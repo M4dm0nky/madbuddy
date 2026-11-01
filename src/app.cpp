@@ -152,6 +152,10 @@ static bool fresh_weather(uint32_t now, WeatherMood *wm, NetWeather *w) {
   return true;
 }
 
+static SettingsCam settings_cam(uint32_t now) {   // Zustand für Einstellungen Seite 2
+  return SettingsCam{s_persist.cam_on, cam_link_conn(cam_uart_link(), now, s_persist.cam_on), cam_link_version(cam_uart_link())};
+}
+
 static StatusInfo status_info(uint32_t now) {
   StatusInfo si{};
   struct tm t;
@@ -169,6 +173,10 @@ static StatusInfo status_info(uint32_t now) {
   si.update_ready = ota_pull::info().state == ota_pull::AVAILABLE;
   si.timer_s = (uint16_t)pomo_remaining_s(s_pomo, now);
   si.timer_break = s_pomo.state == PomoState::BREAK;
+  if (s_persist.cam_on) {   // Kamera-Auge: rot ohne Verbindung/bei Fehler, grün bei laufender Kamera mit Gesicht, sonst grau
+    const CamConn cc = cam_link_conn(cam_uart_link(), now, true);
+    si.cam = (cc == CamConn::NONE || cc == CamConn::ERR) ? 3 : (cc == CamConn::ON && s_pres.present ? 2 : 1);
+  }
   si.claude_on = claude_active(s_claude, now);
   si.helpers = claude_helpers(s_claude, now);
   return si;
@@ -514,7 +522,7 @@ static int firmware_line(char *out, size_t n, uint32_t now) {
 static void open_settings(uint32_t now) {
   s_manual_ota = false;
   s_screen = Screen::SETTINGS;
-  settings_open(s_lcd, s_persist, now);
+  settings_open(s_lcd, s_persist, now, settings_cam(now));
 }
 
 static void open_ota_card(uint32_t now) {
@@ -594,15 +602,22 @@ static void screen_frame(uint32_t now, uint32_t dt, Gesture g, int16_t tx, int16
             s_persist.brightness = (uint8_t)((s_persist.brightness + 1) % 3);
             set_backlight(kBacklight[s_persist.brightness]);
             save_now();
-            settings_redraw(s_lcd, s_persist);
+            settings_redraw(s_lcd, s_persist, settings_cam(now));
             break;
-          case SettingsAction::PORTAL: claude_api_stop(); net_open_portal(); settings_redraw(s_lcd, s_persist); break;   // claude_api_stop: Port 80 frei für das Portal
+          case SettingsAction::PORTAL: claude_api_stop(); net_open_portal(); settings_redraw(s_lcd, s_persist, settings_cam(now)); break;   // claude_api_stop: Port 80 frei für das Portal
           case SettingsAction::OTA_CHECK:
             // Manuelles Update: suchen (hebt auch "Später" auf); liegt eins bereit, kommt die Karte sofort (unten).
             ota_pull::check_now();
             s_manual_ota = true;
-            settings_redraw(s_lcd, s_persist);
+            settings_redraw(s_lcd, s_persist, settings_cam(now));
             break;
+          case SettingsAction::CAM_TOGGLE:
+            s_persist.cam_on = !s_persist.cam_on;
+            cam_uart_send_ctrl(s_persist.cam_on);
+            save_now();
+            settings_redraw(s_lcd, s_persist, settings_cam(now));
+            break;
+          case SettingsAction::PAGE: settings_redraw(s_lcd, s_persist, settings_cam(now)); break;
           default: break;
         }
       }
@@ -610,7 +625,7 @@ static void screen_frame(uint32_t now, uint32_t dt, Gesture g, int16_t tx, int16
         s_manual_ota = false;
         if (ota_pull::info().state == ota_pull::AVAILABLE) { open_ota_card(now); return; }
       }
-      settings_tick(s_lcd, s_persist, now);
+      settings_tick(s_lcd, s_persist, now, settings_cam(now));
       return;
 
     case Screen::GAME_CATCH:

@@ -3,6 +3,12 @@
 Neueste Einträge oben. Format und Regeln: `docs/superpowers/plans/2026-10-25-cyd-buddy.md`, Abschnitt „Fortschritts-Protokoll“.
 
 
+## Kamera-Firmware Phase B – Task 5: Einstellungen Seite 2 und Augen-Symbol – ERLEDIGT
+- Zeit: 2026-11-01 (Sonnet, Umsetzung nach Plan), Branch `feature/kamera-firmware`
+- Gemacht: `icon_eye` und `icon_arrow`; Einstellungen mit zweiter Seite (Zeile 0 Kamera-Schalter grün/grau, Zeile 1 Kamera-Info: grün „XIAO <Version> verbunden“, gelb „keine Verbindung“, rot „Kamera-Fehler“, grau „aus“); Seitenpfeil in Zeile 3 (Seite 1 rechts x 268..320, Seite 2 links x 0..52, Trefferfläche 52 x 52); Charakter-Balken auf Seite 1 nach links geschoben (x 192..240) und Info-Texte enden vor x 170; `SettingsAction::CAM_TOGGLE/PAGE`, `SettingsCam` an `settings_open/redraw/tick`; `app.cpp` schaltet `cam_on`, sendet `C`, speichert. Statusstreifen: `StatusInfo::cam` (0/1 grau/2 grün/3 rot), Auge bei x = 194 (s = 8, 186..202) zwischen Wetter-Temperatur und Pomodoro.
+- Prüfung: `pio run -e cyd2usb` SUCCESS (Flash 75,3 %, RAM 18,1 %); HTML-Mockup `docs/superpowers/mockups/2026-11-01-einstellungen-kamera.html` per Edge headless geprüft, keine Überlappung.
+- Offen: Anzeige am Gerät (Schriftbreiten der Info-Zeile, Auge im Statusstreifen) nicht geflasht geprüft.
+
 ## Kamera-Firmware Phase B – Task 4: Treiber, Speichern und Verdrahtung in `app.cpp` – ERLEDIGT
 - Zeit: 2026-11-01 (Sonnet, Umsetzung nach Plan), Branch `feature/kamera-firmware`
 - Gemacht: `config.h` Kamera-Abschnitt (Pins 27/22, 115200, CAM_MIRROR_X, CAM_NEAR_W). Neu `hw/cam_uart.{h,cpp}` (Serial2, Poll mit Rückruf, `send` mit gelöschtem Puffer, `send_ctrl`, `take_restart`, `cam_uart_link`). `Persist::cam_on` (NVS `cam`, Standard an), `kVersion = 4`; `store_load` verwirft nur Stände neuer als kVersion, Stände 1–3 laden weiter. `app.cpp`: `cam_active`, `on_cam_msg` (presence_msg), `mood_frame` (presence_tick, Wachhalten bei Gesicht außer nachts im Schlaf, Kamera ersetzt LDR-Dunkel, `light_update` läuft immer, NEAR nur bei steigender Flanke), `speech_frame` (WIEDER-Begrüßung nach dem Morgen-Ritual), `eyes_frame` (Blick folgt dem Gesicht nach dem Finger), Poll und C-Neusendung im `app_loop`.

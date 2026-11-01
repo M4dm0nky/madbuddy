@@ -265,3 +265,20 @@ void icon_helper(LovyanGFX &d, int cx, int cy, int s, uint32_t col) {
   d.fillCircle(cx, cy - s * 3 / 10, s / 5, col);
   d.fillRoundRect(cx - s * 3 / 10, cy - s / 10, s * 3 / 5, s * 3 / 5, s / 5, col);
 }
+
+// Auge: Mandel aus einer Ellipse mit schwarzem Inneren, Iris als Kreis, Pupille dunkel (ca. 2s x 1,2s).
+void icon_eye(LovyanGFX &d, int cx, int cy, int s, uint32_t col) {
+  const int rx = s, ry = s * 6 / 10;
+  const int t = s / 6 + 1;   // Randstärke
+  d.fillEllipse(cx, cy, rx, ry, col);
+  d.fillEllipse(cx, cy, rx - t, ry - t, TFT_BLACK);
+  d.fillCircle(cx, cy, s * 4 / 10, col);
+  d.fillCircle(cx, cy, s * 17 / 100 + 1, TFT_BLACK);
+}
+
+// Pfeil als gefülltes Dreieck nach rechts bzw. links.
+void icon_arrow(LovyanGFX &d, int cx, int cy, int s, uint32_t col, bool right) {
+  const int h = s / 2, w = s * 4 / 10;
+  if (right) d.fillTriangle(cx + w, cy, cx - w, cy - h, cx - w, cy + h, col);
+  else d.fillTriangle(cx - w, cy, cx + w, cy - h, cx + w, cy + h, col);
+}

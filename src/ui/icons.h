@@ -31,3 +31,5 @@ void icon_pillow(LovyanGFX &d, int cx, int cy, int s, uint32_t col);     // faul
 void icon_claude(LovyanGFX &d, int cx, int cy, int s, uint32_t col);     // Funke/Stern (Claude-Modus)
 void icon_helper(LovyanGFX &d, int cx, int cy, int s, uint32_t col);     // Helfer-Männchen (Subagent)
 void icon_stop(LovyanGFX &d, int cx, int cy, int s, uint32_t col);       // Quadrat (Timer stoppen)
+void icon_eye(LovyanGFX &d, int cx, int cy, int s, uint32_t col);        // Auge (Kamera), ca. 2s x 1,2s
+void icon_arrow(LovyanGFX &d, int cx, int cy, int s, uint32_t col, bool right);   // Dreieck nach rechts/links (Seite wechseln)
