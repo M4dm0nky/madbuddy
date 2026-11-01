@@ -47,6 +47,7 @@ void send_pct(int pct) {
 void setup_tls(WiFiClientSecure &tls) {
 #if ESP_ARDUINO_VERSION_MAJOR >= 3
   tls.useBuiltinCACertBundle();
+  tls.setHandshakeTimeout(6);   // Sekunden; Vorgabe 120 s würde den Herzschlag blockieren
 #else
   tls.setInsecure();   // Kern 2.x ohne eingebautes Zertifikatsbündel: Der Inhalt ist über die SHA-256 festgelegt
 #endif
