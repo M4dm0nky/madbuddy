@@ -39,3 +39,10 @@ constexpr int LDR_HYSTERESIS = 75;
 constexpr int LED_R = 4;
 constexpr int LED_G = 16;
 constexpr int LED_B = 17;
+
+// Kamera (XIAO ESP32-S3 Sense an CN1, docs/verkabelung.md)
+constexpr int CAM_RX = 27;          // vom XIAO D6 (TX)
+constexpr int CAM_TX = 22;          // zum XIAO D7 (RX)
+constexpr uint32_t CAM_BAUD = 115200;
+constexpr bool CAM_MIRROR_X = true; // am Gerät bestimmen: Augen sollen zur Person schauen
+constexpr int16_t CAM_NEAR_W = 450; // Gesichtsbreite 0..1000, ab der er überrascht schielt (am Gerät messen)

@@ -17,6 +17,8 @@
 #include "ui/review.h"
 #include "hw/led.h"
 #include "hw/light.h"
+#include "hw/cam_uart.h"
+#include "logic/presence.h"
 #include "hw/store.h"
 #include "ui/eyes.h"
 #include "ui/status_bar.h"
@@ -66,6 +68,9 @@ static uint32_t s_next_hmm = 0, s_next_hey = 0;
 static bool s_needs_ack = false;                       // Tippen hat das gelbe Blinken beendet ...
 static uint32_t s_needs_ack_since = 0;                 // ... für das NEEDS_YOU, das bei L.since begann
 static MoodState s_mood;
+static Presence s_presence;                         // Kamera: Anwesenheit, Begrüßung, Nähe, Blick
+static PresenceOut s_pres;                          // Ergebnis des letzten mood_frame (für speech_frame/eyes_frame)
+static bool s_prev_near = false;
 static GestureState s_gesture;
 static Blinker s_blink;
 static Gazer s_gaze;
@@ -308,6 +313,15 @@ static void claude_frame(ClaudeState cs, uint32_t now) {
   }
 }
 
+// Kamera zählt nur, wenn eingeschaltet und der XIAO läuft.
+static bool cam_active(uint32_t now) {
+  return s_persist.cam_on && cam_link_conn(cam_uart_link(), now, s_persist.cam_on) == CamConn::ON;
+}
+
+static void on_cam_msg(const CamMsg &m, uint32_t now) {
+  presence_msg(s_presence, m, now, CAM_MIRROR_X);   // U-Meldungen (Update-Karte) kommen mit Task 6
+}
+
 // Stimmung läuft auf jedem Bildschirm weiter (Zeit vergeht), Licht und LED auch.
 static void mood_frame(uint32_t now, uint32_t dt) {
   const int hour = current_hour();
@@ -316,7 +330,16 @@ static void mood_frame(uint32_t now, uint32_t dt) {
   s_claude_busy = claude_busy(cs);
   const bool calm = work || s_claude_busy;   // Pomodoro-Arbeit bzw. Claude arbeitet: kein Schlaf, keine Eigenarten
   if (calm) mood_touch(s_mood, now);
-  mood_set_dark(s_mood, calm ? false : light_update(now), hour, now);
+  const bool cam = cam_active(now);
+  const PresenceOut po = presence_tick(s_presence, cam, now, CAM_NEAR_W);
+  s_pres = po;   // für eyes_frame/speech_frame
+  const bool asleep = mood_is_sleeping(s_mood, now);
+  if (po.present && !(mood_is_night(hour) && asleep)) mood_touch(s_mood, now);   // da = wach halten; nachts weckt ein Gesicht nicht
+  const bool ldr_dark = light_update(now);   // läuft immer weiter, damit die Glättung nicht springt
+  const bool dark = cam ? po.unattended : ldr_dark;   // Kamera ersetzt den Lichtsensor
+  mood_set_dark(s_mood, calm ? false : dark, hour, now);
+  if (po.near && !s_prev_near) mood_set_transient(s_mood, Emotion::NEAR, now, PRES_NEAR_FOR_MS);
+  s_prev_near = po.near;
   mood_night_check(s_mood, hour, now);
   mood_set_character(s_mood, s_char);
   mood_tick(s_mood, dt, now);
@@ -383,7 +406,11 @@ static void speech_frame(uint32_t now, bool sleeping) {
       weather_sentence(w.temp_c, wm.sky, s_pending, sizeof s_pending);
       s_pending_at = now + kMorningWeatherDelayMs;
     }
+  } else if (s_pres.greet) {   // Kamera: jemand ist wieder da (Morgen hat Vorrang)
+    mood_set_transient(s_mood, Emotion::GREETING, now, 3000);
+    say(Say::WIEDER, now);
   }
+  s_pres.greet = false;
   if (ritual_night(s_rituals, true, hour, minute, day)) {
     mood_set_transient(s_mood, Emotion::YAWN, now, 3000);
     say(Say::NACHT, now);
@@ -419,6 +446,7 @@ static void eyes_frame(uint32_t now, uint32_t dt) {
   gazer_update(s_gaze, now);
   float gx = s_gaze.gx, gy = s_gaze.gy;
   if (look_active(s_look, now)) look_target(s_look, &gx, &gy);   // Blick folgt dem Finger
+  else if (s_pres.gaze) { gx = s_pres.gx; gy = s_pres.gy; }   // Blick folgt dem Gesicht
   if (sleeping || (s_claude_fx & (CFX_STRAIGHT | CFX_JUMP))) gx = gy = 0;   // Claude: Blick gerade bzw. springend, kein Wandern
   target.s.pupil_dx += gx / GAZE_X_MAX * 14.0f;
   target.s.pupil_dy += gy / GAZE_Y_MAX * 10.0f;
@@ -654,6 +682,8 @@ static void screen_frame(uint32_t now, uint32_t dt, Gesture g, int16_t tx, int16
 void app_setup() {
   led_begin();
   light_begin();
+  cam_uart_begin();
+  cam_uart_on_msg(on_cam_msg);
   if (!store_load(s_persist)) Serial.println("store: nichts gespeichert, Startwerte");
   mood_init(s_mood, s_persist.needs);
   s_mood.sick = s_persist.sick;
@@ -706,6 +736,8 @@ void app_loop() {
 
   net_loop();
   claude_api_loop();
+  cam_uart_poll(now);
+  if (cam_uart_take_restart()) cam_uart_send_ctrl(s_persist.cam_on);
   apply_elapsed_once();
 
   int16_t tx, ty;

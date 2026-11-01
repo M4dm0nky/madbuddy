@@ -3,6 +3,12 @@
 Neueste Einträge oben. Format und Regeln: `docs/superpowers/plans/2026-10-25-cyd-buddy.md`, Abschnitt „Fortschritts-Protokoll“.
 
 
+## Kamera-Firmware Phase B – Task 4: Treiber, Speichern und Verdrahtung in `app.cpp` – ERLEDIGT
+- Zeit: 2026-11-01 (Sonnet, Umsetzung nach Plan), Branch `feature/kamera-firmware`
+- Gemacht: `config.h` Kamera-Abschnitt (Pins 27/22, 115200, CAM_MIRROR_X, CAM_NEAR_W). Neu `hw/cam_uart.{h,cpp}` (Serial2, Poll mit Rückruf, `send` mit gelöschtem Puffer, `send_ctrl`, `take_restart`, `cam_uart_link`). `Persist::cam_on` (NVS `cam`, Standard an), `kVersion = 4`; `store_load` verwirft nur Stände neuer als kVersion, Stände 1–3 laden weiter. `app.cpp`: `cam_active`, `on_cam_msg` (presence_msg), `mood_frame` (presence_tick, Wachhalten bei Gesicht außer nachts im Schlaf, Kamera ersetzt LDR-Dunkel, `light_update` läuft immer, NEAR nur bei steigender Flanke), `speech_frame` (WIEDER-Begrüßung nach dem Morgen-Ritual), `eyes_frame` (Blick folgt dem Gesicht nach dem Finger), Poll und C-Neusendung im `app_loop`.
+- Prüfung: `pio run -e cyd2usb` SUCCESS (Flash 75,3 %, vorher 75,1 %; RAM 18,1 %); `pio test -e native -f test_mood -f test_presence -f test_cam_link` 64/64.
+- Offen: Anzeige/Einstellung `cam_on` und Update-Karte (Task 5/6); CAM_MIRROR_X und CAM_NEAR_W am Gerät bestimmen; nicht geflasht.
+
 ## Kamera-Firmware Phase B – Task 3: Ausdruck NEAR (schielend) und Sätze WIEDER – ERLEDIGT
 - Zeit: 2026-11-01 (Sonnet, Umsetzung nach Plan), Branch `feature/kamera-firmware`
 - Gemacht: `Emotion::NEAR` (vor `COUNT`), `FaceShape::cross` (Pixel, Pupillen beider Augen zur Nase hin, im Tween gemischt), Ausdruck NEAR = Werte von SURPRISED + `cross = 6`, Mund O; `eyes.cpp` zieht die Pupille um `side * cross` nach innen. Satzgruppe `wieder` (6 Sätze) in `saetze.json`, `phrases.h` neu erzeugt (`Say::WIEDER`). Weitere Tabellen über `Emotion` gibt es nicht (nur `face_expression`, der Rest läuft über `default`).

@@ -15,6 +15,7 @@ struct Persist {
   bool sick;             // F3 (Sättigung steckt in needs.satiety)
   float cuddly, playful; // Charakter -100..100
   uint8_t favorite_food; // 0..3; STORE_NO_FAVORITE = noch nicht gewählt (app zieht beim ersten Start zufällig)
+  bool cam_on;           // Kamera eingeschaltet (Einstellung), Standard an
 };
 constexpr uint8_t STORE_NO_FAVORITE = 255;
 
