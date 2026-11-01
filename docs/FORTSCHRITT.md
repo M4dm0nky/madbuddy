@@ -2,6 +2,12 @@
 
 Neueste Einträge oben. Format und Regeln: `docs/superpowers/plans/2026-10-25-cyd-buddy.md`, Abschnitt „Fortschritts-Protokoll“.
 
+## Kamera-Firmware Phase A – Task 3: `cam_xiao.h` (Box, Probelauf) und S3 in `ota_policy.h` – ERLEDIGT
+- Zeit: 2026-11-01 (Sonnet), Branch `feature/kamera-firmware`
+- Gemacht: `cam_health()` (Probelauf: gut ab 20 s ohne Kamerafehler mit mindestens 5 Lebenszeichen, sonst Rollback nach 60 s; `up_ms` ist die kurze Zeit seit Start des Images, daher kein `deadline.h` nötig). `ota_policy.h`: `OTA_CHIP_ESP32S3 = 9` und `ota_image_check(..., chip = OTA_CHIP_ESP32)`; der CYD-Aufruf bleibt unverändert. `cam_box_to_face` stand schon seit Task 1. Tests: 3 neue in `test_cam_proto`, 1 in `test_ota_policy`.
+- Prüfung: `pio test -e native -f test_cam_proto -f test_ota_policy` → vorher ERRORED (`OTA_CHIP_ESP32S3` fehlte), danach beide grün. Mutationen, je rot gesehen und zurückgesetzt: Box-Faktor → `test_box_center`; Klemmung → `test_box_clamped_and_degenerate`; leere Box → dasselbe; `cam_ok` → `test_health_decision`; Lebenszeichen → `test_health_decision`; 20-s-Grenze → `test_health_decision`; 60-s-Grenze → `test_health_decision`; Chip-Parameter ignoriert → `test_image_chip_s3` (+ `test_image_ok_esp32`, `test_image_rejects`). Kein `pio run -e cyd2usb` (Vorgabe: kein Build); Aufrufer in `ota_pull.cpp` bleiben durch das Standardargument gültig.
+- Offen: Task 4 ff. (cam/-Firmware nutzt das), Phase B (CYD-Seite).
+
 ## Kamera-Firmware Phase A – Task 2: Zeilenprotokoll `cam_proto.h` – ERLEDIGT
 - Zeit: 2026-11-01 (Sonnet), Branch `feature/kamera-firmware`
 - Gemacht: `src/logic/cam_proto.h` (Prüfsumme XOR, Bauen/Parsen der Zeilen F/N/H/C/U, `CamLineBuf`), Host-Tests `test/test_cam_proto/test_main.cpp` (11 Tests). Spec Zeile 24: Zeilenmaximum 200 → 400 Zeichen.

@@ -11,7 +11,8 @@
 // App-Image einer Arduino-/IDF-Firmware: Kopf 24 Byte (Magic 0xE9, Chip-ID bei Byte 12), dann Segmentkopf (8 Byte), dann esp_app_desc_t ab Byte 32.
 // esp_app_desc_t: magic 0xABCD5432 (0), project_name (48..79), app_elf_sha256 (144..175).
 constexpr size_t OTA_IMG_CHECK_BYTES = 32 + 176; // so viel vom Anfang der Datei reicht für die Prüfung (bis Ende app_elf_sha256; die Vorlage hatte 176 und las darüber hinaus)
-constexpr uint16_t OTA_CHIP_ESP32 = 0;          // ESP32 (CYD); beim HA-Buddy war es 9 (ESP32-S3)
+constexpr uint16_t OTA_CHIP_ESP32 = 0;          // ESP32 (CYD)
+constexpr uint16_t OTA_CHIP_ESP32S3 = 9;        // ESP32-S3 (XIAO-Kamera, cam/)
 
 enum OtaImg : uint8_t { OTA_IMG_OK = 0, OTA_IMG_SHORT, OTA_IMG_MAGIC, OTA_IMG_CHIP, OTA_IMG_DESC, OTA_IMG_PROJECT };
 
@@ -22,10 +23,11 @@ static inline bool ota_hex_ok(const char *s, size_t n) {
 }
 
 // Prüft die ersten Bytes eines Images. elf_hex (65 Byte) bekommt bei OTA_IMG_OK die ELF-SHA-256 des Images (64 Hexziffern).
-static inline OtaImg ota_image_check(const uint8_t *b, size_t n, const char *project, char *elf_hex) {
+// chip: erwartete Chip-ID aus dem Image-Kopf (CYD: ESP32, cam/: ESP32-S3).
+static inline OtaImg ota_image_check(const uint8_t *b, size_t n, const char *project, char *elf_hex, uint16_t chip = OTA_CHIP_ESP32) {
   if (!b || n < OTA_IMG_CHECK_BYTES) return OTA_IMG_SHORT;
   if (b[0] != 0xE9) return OTA_IMG_MAGIC;
-  if ((uint16_t)(b[12] | (b[13] << 8)) != OTA_CHIP_ESP32) return OTA_IMG_CHIP;
+  if ((uint16_t)(b[12] | (b[13] << 8)) != chip) return OTA_IMG_CHIP;
   const uint32_t magic = (uint32_t)b[32] | ((uint32_t)b[33] << 8) | ((uint32_t)b[34] << 16) | ((uint32_t)b[35] << 24);
   if (magic != 0xABCD5432u) return OTA_IMG_DESC;
   char name[33];

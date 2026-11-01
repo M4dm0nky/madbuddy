@@ -1,6 +1,7 @@
 #include <unity.h>
 #include <string.h>
 #include "logic/cam_proto.h"
+#include "logic/cam_xiao.h"
 void setUp() {}
 void tearDown() {}
 
@@ -218,6 +219,31 @@ void test_linebuf_overflow_recovers() {
   TEST_ASSERT_EQUAL_STRING("N*4E", lb.line());
 }
 
+void test_box_center() {
+  CamFace f;
+  TEST_ASSERT_TRUE(cam_box_to_face(100, 80, 220, 200, 320, 240, &f));
+  TEST_ASSERT_EQUAL(500, f.x);   // (100+220)/2 = 160 von 320
+  TEST_ASSERT_EQUAL(583, f.y);   // 140 von 240
+  TEST_ASSERT_EQUAL(375, f.w);   // 120 von 320
+}
+void test_box_clamped_and_degenerate() {
+  CamFace f;
+  TEST_ASSERT_TRUE(cam_box_to_face(-10, -10, 400, 300, 320, 240, &f));
+  TEST_ASSERT_EQUAL(500, f.x); TEST_ASSERT_EQUAL(500, f.y); TEST_ASSERT_EQUAL(1000, f.w);
+  TEST_ASSERT_FALSE(cam_box_to_face(50, 10, 50, 20, 320, 240, &f));   // Breite 0
+  TEST_ASSERT_FALSE(cam_box_to_face(60, 10, 50, 20, 320, 240, &f));   // vertauscht
+  TEST_ASSERT_FALSE(cam_box_to_face(0, 0, 10, 10, 0, 240, &f));       // Bildgröße 0
+}
+void test_health_decision() {
+  TEST_ASSERT_EQUAL(CAM_HEALTH_WAIT, cam_health(19999, true, 10));
+  TEST_ASSERT_EQUAL(CAM_HEALTH_VALID, cam_health(20000, true, 5));
+  TEST_ASSERT_EQUAL(CAM_HEALTH_WAIT, cam_health(20000, true, 4));
+  TEST_ASSERT_EQUAL(CAM_HEALTH_WAIT, cam_health(30000, false, 10));
+  TEST_ASSERT_EQUAL(CAM_HEALTH_ROLLBACK, cam_health(60000, false, 10));
+  TEST_ASSERT_EQUAL(CAM_HEALTH_ROLLBACK, cam_health(60000, true, 2));
+  TEST_ASSERT_EQUAL(CAM_HEALTH_VALID, cam_health(60000, true, 5));   // gesund geht vor Zeitablauf
+}
+
 int main(int, char **) {
   UNITY_BEGIN();
   RUN_TEST(test_xor_known);
@@ -235,5 +261,8 @@ int main(int, char **) {
   RUN_TEST(test_update_progress);
   RUN_TEST(test_linebuf_split_and_cr);
   RUN_TEST(test_linebuf_overflow_recovers);
+  RUN_TEST(test_box_center);
+  RUN_TEST(test_box_clamped_and_degenerate);
+  RUN_TEST(test_health_decision);
   return UNITY_END();
 }

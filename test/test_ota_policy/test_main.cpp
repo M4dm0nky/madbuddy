@@ -72,6 +72,14 @@ void test_notice_snooze_one_hour_and_2_31() {
   TEST_ASSERT_TRUE(ota_notice_due(1000UL + OTA_NAG_MS + 0x80000000UL + 5, 1000, true));   // vor 24,8 Tagen geschlummert
   TEST_ASSERT_FALSE(ota_notice_due(1000UL + OTA_NAG_MS + 0x80000000UL + 5, 1000, false));
 }
+void test_image_chip_s3() {
+  char elf[65];
+  make_img(9, "cam");
+  TEST_ASSERT_EQUAL(OTA_IMG_CHIP, ota_image_check(img, sizeof img, "cam", elf));                    // Vorgabe bleibt ESP32
+  TEST_ASSERT_EQUAL(OTA_IMG_OK, ota_image_check(img, sizeof img, "cam", elf, OTA_CHIP_ESP32S3));
+  make_img(0, "cam");
+  TEST_ASSERT_EQUAL(OTA_IMG_CHIP, ota_image_check(img, sizeof img, "cam", elf, OTA_CHIP_ESP32S3));
+}
 int main(int, char **) {
   UNITY_BEGIN();
   RUN_TEST(test_image_ok_esp32);
@@ -81,5 +89,6 @@ int main(int, char **) {
   RUN_TEST(test_redirect_authority_tricks);
   RUN_TEST(test_notice_and_progress);
   RUN_TEST(test_notice_snooze_one_hour_and_2_31);
+  RUN_TEST(test_image_chip_s3);
   return UNITY_END();
 }
