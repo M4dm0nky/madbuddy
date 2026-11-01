@@ -2,6 +2,13 @@
 
 Neueste Einträge oben. Format und Regeln: `docs/superpowers/plans/2026-10-25-cyd-buddy.md`, Abschnitt „Fortschritts-Protokoll“.
 
+## Kamera-Firmware Phase B – Task 2: `presence.h` (Anwesenheit, Begrüßung, Schlaf, Nähe, Blick) – ERLEDIGT
+- Zeit: 2026-11-01 (Haiku, Umsetzung nach Plan), Branch `feature/kamera-firmware`
+- Gemacht: `src/logic/presence.h` (`Presence`, `presence_msg`, `presence_tick`, `presence_gaze_raw`, `PRES_*`; nutzt `cam_proto.h` und `deadline.h`, Header-Namen wie im Brief, keine Anpassung nötig). Host-Tests `test/test_presence/test_main.cpp` (10 Tests: 9 aus dem Brief plus 1 zusätzlich, siehe unten).
+- Prüfung: `pio test -e native -f test_presence` → vorher ERRORED (Header fehlte), danach 10/10 PASSED. Mutationen, je rot gesehen und zurückgesetzt: Paarzeit 1 s → 2 s → `test_present_needs_two_faces_in_1s`; Weg-Zeit 30 s → 31 s → `test_gone_after_30s`, `test_greet_after_2min_away_with_cooldown`, `test_greet_is_one_shot`; Begrüßungs-Sperrzeit aus → `test_greet_after_2min_away_with_cooldown`; `unattended` ohne `since_ms` → `test_unattended_counts_from_activation`; Nähe `>` → `>=` → `test_near_with_cooldown`; Spiegeln invertiert → `test_gaze_mapping_and_smoothing`; Glättung aus → `test_gaze_mapping_and_smoothing`.
+- Abweichungen vom Brief (nur Tests): (1) `presence_tick(p, true, 0, NEAR)` vor dem ersten F, sonst verwirft `presence_msg` das F bei inaktiver Kamera und die Paarzeit wird nicht geprüft; (2) neuer Test `test_unattended_counts_from_activation` (Aktivierung bei 5 s), weil alle Brief-Tests bei 0 aktivieren und die Mutation `since_ms` sonst unentdeckt bliebe.
+- Offen: Verdrahtung in der CYD-Hauptschleife (nächste Tasks Phase B), Prüfung mit echter Kamera am Gerät.
+
 ## Kamera-Firmware Phase B – Task 1: `cam_link.h` (Zeilen, Verbindung, Update-Watchdog am CYD) – ERLEDIGT
 - Zeit: 2026-11-01 (Haiku, Umsetzung nach Plan), Branch `feature/kamera-firmware`
 - Gemacht: `src/logic/cam_link.h` (`CamLink`, `cam_link_feed` über `CamLineBuf`/`cam_parse`, Verbindung mit 5 s Zeitlimit, `CamConn`-Zustände, Neustart-Erkennung, Update-Watchdog 20 s). Host-Tests `test/test_cam_link/test_main.cpp` (6 Tests). Feldnamen des Headers passen zum Plan, keine Anpassung nötig.
