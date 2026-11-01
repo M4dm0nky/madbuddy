@@ -2,6 +2,15 @@
 
 Neueste Einträge oben. Format und Regeln: `docs/superpowers/plans/2026-10-25-cyd-buddy.md`, Abschnitt „Fortschritts-Protokoll“.
 
+## Kamera-Firmware Phase A – Task 5: am Gerät abgenommen (XIAO an COM7, vor dem Löten) – ERLEDIGT bis auf Gesichts-Messwerte
+- Zeit: 2026-11-01 (Opus mit Nutzer), Branch `feature/kamera-firmware`
+- Volle Prüfung: `pio test -e native` 199/199, `node --test` 7/7, `pio run -e cyd2usb` SUCCESS (Flash 75,0 %), `tools\cam-build.ps1` SUCCESS (Flash 72,1 %, RAM 60 792 B).
+- Flash per USB-C: `cam-build.ps1 -Upload -Port COM7`, Hash verified. Partitionstabelle am Gerät ausgelesen (0x8000): nvs 0x9000, otadata 0xe000, app0 0x10000 und app1 0x340000 (je 0x330000), spiffs, coredump.
+- Protokoll: `H 0.1.0 on` alle 2 s; `C 0` → `off`, fps 0; `C 1` → Kamera neu gestartet, `on`, 12 fps, 77 ms/Bild.
+- WLAN-Update (Pre-Release `cam-test-20261101`, danach gelöscht): gutes Bild → `U 0`…`U 100` in ~50 s, Neustart auf app1 Zustand 1, nach 20 s `U ok`, „neue Firmware bestaetigt“. Falsche SHA → `U err SHA-256 falsch`, kein Neustart, Kamera wieder an. Kaputtes Bild → Neustart, `H 0.1.0-broken err`, nach 60 s „Probelauf gescheitert, Rollback“, Neustart auf app1 Zustand 2, `H 0.1.0 on`. Endstand: gute Firmware 0.1.0 auf app1.
+- Erkenntnisse: Ohne die aufgesteckte Stabantenne (U.FL) findet der XIAO kein WLAN (`U err kein WLAN` nach 20 s, Fehlerweg sauber). Ein Download blieb einmal bei 15 % hängen → nach 15 s `U err Zeitueberschreitung`, kein Neustart; zweiter Versuch lief durch.
+- Offen: Gesichts-Messwerte (größte Entfernung, `w` normal/nah → `CAM_NEAR_W`, Richtung von `x` → `CAM_MIRROR_X`) und `CAM_FLIP_180` erst nach dem Einbau bei Tageslicht (17 Uhr Winter, zu dunkel; Probemitschnitt nur vereinzelte Treffer). Danach Phase B (CYD-Seite, Watchdog ≥ 20 s).
+
 ## Kamera-Firmware Phase A – Task 4: XIAO-Firmware (Link, Updater, Ablauf) – ERLEDIGT, gebaut (nicht geflasht)
 - Zeit: 2026-11-01 (Sonnet), Branch `feature/kamera-firmware`
 - Gemacht: `cam/src/link.*` (UART zum CYD + USB-Seriell, Zeilenprotokoll), `updater.*` (WLAN nur während des Updates, Umleitungen nur über `ota_redirect_ok`, Chip-/Projektprüfung S3, SHA-256 vor `Update.end`, Probelauf mit `cam_health`, Rollback), `main.cpp` endgültig (Kamera an/aus per `C`, Herzschlag, F/N, Wiederholung von `camera_start` alle `CAM_RETRY_MS`). `CAM_FLIP_180 0` in `cam_config.h` und in `camera_start()` ausgewertet. `cam_parse_upd_cmd` hat 4 Felder (Header gilt), keine Anpassung nötig.
