@@ -12,6 +12,7 @@ bool detect_init() {
 }
 
 bool detect_face(camera_fb_t *fb, CamFace *out, uint32_t *infer_ms) {
+  if (!g_det) return false;  // detect_init() fehlgeschlagen
   const uint32_t t0 = millis();
   dl::image::img_t img = {};
   img.data = fb->buf;
