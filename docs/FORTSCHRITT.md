@@ -2,6 +2,13 @@
 
 Neueste Einträge oben. Format und Regeln: `docs/superpowers/plans/2026-10-25-cyd-buddy.md`, Abschnitt „Fortschritts-Protokoll“.
 
+## Kamera-Firmware Phase A – Task 2: Zeilenprotokoll `cam_proto.h` – ERLEDIGT
+- Zeit: 2026-11-01 (Sonnet), Branch `feature/kamera-firmware`
+- Gemacht: `src/logic/cam_proto.h` (Prüfsumme XOR, Bauen/Parsen der Zeilen F/N/H/C/U, `CamLineBuf`), Host-Tests `test/test_cam_proto/test_main.cpp` (11 Tests). Spec Zeile 24: Zeilenmaximum 200 → 400 Zeichen.
+- Abweichung vom Plan-Code: `cam_parse_upd_cmd` zerlegte 5 statt 4 Felder (url, sha, ssid, pass) und wies darum jede gültige U-Zeile ab; auf 4 Felder korrigiert.
+- Prüfung: `pio test -e native -f test_cam_proto` → erst ERRORED (Header fehlte), dann 1 FAIL (`test_update_cmd_roundtrip`, der Fehler oben), nach Korrektur 11/11 grün. Gegenprobe (Prüfsummenvergleich auskommentiert) → `test_checksum_rules` FAIL, zurückgesetzt wieder 11/11.
+- Offen: Task 3 (cam/-Firmware nutzt das Protokoll), Phase B (CYD-Seite).
+
 ## Kamera-Firmware Phase A – Task 1: Spike `cam/` (XIAO) – ERLEDIGT, am Gerät gemessen
 - Zeit: 2026-10-29 (Sonnet), Branch `feature/kamera-firmware`
 - Weg: **Weg 1** (pioarduino 55.03.312-1, Arduino als IDF-Komponente, ESP-DL v3 `human_face_detect`). Grund: baut sauber, neuere ESP-DL; Weg 2 (Arduino-Kern 2.0.17) bleibt Rückfall.

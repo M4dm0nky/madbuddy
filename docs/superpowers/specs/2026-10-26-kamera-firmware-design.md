@@ -21,7 +21,7 @@ Ein Kamerabild zeigt der CYD nicht. Bilder verlassen den XIAO nie.
 
 ## UART-Protokoll
 - 115200 Baud, 8N1. CYD: `Serial2`, RX = GPIO 27, TX = GPIO 22. XIAO: D6 = TX, D7 = RX.
-- Eine Nachricht ist eine Textzeile: `<inhalt>*<xx>\n`. `xx` ist die XOR-Prüfsumme über `<inhalt>` als zwei Hex-Ziffern. Zeilen mit falscher Prüfsumme, unbekanntem Befehl oder mehr als 200 Zeichen werden verworfen.
+- Eine Nachricht ist eine Textzeile: `<inhalt>*<xx>\n`. `xx` ist die XOR-Prüfsumme über `<inhalt>` als zwei Hex-Ziffern. Zeilen mit falscher Prüfsumme, unbekanntem Befehl oder mehr als 400 Zeichen (die `U`-Zeile braucht mehr als 200) werden verworfen.
 
 | Richtung | Zeile | Bedeutung |
 |---|---|---|
