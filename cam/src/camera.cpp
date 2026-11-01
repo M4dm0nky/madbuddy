@@ -23,6 +23,13 @@ bool camera_start() {
   c.fb_location = CAMERA_FB_IN_PSRAM;
   c.grab_mode = CAMERA_GRAB_LATEST;
   g_on = esp_camera_init(&c) == ESP_OK;
+#if CAM_FLIP_180
+  if (g_on) {
+    sensor_t *s = esp_camera_sensor_get();
+    s->set_vflip(s, 1);
+    s->set_hmirror(s, 1);
+  }
+#endif
   return g_on;
 }
 

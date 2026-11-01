@@ -2,6 +2,13 @@
 
 Neueste Einträge oben. Format und Regeln: `docs/superpowers/plans/2026-10-25-cyd-buddy.md`, Abschnitt „Fortschritts-Protokoll“.
 
+## Kamera-Firmware Phase A – Task 4: XIAO-Firmware (Link, Updater, Ablauf) – ERLEDIGT, gebaut (nicht geflasht)
+- Zeit: 2026-11-01 (Sonnet), Branch `feature/kamera-firmware`
+- Gemacht: `cam/src/link.*` (UART zum CYD + USB-Seriell, Zeilenprotokoll), `updater.*` (WLAN nur während des Updates, Umleitungen nur über `ota_redirect_ok`, Chip-/Projektprüfung S3, SHA-256 vor `Update.end`, Probelauf mit `cam_health`, Rollback), `main.cpp` endgültig (Kamera an/aus per `C`, Herzschlag, F/N, Wiederholung von `camera_start` alle `CAM_RETRY_MS`). `CAM_FLIP_180 0` in `cam_config.h` und in `camera_start()` ausgewertet. `cam_parse_upd_cmd` hat 4 Felder (Header gilt), keine Anpassung nötig.
+- Abweichung: `cam/sdkconfig.defaults` + `CONFIG_MBEDTLS_PSK_MODES=y` und `CONFIG_MBEDTLS_KEY_EXCHANGE_PSK=y`; ohne sie kompiliert `ssl_client.cpp` des Arduino-Kerns leer, Linker meldet `start_ssl_client` undefiniert. `getStreamPtr()` mit `auto *`.
+- Prüfung: `tools\cam-build.ps1` → SUCCESS, Flash 2 410 272 B (72,1 % von 3 342 336), RAM 60 792 B. Rollback-Testbild (`-DCAM_TEST_BROKEN`, Version `0.1.0-broken`) → SUCCESS, 2 313 040 B, abgelegt als `%TEMP%\cam-broken.bin`. Kein Flash, kein Seriell (das ist Task 5).
+- Offen: Task 5 (Flashen, Rollback-Probe, Update-Probe am Gerät mit dem Nutzer), Phase B (CYD-Seite).
+
 ## Kamera-Firmware Phase A – Task 3: `cam_xiao.h` (Box, Probelauf) und S3 in `ota_policy.h` – ERLEDIGT
 - Zeit: 2026-11-01 (Sonnet), Branch `feature/kamera-firmware`
 - Gemacht: `cam_health()` (Probelauf: gut ab 20 s ohne Kamerafehler mit mindestens 5 Lebenszeichen, sonst Rollback nach 60 s; `up_ms` ist die kurze Zeit seit Start des Images, daher kein `deadline.h` nötig). `ota_policy.h`: `OTA_CHIP_ESP32S3 = 9` und `ota_image_check(..., chip = OTA_CHIP_ESP32)`; der CYD-Aufruf bleibt unverändert. `cam_box_to_face` stand schon seit Task 1. Tests: 3 neue in `test_cam_proto`, 1 in `test_ota_policy`.
