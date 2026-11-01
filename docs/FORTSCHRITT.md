@@ -2,6 +2,12 @@
 
 Neueste Einträge oben. Format und Regeln: `docs/superpowers/plans/2026-10-25-cyd-buddy.md`, Abschnitt „Fortschritts-Protokoll“.
 
+## Kamera-Firmware Phase B – Task 1: `cam_link.h` (Zeilen, Verbindung, Update-Watchdog am CYD) – ERLEDIGT
+- Zeit: 2026-11-01 (Haiku, Umsetzung nach Plan), Branch `feature/kamera-firmware`
+- Gemacht: `src/logic/cam_link.h` (`CamLink`, `cam_link_feed` über `CamLineBuf`/`cam_parse`, Verbindung mit 5 s Zeitlimit, `CamConn`-Zustände, Neustart-Erkennung, Update-Watchdog 20 s). Host-Tests `test/test_cam_link/test_main.cpp` (6 Tests). Feldnamen des Headers passen zum Plan, keine Anpassung nötig.
+- Prüfung: `pio test -e native -f test_cam_link` → vorher ERRORED (Header fehlte), danach 6/6 PASSED. Mutationen, je rot gesehen und zurückgesetzt: Timeout `>=` → `>` (in `cam_link_connected` nachgebildet) → `test_connection_timeout`, `test_conn_states`; Neustart-Zuweisung entfernt → `test_restart_detect`; `U ok` beendet Watchdog nicht → `test_update_watchdog`; `state`-Übernahme entfernt → `test_conn_states`.
+- Offen: Task 2 ff. des Kamera-Plans (CYD-Seite einbinden), Phase B am Gerät.
+
 ## Kamera-Firmware Phase A – Task 5: am Gerät abgenommen (XIAO an COM7, vor dem Löten) – ERLEDIGT bis auf Gesichts-Messwerte
 - Zeit: 2026-11-01 (Opus mit Nutzer), Branch `feature/kamera-firmware`
 - Volle Prüfung: `pio test -e native` 199/199, `node --test` 7/7, `pio run -e cyd2usb` SUCCESS (Flash 75,0 %), `tools\cam-build.ps1` SUCCESS (Flash 72,1 %, RAM 60 792 B).
