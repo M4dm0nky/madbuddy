@@ -22,6 +22,11 @@ static uint32_t g_stat_t0 = 0, g_frames = 0, g_ms_sum = 0;
 static CamFace g_last = {0, 0, 0};
 static bool g_has = false;
 
+static void wipe_msg(CamMsg &m) {
+  volatile char *p = m.pass;
+  for (size_t i = 0; i < sizeof m.pass; i++) p[i] = 0;
+}
+
 static void send_heart() {
   char b[48];
   const size_t n = cam_build_heart(CAM_FW_VERSION, g_state, b, sizeof b);
@@ -69,6 +74,8 @@ void loop() {
       camera_stop();               // Speicher und Rechenzeit fürs Update
       g_state = CAM_ST_OFF;
       updater_run(m, send_heart);  // kehrt nur bei Fehler zurück
+      wipe_msg(m);                 // Passwort aus dem Speicher
+      link_wipe();
       apply_camera();
     }
   }

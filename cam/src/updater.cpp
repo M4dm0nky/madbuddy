@@ -53,10 +53,11 @@ void setup_tls(WiFiClientSecure &tls) {
 }
 
 // GET mit selbst verfolgten Umleitungen; jede Adresse muss ota_redirect_ok() bestehen.
-bool open_follow(HTTPClient &http, WiFiClientSecure &tls, const char *url, int *code, char *why, size_t wn) {
+bool open_follow(HTTPClient &http, WiFiClientSecure &tls, const char *url, int *code, char *why, size_t wn, void (*beat)()) {
   String cur = url;
   static const char *keys[] = {"Location"};
   for (int hop = 0; hop <= kMaxRedirects; hop++) {
+    beat();   // ein Schritt (Verbinden + Antwort) dauert höchstens ~8 s, siehe Timeouts in download()
     if (!ota_redirect_ok(cur.c_str())) { strlcpy(why, "Umleitung abgelehnt", wn); return false; }
     http.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
     if (!http.begin(tls, cur)) { strlcpy(why, "URL", wn); return false; }
@@ -81,7 +82,7 @@ void hex_of(const uint8_t *b, size_t n, char *out) {
 }
 
 void wifi_off() {
-  WiFi.disconnect(true);
+  WiFi.disconnect(true, true);   // WLAN aus und gespeicherte Station-Daten löschen
   WiFi.mode(WIFI_OFF);
 }
 
@@ -91,10 +92,10 @@ bool download(const CamMsg &cmd, void (*beat)(), char *why, size_t wn) {
   setup_tls(tls);
   HTTPClient http;
   http.useHTTP10(true);
-  http.setTimeout(15000);
-  http.setConnectTimeout(6000);
+  http.setTimeout(4000);        // Antwort-Wartezeit je Schritt
+  http.setConnectTimeout(4000);  // + 4 s = höchstens ~8 s ohne Herzschlag je Schritt
   int code = 0;
-  if (!open_follow(http, tls, cmd.url, &code, why, wn)) return false;
+  if (!open_follow(http, tls, cmd.url, &code, why, wn, beat)) return false;
   if (code != 200) { snprintf(why, wn, "HTTP %d", code); http.end(); return false; }
   const int total = http.getSize();
   if (total < (int)OTA_IMG_CHECK_BYTES) { strlcpy(why, "Groesse unbekannt", wn); http.end(); return false; }
@@ -170,6 +171,7 @@ void updater_boot() {
 void updater_run(const CamMsg &cmd, void (*beat)()) {
   if (!ota_redirect_ok(cmd.url)) { send_err("URL abgelehnt"); return; }
   send_pct(0);
+  WiFi.persistent(false);   // Zugangsdaten nie in den Flash (NVS) schreiben
   WiFi.mode(WIFI_STA);
   WiFi.begin(cmd.ssid, cmd.pass);
   const uint32_t t0 = millis();

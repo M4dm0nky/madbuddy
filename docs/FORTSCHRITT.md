@@ -7,7 +7,8 @@ Neueste Einträge oben. Format und Regeln: `docs/superpowers/plans/2026-10-25-cy
 - Gemacht: `cam/src/link.*` (UART zum CYD + USB-Seriell, Zeilenprotokoll), `updater.*` (WLAN nur während des Updates, Umleitungen nur über `ota_redirect_ok`, Chip-/Projektprüfung S3, SHA-256 vor `Update.end`, Probelauf mit `cam_health`, Rollback), `main.cpp` endgültig (Kamera an/aus per `C`, Herzschlag, F/N, Wiederholung von `camera_start` alle `CAM_RETRY_MS`). `CAM_FLIP_180 0` in `cam_config.h` und in `camera_start()` ausgewertet. `cam_parse_upd_cmd` hat 4 Felder (Header gilt), keine Anpassung nötig.
 - Abweichung: `cam/sdkconfig.defaults` + `CONFIG_MBEDTLS_PSK_MODES=y` und `CONFIG_MBEDTLS_KEY_EXCHANGE_PSK=y`; ohne sie kompiliert `ssl_client.cpp` des Arduino-Kerns leer, Linker meldet `start_ssl_client` undefiniert. `getStreamPtr()` mit `auto *`.
 - Prüfung: `tools\cam-build.ps1` → SUCCESS, Flash 2 410 272 B (72,1 % von 3 342 336), RAM 60 792 B. Rollback-Testbild (`-DCAM_TEST_BROKEN`, Version `0.1.0-broken`) → SUCCESS, 2 313 040 B, abgelegt als `%TEMP%\cam-broken.bin`. Kein Flash, kein Seriell (das ist Task 5).
-- Offen: Task 5 (Flashen, Rollback-Probe, Update-Probe am Gerät mit dem Nutzer), Phase B (CYD-Seite).
+- Fix-Runde 1: WLAN-Zugangsdaten nie gespeichert (`WiFi.persistent(false)`, `disconnect(true, true)`); Herzschlag vor jedem Umleitungsschritt, Timeouts 4 s + 4 s; Passwort und Zeilenpuffer nach dem Auftrag genullt; Kommentar zu den MBEDTLS-PSK-Zeilen.
+- Offen: Task 5 (Flashen, Rollback-Probe, Update-Probe am Gerät mit dem Nutzer), Phase B (CYD-Seite). Längste Stille zwischen zwei Herzschlägen im Update: rund 8 s je Umleitungsschritt, dazu mögliche Flash-Löschpause bei `Update.begin` (geschätzt bis ~25 s, ungemessen). Der CYD-Watchdog (Phase B) muss darüber liegen, Vorschlag 40 s.
 
 ## Kamera-Firmware Phase A – Task 3: `cam_xiao.h` (Box, Probelauf) und S3 in `ota_policy.h` – ERLEDIGT
 - Zeit: 2026-11-01 (Sonnet), Branch `feature/kamera-firmware`

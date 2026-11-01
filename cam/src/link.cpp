@@ -25,3 +25,10 @@ static bool poll_one(Stream &st, CamLineBuf &lb, CamMsg *m) {
 }
 
 bool link_poll(CamMsg *m) { return poll_one(g_uart, g_ub, m) || poll_one(Serial, g_sb, m); }
+
+// Zeilenpuffer löschen (enthalten nach einer U-Zeile das WLAN-Passwort)
+void link_wipe() {
+  volatile char *a = g_ub.buf, *b = g_sb.buf;
+  for (size_t i = 0; i < sizeof g_ub.buf; i++) { a[i] = 0; b[i] = 0; }
+  g_ub.n = g_ub.done = g_sb.n = g_sb.done = 0;
+}
