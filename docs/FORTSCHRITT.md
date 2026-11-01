@@ -2,6 +2,16 @@
 
 Neueste Einträge oben. Format und Regeln: `docs/superpowers/plans/2026-10-25-cyd-buddy.md`, Abschnitt „Fortschritts-Protokoll“.
 
+## Kamera-Firmware Phase B – Task 7: Release und erster Gerätetest – IN ARBEIT (Stand 2026-11-01 abends)
+- Zeit: 2026-11-01 (Opus mit Nutzer), Branch `feature/kamera-firmware` (d38a35b)
+- Volle Prüfung: `pio test -e native` 223/223, `node --test tools/gen-phrases.test.mjs tools/ota-publish.test.mjs` 12/12, `cyd2usb` SUCCESS (Flash 75,5 %), `tools\cam-build.ps1` SUCCESS (72,1 %).
+- Release `v20261101-2056` (CYD-Firmware + `cam.bin` 0.1.0, Manifest mit `cam`) per OTA am CYD installiert. Der XIAO hat schon 0.1.0, daher kein Kamera-Update angeboten.
+- Am Gerät: Augen-Symbol erscheint, Einstellungen Seite 2 zeigt „verbunden“ → UART-Leitung, Lebenszeichen und `C` funktionieren.
+- Problem: Das Augen-Symbol bleibt grau, es kommen also keine `F`-Zeilen. Der XIAO sendet `F` nur, wenn `detect_face` ein Gesicht findet. Verdacht 1: zu dunkel (Abendlicht; auch die Phase-A-Messung im Dunkeln hatte kaum Treffer). Verdacht 2: Die Kamera sitzt kopfüber im Gehäuse; das Gesichtsmodell erkennt nur aufrechte Gesichter (`CAM_FLIP_180` noch 0).
+- Offen (nächste Sitzung):
+  - Test bei Licht. Wenn nötig, Handy mit Gesichtsfoto **auf dem Kopf** vor die Kamera halten. Wird das Auge dann grün: `CAM_FLIP_180 1` in `cam/src/cam_config.h`, Version 0.1.1 (`CAM_FW_VERSION` **und** `CONFIG_APP_PROJECT_VER` in `cam/sdkconfig.defaults`), Release. Damit wird zugleich das XIAO-Update über den CYD getestet.
+  - Dann Blickrichtung (`CAM_MIRROR_X`), Nähe/Schielen (`CAM_NEAR_W`), Schriftbreiten der Einstellungen am Gerät prüfen.
+  - Danach das finale Branch-Review und der Merge auf main.
 
 ## Kamera-Firmware Phase B – Task 6: XIAO-Update über das Release – ERLEDIGT
 - Zeit: 2026-11-01 (Sonnet, Umsetzung nach Plan), Branch `feature/kamera-firmware`
