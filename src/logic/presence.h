@@ -33,6 +33,13 @@ struct Presence {
 
 static inline float pres_clampf(float v, float lo, float hi) { return v < lo ? lo : (v > hi ? hi : v); }
 
+// Alles vergessen, außer der Begrüßungssperre (sonst umgeht ein Kamera-Aus/An oder ein WLAN-Flackern die 10 min).
+static inline void presence_reset(Presence &p) {
+  const bool g = p.greeted; const uint32_t gm = p.greet_ms;
+  p = Presence();
+  p.greeted = g; p.greet_ms = gm;
+}
+
 // Bildposition 0..1000 → Blickziel in Gazer-Einheiten (±30/±15), +x rechts, +y unten.
 static inline void presence_gaze_raw(int16_t x, int16_t y, bool mirror, float *gx, float *gy) {
   const float fx = mirror ? (float)(1000 - x) : (float)x;
@@ -53,7 +60,8 @@ static inline void presence_msg(Presence &p, const CamMsg &m, uint32_t now, bool
   p.last_w = m.w;
   if (!p.present && pair) {
     p.present = true;
-    const bool long_away = p.was_away && due_since(now, p.away_ms, PRES_GREET_AWAY_MS);
+    const uint32_t ref = p.was_away ? p.away_ms : p.since_ms;   // weg seit dem letzten F, sonst seit Aktivierung
+    const bool long_away = due_since(now, ref, PRES_GREET_AWAY_MS);
     const bool gap_ok = !p.greeted || due_since(now, p.greet_ms, PRES_GREET_GAP_MS);
     if (long_away && gap_ok) { p.greet_pending = true; p.greeted = true; p.greet_ms = now; }
   }
@@ -62,10 +70,10 @@ static inline void presence_msg(Presence &p, const CamMsg &m, uint32_t now, bool
 // Einmal pro Bild. active = Kamera eingeschaltet, verbunden und ohne Fehler.
 static inline PresenceOut presence_tick(Presence &p, bool active, uint32_t now, int16_t near_w) {
   PresenceOut o{};
-  if (!active) { p = Presence(); return o; }   // Ausfall: alles vergessen, Buddy wie vor der Kamera
-  if (!p.active) { p = Presence(); p.active = true; p.since_ms = now; }
+  if (!active) { presence_reset(p); return o; }   // Ausfall: alles vergessen (Begrüßungssperre bleibt), Buddy wie vor der Kamera
+  if (!p.active) { presence_reset(p); p.active = true; p.since_ms = now; }
   if (p.present && due_since(now, p.face_ms, PRES_GONE_MS)) { p.present = false; p.was_away = true; p.away_ms = p.face_ms; }
-  if (p.present && p.last_w > near_w && !p.near.active(now) && (!p.near_ever || due_since(now, p.near_ms, PRES_NEAR_GAP_MS))) {
+  if (p.present && p.last_w > near_w && !due_since(now, p.face_ms, PRES_GAZE_HOLD_MS) && !p.near.active(now) && (!p.near_ever || due_since(now, p.near_ms, PRES_NEAR_GAP_MS))) {
     p.near.arm(now, PRES_NEAR_FOR_MS);
     p.near_ms = now;
     p.near_ever = true;

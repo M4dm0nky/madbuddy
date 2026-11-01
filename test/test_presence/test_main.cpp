@@ -37,7 +37,7 @@ void test_gone_after_30s() {
 void test_greet_after_2min_away_with_cooldown() {
   Presence p;
   PresenceOut o = faces(p, 0, 200);
-  TEST_ASSERT_FALSE(o.greet);                           // erster Kontakt nach Start: keine Begrüßung (nie „weg“ gewesen)
+  TEST_ASSERT_FALSE(o.greet);                           // erster Kontakt innerhalb 2 min nach Start: keine Begrüßung
   // weg ab 200, gilt nach 30 s als weg; 2 min weg = ab 200 + 120000
   presence_tick(p, true, 60000, NEAR);
   o = faces(p, 200 + 30000 + 60000, 200 + 30000 + 60000 + 200);   // nur 1,5 min weg
@@ -97,6 +97,48 @@ void test_unattended_counts_from_activation() {
   TEST_ASSERT_TRUE(presence_tick(p, true, 5000 + 600000, NEAR).unattended);   // ab Aktivierung, nicht ab 0
 }
 
+void test_greet_after_unattended_arrival() {
+  Presence p;
+  presence_tick(p, true, 0, NEAR);                      // Kamera ab 0 aktiv
+  presence_tick(p, true, 1800000, NEAR);                // 30 min niemand da
+  int n = 0;
+  for (uint32_t s = 1800000; s <= 1800300; s += 100) {  // dann kommt jemand tagsüber
+    presence_msg(p, face(500, 500, 300), s);
+    n += presence_tick(p, true, s, NEAR).greet ? 1 : 0;
+  }
+  TEST_ASSERT_EQUAL(1, n);                              // wacht auf und begrüßt einmal
+}
+
+void test_greet_gap_survives_camera_toggle() {
+  Presence p;
+  faces(p, 0, 200);
+  presence_tick(p, true, 30200, NEAR);                  // weg
+  int n = 0;
+  for (uint32_t s = 150000; s <= 150300; s += 100) {    // zurück, Begrüßung
+    presence_msg(p, face(500, 500, 300), s);
+    n += presence_tick(p, true, s, NEAR).greet ? 1 : 0;
+  }
+  TEST_ASSERT_EQUAL(1, n);
+  presence_tick(p, false, 150400, NEAR);                // Kamera kurz aus
+  presence_tick(p, true, 150500, NEAR);                 // und wieder an
+  n = 0;
+  for (uint32_t s = 270500; s <= 270800; s += 100) {    // 2 min später kommt jemand
+    presence_msg(p, face(500, 500, 300), s);
+    n += presence_tick(p, true, s, NEAR).greet ? 1 : 0;
+  }
+  TEST_ASSERT_EQUAL(0, n);                              // 10 min Sperre seit der Begrüßung gelten weiter
+}
+
+void test_near_needs_fresh_face() {
+  Presence p;
+  faces(p, 0, 5000, 500);                               // nah bis 5 s, dann weg
+  for (uint32_t t = 5100; t <= 34900; t += 100) {       // Anwesenheit hält bis 35 s
+    PresenceOut o = presence_tick(p, true, t, NEAR);
+    if (t == 30200) TEST_ASSERT_TRUE(o.present);        // noch da
+    TEST_ASSERT_FALSE(o.near);                          // kein Nähe-Ausdruck ohne frisches Gesicht
+  }
+}
+
 void test_near_with_cooldown() {
   Presence p;
   PresenceOut o = faces(p, 0, 200, 500);
@@ -154,6 +196,9 @@ int main(int, char **) {
   RUN_TEST(test_unattended_after_10min);
   RUN_TEST(test_unattended_from_start_without_faces);
   RUN_TEST(test_unattended_counts_from_activation);
+  RUN_TEST(test_greet_after_unattended_arrival);
+  RUN_TEST(test_greet_gap_survives_camera_toggle);
+  RUN_TEST(test_near_needs_fresh_face);
   RUN_TEST(test_near_with_cooldown);
   RUN_TEST(test_inactive_resets);
   RUN_TEST(test_gaze_mapping_and_smoothing);
