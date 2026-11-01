@@ -2,6 +2,13 @@
 
 Neueste Einträge oben. Format und Regeln: `docs/superpowers/plans/2026-10-25-cyd-buddy.md`, Abschnitt „Fortschritts-Protokoll“.
 
+
+## Kamera-Firmware Phase B – Task 3: Ausdruck NEAR (schielend) und Sätze WIEDER – ERLEDIGT
+- Zeit: 2026-11-01 (Sonnet, Umsetzung nach Plan), Branch `feature/kamera-firmware`
+- Gemacht: `Emotion::NEAR` (vor `COUNT`), `FaceShape::cross` (Pixel, Pupillen beider Augen zur Nase hin, im Tween gemischt), Ausdruck NEAR = Werte von SURPRISED + `cross = 6`, Mund O; `eyes.cpp` zieht die Pupille um `side * cross` nach innen. Satzgruppe `wieder` (6 Sätze) in `saetze.json`, `phrases.h` neu erzeugt (`Say::WIEDER`). Weitere Tabellen über `Emotion` gibt es nicht (nur `face_expression`, der Rest läuft über `default`).
+- Prüfung: neue Tests `test_near_schielend` und `test_wieder_exists`; `pio test -e native` (face_model, phrases, mood, speech, eye_model, weather_mood, claude_face) 93/93 PASSED; `node --test tools/gen-phrases.test.mjs` 4/4; `gen-phrases --check` aktuell; `pio run -e cyd2usb` SUCCESS (Flash 75,1 %). Mutation `cross = 0` im NEAR-Ausdruck → Test rot, zurückgenommen.
+- Offen: NEAR und WIEDER sind noch nirgends ausgelöst (kommt in den folgenden Phase-B-Tasks); optische Abnahme am Gerät steht aus.
+
 ## Kamera-Firmware Phase B – Task 2: `presence.h` (Anwesenheit, Begrüßung, Schlaf, Nähe, Blick) – ERLEDIGT
 - Zeit: 2026-11-01 (Haiku, Umsetzung nach Plan), Branch `feature/kamera-firmware`
 - Gemacht: `src/logic/presence.h` (`Presence`, `presence_msg`, `presence_tick`, `presence_gaze_raw`, `PRES_*`; nutzt `cam_proto.h` und `deadline.h`, Header-Namen wie im Brief, keine Anpassung nötig). Host-Tests `test/test_presence/test_main.cpp` (13 Tests: 9 aus dem Brief plus 4 zusätzlich, siehe unten).

@@ -7,7 +7,7 @@
 // BedÃ¼rfnisse und GefÃ¼hl des Buddys. Reine Logik, Zeit kommt als Parameter (Host-Test test/test_mood).
 enum class Emotion : uint8_t { CONTENT, HAPPY, BORED, SAD, SLEEPY, SLEEPING, SURPRISED, LOVE, ANNOYED, EXCITED, GREETING,
                             CONFUSED, MISCHIEVOUS, SCARED, SKEPTICAL, PROUD, GIGGLE, YAWN, WHISTLE, KISS, CHEEKY, STARTLED,
-                            HUNGRY, FULL, SICK, FOCUSED, THINKING, COUNT };
+                            HUNGRY, FULL, SICK, FOCUSED, THINKING, NEAR, COUNT };
 enum class MoodEvent : uint8_t { TAP, STROKE, POKE, GAME_WON, GAME_LOST, HIGHFIVE };
 struct Needs { float affection, fun, energy; float satiety = 70; };   // satiety = SÃ¤ttigung (F3)
 struct MoodState {

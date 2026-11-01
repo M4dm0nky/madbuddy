@@ -188,7 +188,7 @@ static void face_eye(LovyanGFX &d, const FaceShape &f, int side, int ox, int oy,
   d.fillRoundRect(ir(x0), ir(y0), ir(W), ir(h), ir(rad), col);
   if (h > 20) {
     const float pr = f.pupil_r;
-    const int px = ir(cx + f.pupil_dx), py = ir(ey + f.pupil_dy);
+    const int px = ir(cx + f.pupil_dx - side * f.cross), py = ir(ey + f.pupil_dy);
     d.fillCircle(px, py, ir(pr), pupil_col);
     d.fillCircle(ir(px + pr * 0.35f), ir(py - pr * 0.4f), ir(fmaxf(2.0f, pr * 0.3f)), TFT_WHITE);
   }

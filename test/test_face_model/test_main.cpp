@@ -109,6 +109,20 @@ void test_thinking_claude_mode() {
   TEST_ASSERT_TRUE((int)Emotion::THINKING < (int)Emotion::COUNT);
 }
 
+void test_near_schielend() {
+  const FaceExpr n = face_expression(Emotion::NEAR);
+  TEST_ASSERT_TRUE(n.s.cross > 0);
+  TEST_ASSERT_TRUE(n.s.eye.open >= face_expression(Emotion::SURPRISED).s.eye.open);
+  TEST_ASSERT_EQUAL((int)Mouth::O, (int)n.s.mouth);
+  // alle anderen Ausdrücke schielen nicht
+  for (int i = 0; i < (int)Emotion::COUNT; i++)
+    if ((Emotion)i != Emotion::NEAR) TEST_ASSERT_EQUAL_FLOAT(0, face_expression((Emotion)i).s.cross);
+  // Tween mischt cross mit
+  FaceShape c = face_expression(Emotion::CONTENT).s;
+  for (int i = 0; i < 60; i++) c = face_tween(c, n.s, 50);
+  TEST_ASSERT_FLOAT_WITHIN(0.1f, n.s.cross, c.cross);
+}
+
 int main(int, char **) {
   UNITY_BEGIN();
   RUN_TEST(test_table_complete_for_all_emotions);
@@ -120,5 +134,6 @@ int main(int, char **) {
   RUN_TEST(test_eye_expression_matches_face);
   RUN_TEST(test_new_emotions_f3_f4);
   RUN_TEST(test_thinking_claude_mode);
+  RUN_TEST(test_near_schielend);
   return UNITY_END();
 }

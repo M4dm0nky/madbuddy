@@ -12,6 +12,7 @@ struct FaceShape {
   float mouth_curve, mouth_open, mouth_w;
   Mouth mouth;
   bool wink;                                       // rechtes Auge zu
+  float cross = 0;                                 // Schielen: beide Pupillen um so viele Pixel zur Nase hin
   float switch_acc = 0;                            // intern: aufgelaufener Tween-Anteil bis mouth/wink springen
 };
 struct FaceExpr { FaceShape s; Rgb color; };
@@ -20,7 +21,7 @@ namespace face_detail {
 // Reglerwerte wie im Mockup (P()); Reihenfolge der Felder = Reihenfolge dort.
 struct P {
   float open = 1, tilt = 0, topCut = 0, botCut = 0;
-  float pdx = 0, pdy = 0, pr = 15;
+  float pdx = 0, pdy = 0, pr = 15, cross = 0;
   bool wink = false;
   float by = -12, bt = 0, bc = 0.6f, bAsym = 0;
   float mc = 0.6f, mo = 0, mw = 60;
@@ -29,7 +30,7 @@ struct P {
 inline FaceExpr mk(Rgb col, const P &p) {
   FaceShape s{};
   s.eye = EyeShape{64, 72, 20, p.open, p.tilt, p.topCut, p.botCut, 0, 0};
-  s.pupil_r = p.pr; s.pupil_dx = p.pdx; s.pupil_dy = p.pdy;
+  s.pupil_r = p.pr; s.pupil_dx = p.pdx; s.pupil_dy = p.pdy; s.cross = p.cross;
   s.brow_y = p.by; s.brow_tilt = p.bt; s.brow_curve = p.bc; s.brow_asym = p.bAsym;
   s.mouth_curve = p.mc; s.mouth_open = p.mo; s.mouth_w = p.mw;
   s.mouth = p.ms; s.wink = p.wink;
@@ -72,6 +73,7 @@ inline FaceExpr face_expression(Emotion e) {
     case Emotion::SICK:      p.open = .55f; p.tilt = .4f; p.mc = -.4f; return mk(SICKC, p);
     case Emotion::FOCUSED:   p.open = .7f; p.topCut = .25f; p.bt = -.3f; p.mc = 0; p.mw = 30; return mk(TIMERC, p);
     case Emotion::THINKING:  p.pdx = -10; p.pdy = -10; p.bAsym = 10; p.mc = .1f; p.mw = 30; return mk(CLAUDEC, p);   // Claude-Modus
+    case Emotion::NEAR:      p.pr = 10; p.by = -26; p.bc = 1; p.ms = Mouth::O; p.mo = .7f; p.cross = 6; return mk(SURPC, p);   // Gesicht ganz nah: wie SURPRISED, aber schielend
     case Emotion::CONTENT:
     default:                return mk(CYAN, p);
   }
@@ -85,6 +87,7 @@ inline FaceShape face_tween(const FaceShape &cur, const FaceShape &target, uint3
   r.pupil_r = eye_lerp(cur.pupil_r, target.pupil_r, k);
   r.pupil_dx = eye_lerp(cur.pupil_dx, target.pupil_dx, k);
   r.pupil_dy = eye_lerp(cur.pupil_dy, target.pupil_dy, k);
+  r.cross = eye_lerp(cur.cross, target.cross, k);
   r.brow_y = eye_lerp(cur.brow_y, target.brow_y, k);
   r.brow_tilt = eye_lerp(cur.brow_tilt, target.brow_tilt, k);
   r.brow_curve = eye_lerp(cur.brow_curve, target.brow_curve, k);
