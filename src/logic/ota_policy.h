@@ -62,6 +62,7 @@ static inline char ota_lower(char c) { return (c >= 'A' && c <= 'Z') ? (char)(c 
 // Hosts mit anderen Zeichen als Buchstaben, Ziffern, '-' und '.' werden abgelehnt.
 static inline bool ota_redirect_ok(const char *url) {
   if (!url) return false;
+  for (const char *c = url; *c; c++) if ((unsigned char)*c <= 0x20 || (unsigned char)*c == 0x7F) return false;   // Steuerzeichen/Leerzeichen (würden die U-Zeile zerlegen)
   static const char kScheme[] = "https://";
   for (size_t i = 0; i < sizeof kScheme - 1; i++) if (ota_lower(url[i]) != kScheme[i]) return false;
   const char *h = url + sizeof kScheme - 1;
@@ -114,6 +115,12 @@ static inline bool ota_cam_newer(const char *have, const char *man) {
   if (!ota_ver3(have, a) || !ota_ver3(man, b)) return false;
   for (int k = 0; k < 3; k++) if (a[k] != b[k]) return b[k] > a[k];
   return false;
+}
+
+// Zeilenansicht (Kamera-Angebot, ggf. mit CYD-Zeile) statt der CYD-Karte? Nur im ruhigen CYD-Zustand: IDLE oder AVAILABLE ohne Zustimmung.
+// Laden, Prüfen, Neustart, Zustimmung gegeben und FAILED behalten die CYD-Karte unverändert. state wie ota_status_line (0 IDLE, 1 AVAILABLE ...).
+static inline bool ota_card_list(int cyd_state, bool consented, bool cam_offer) {
+  return cam_offer && (cyd_state == 0 || (cyd_state == 1 && !consented));
 }
 
 // Hinweis anzeigen? Nur wenn das Display wach ist (nicht dunkel/gedimmt: ein Tipp in ein dunkles Display darf nie zustimmen)

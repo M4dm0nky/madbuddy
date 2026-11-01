@@ -84,6 +84,20 @@ function newestSource() {
   return t;
 }
 
+// Neueste Änderung an den Quellen des cam-Images (cam/src und die geteilte src/logic/cam_proto.h)
+function newestCam() {
+  let t = fs.statSync(path.join(ROOT, 'src', 'logic', 'cam_proto.h')).mtimeMs;
+  const walk = (d) => {
+    if (!fs.existsSync(d)) return;
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const p = path.join(d, e.name);
+      if (e.isDirectory()) walk(p); else t = Math.max(t, fs.statSync(p).mtimeMs);
+    }
+  };
+  walk(path.join(ROOT, 'cam', 'src'));
+  return t;
+}
+
 function stamp(d = new Date()) {
   const p = (n) => String(n).padStart(2, '0');
   return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`;
@@ -121,7 +135,7 @@ function main() {
     die('Quellcode ist neuer als die .bin (veralteter Build). Neu bauen oder --allow-stale.');
   }
   let dirty = '';
-  try { dirty = execFileSync('git', ['status', '--porcelain', '--', 'src', 'tools', 'platformio.ini'], { cwd: ROOT }).toString().trim(); } catch { /* kein git */ }
+  try { dirty = execFileSync('git', ['status', '--porcelain', '--', 'src', 'tools', 'cam', 'platformio.ini'], { cwd: ROOT }).toString().trim(); } catch { /* kein git */ }
   if (dirty && !flag('--allow-dirty') && !flag('--check')) die('Arbeitsverzeichnis hat uncommittete Änderungen (git status). Committen oder --allow-dirty.\n' + dirty.split('\n').slice(0, 8).join('\n'));
   let commit = 'unbekannt';
   try { commit = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: ROOT }).toString().trim(); } catch { /* egal */ }
@@ -129,7 +143,9 @@ function main() {
   // XIAO-Image (cam/): eigene Prüfungen, Version aus dem App-Deskriptor
   let cam = null, camBuf = null;
   if (!flag('--no-cam')) {
-    if (!fs.existsSync(CAM_BIN)) die(`${CAM_BIN} fehlt: erst tools\\cam-build.ps1 (oder --no-cam)`);
+    if (!fs.existsSync(CAM_BIN)) die(`${CAM_BIN} fehlt: erst tools\\cam-build.ps1 ausführen, oder ohne Kamera-Image veröffentlichen mit --no-cam`);
+    const camTime = fs.statSync(CAM_BIN).mtimeMs;
+    if (!flag('--allow-stale') && newestCam() > camTime + 2000) die('cam-Quellen (cam/src, src/logic/cam_proto.h) sind neuer als das cam-Image: tools/cam-build.ps1 oder --allow-stale.');
     camBuf = fs.readFileSync(CAM_BIN);
     const ci = inspectImage(camBuf, CAM_PROJECT, CHIP_ESP32S3);
     if (ci.error) die(`${CAM_BIN}: ${ci.error}`);

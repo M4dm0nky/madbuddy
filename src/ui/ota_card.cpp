@@ -208,7 +208,7 @@ void ota_card_draw(LGFX &lcd, uint32_t now_ms) {
   }
   const ota_pull::Info i = ota_pull::info();
   const bool cyd_row = i.state == ota_pull::AVAILABLE && !s_consented;
-  const bool list = s_cam_phase == CP_NONE && !(i.state == ota_pull::AVAILABLE && s_consented) && ota_card_cam_offer(now_ms);
+  const bool list = s_cam_phase == CP_NONE && ota_card_list((int)i.state, s_consented, ota_card_cam_offer(now_ms));
   int key, pct = -1;
   if (s_cam_phase != CP_NONE) {
     key = 1000 + s_cam_phase;
@@ -254,7 +254,7 @@ void ota_card_touch(int16_t x, int16_t y, uint32_t now_ms) {
   if (s_cam_phase != CP_NONE) return;
   const ota_pull::Info i = ota_pull::info();
   const bool cyd = i.state == ota_pull::AVAILABLE && !s_consented;
-  if (!(i.state == ota_pull::AVAILABLE && s_consented) && ota_card_cam_offer(now_ms)) {   // Zeilenansicht
+  if (ota_card_list((int)i.state, s_consented, ota_card_cam_offer(now_ms))) {   // Zeilenansicht (nur bei ruhigem CYD-Zustand)
     if (cyd && ui_hit(kRowYes[0], x, y)) {
       s_consented = true;
       s_drawn_state = -1;   // „Starte …“ zeichnen

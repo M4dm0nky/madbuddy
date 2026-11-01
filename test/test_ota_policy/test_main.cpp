@@ -97,6 +97,21 @@ void test_cam_newer() {
   TEST_ASSERT_FALSE(ota_cam_newer("0.1", "1.0.0"));
   TEST_ASSERT_FALSE(ota_cam_newer("0.1.0", "1.0.0.0"));
 }
+void test_card_list() {
+  // Zustände: 0 IDLE, 1 AVAILABLE, 2 DOWNLOADING, 3 VERIFYING, 4 RESTARTING, 5 FAILED
+  TEST_ASSERT_TRUE(ota_card_list(0, false, true));
+  TEST_ASSERT_TRUE(ota_card_list(1, false, true));
+  TEST_ASSERT_FALSE(ota_card_list(1, true, true));      // Zustimmung gegeben: "Starte ..."
+  for (int s = 2; s <= 5; s++) TEST_ASSERT_FALSE(ota_card_list(s, false, true));
+  for (int s = 0; s <= 5; s++) TEST_ASSERT_FALSE(ota_card_list(s, false, false));   // ohne Angebot nie
+}
+void test_redirect_control_chars() {
+  TEST_ASSERT_TRUE(ota_redirect_ok("https://github.com/a/b.bin"));
+  TEST_ASSERT_FALSE(ota_redirect_ok("https://github.com/a\tb"));
+  TEST_ASSERT_FALSE(ota_redirect_ok("https://github.com/a\nb"));
+  TEST_ASSERT_FALSE(ota_redirect_ok("https://github.com/a\rb"));
+  TEST_ASSERT_FALSE(ota_redirect_ok("https://github.com/a b"));
+}
 int main(int, char **) {
   UNITY_BEGIN();
   RUN_TEST(test_image_ok_esp32);
@@ -108,5 +123,7 @@ int main(int, char **) {
   RUN_TEST(test_notice_snooze_one_hour_and_2_31);
   RUN_TEST(test_image_chip_s3);
   RUN_TEST(test_cam_newer);
+  RUN_TEST(test_card_list);
+  RUN_TEST(test_redirect_control_chars);
   return UNITY_END();
 }
