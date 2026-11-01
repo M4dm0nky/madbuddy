@@ -95,16 +95,13 @@ static void draw_info(LGFX &d, const Persist &p, bool force) {
   const int cy = row(3).y + kRowH / 2;
   icon_info(d, 30, cy, 30, d.color888(180, 180, 255));
   ui_text(d, __DATE__, 62, cy - 17, &fonts::Font2, d.color888(200, 200, 210), middle_left);
-  // Texte enden vor den Charakter-Balken (Symbol bei x=172), darum bei Bedarf kleinere Schrift
-  d.setFont(&fonts::Font2);
-  snprintf(buf, sizeof buf, "Heap %uk Licht %d", (unsigned)(ESP.getFreeHeap() / 1024), light_raw());
-  const lgfx::IFont *hf = (62 + d.textWidth(buf) > 168) ? (const lgfx::IFont *)&fonts::Font0 : (const lgfx::IFont *)&fonts::Font2;
-  ui_text(d, buf, 62, cy, hf, d.color888(200, 200, 210), middle_left);
-  // Claude-Modus-Schlüssel für die PC-Hooks
-  snprintf(buf, sizeof buf, "Claude: %s", claude_api_key());
-  d.setFont(&fonts::Font2);
-  const lgfx::IFont *kf = (62 + d.textWidth(buf) > 168) ? (const lgfx::IFont *)&fonts::Font0 : (const lgfx::IFont *)&fonts::Font2;
-  ui_text(d, buf, 62, cy + 17, kf, d.color888(255, 160, 110), middle_left);
+  // Texte in Font0 (6 px je Zeichen, höchstens 16 Zeichen = x 62..158), damit sie mit Abstand vor den Charakter-Balken
+  // (Symbole ab x 173) enden; Seitenpfeil-Zone x 268..320 bleibt frei
+  snprintf(buf, sizeof buf, "Heap %uk L %d", (unsigned)(ESP.getFreeHeap() / 1024), light_raw());
+  ui_text(d, buf, 62, cy, &fonts::Font0, d.color888(200, 200, 210), middle_left);
+  // Claude-Modus-Schlüssel für die PC-Hooks (12 Zeichen)
+  snprintf(buf, sizeof buf, "Key %s", claude_api_key());
+  ui_text(d, buf, 62, cy + 17, &fonts::Font0, d.color888(255, 160, 110), middle_left);
   // Charakter: verschmust (Herz) gegen frech (Blitz), verspielt (Ball) gegen faul (Kissen); Wert -100..100
   char_bar(d, cy - 10, -p.cuddly, [](LGFX &g, int x, int y) { icon_heart(g, x, y, 14, g.color888(255, 80, 170)); },
            [](LGFX &g, int x, int y) { icon_bolt(g, x, y, 16, g.color888(255, 220, 0)); }, d.color888(255, 80, 170));
@@ -141,12 +138,14 @@ static void draw_cam_info(LGFX &d, const SettingsCam &c, bool force) {
   uint32_t col;
   switch (c.conn) {
     case CamConn::ON:
-      snprintf(buf, sizeof buf, "XIAO %s verbunden", c.version && c.version[0] ? c.version : "");
+      if (c.version && c.version[0]) snprintf(buf, sizeof buf, "XIAO %s verbunden", c.version);
+      else strlcpy(buf, "XIAO verbunden", sizeof buf);
       col = d.color888(60, 220, 120);
       break;
     case CamConn::NONE: strlcpy(buf, "keine Verbindung", sizeof buf); col = d.color888(255, 200, 0); break;
     case CamConn::ERR: strlcpy(buf, "Kamera-Fehler", sizeof buf); col = d.color888(255, 60, 60); break;
     case CamConn::OFF: strlcpy(buf, "Kamera aus (XIAO)", sizeof buf); col = d.color888(160, 160, 170); break;
+    case CamConn::OFF_USER:
     default: strlcpy(buf, "aus", sizeof buf); col = d.color888(160, 160, 170); break;
   }
   char key[48];
