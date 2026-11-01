@@ -87,6 +87,10 @@ void test_update_watchdog() {
   TEST_ASSERT_TRUE(cam_link_upd_timed_out(l, 35000));
   feed_line(l, "U ok", 35001, &m);                     // Ergebnis beendet die Überwachung
   TEST_ASSERT_FALSE(cam_link_upd_timed_out(l, 90000));
+  cam_link_upd_start(l, 0);                            // Zeitüberschreitung bleibt wahr, bis die Karte upd_end meldet
+  TEST_ASSERT_TRUE(cam_link_upd_timed_out(l, 90000));
+  cam_link_upd_end(l);
+  TEST_ASSERT_FALSE(cam_link_upd_timed_out(l, 90000));
 }
 
 int main(int, char **) {

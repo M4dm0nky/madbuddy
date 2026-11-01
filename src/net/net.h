@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include <stddef.h>
 #include <time.h>
 #include "../hw/store.h"
 
@@ -16,4 +17,7 @@ int net_hour();                      // -1 wenn Zeit unbekannt
 bool net_local_time(struct tm *out);
 uint32_t net_epoch();                // 0 wenn unbekannt
 NetWeather net_weather();            // threadsichere Kopie
+// Zeile "U	url	sha	ssid	pass" (versiegelt) für den XIAO bauen. WLAN-Zugang aus dem gespeicherten STA-Eintrag; nichts wird abgelegt,
+// der Aufrufer löscht buf nach dem Senden. 0 = kein WLAN (oder URL/Zeile unbrauchbar).
+size_t net_build_cam_upd(const char *url, const char *sha, char *buf, size_t cap);
 void net_task_hook(void (*fn)());    // wird im net_task nach dem Wetter aufgerufen (OTA)

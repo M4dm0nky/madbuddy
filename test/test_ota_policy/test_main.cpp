@@ -80,6 +80,23 @@ void test_image_chip_s3() {
   make_img(0, "cam");
   TEST_ASSERT_EQUAL(OTA_IMG_CHIP, ota_image_check(img, sizeof img, "cam", elf, OTA_CHIP_ESP32S3));
 }
+void test_cam_newer() {
+  TEST_ASSERT_TRUE(ota_cam_newer("0.1.0", "0.1.1"));
+  TEST_ASSERT_TRUE(ota_cam_newer("0.1.1", "0.2.0"));
+  TEST_ASSERT_TRUE(ota_cam_newer("0.2.0", "1.0.0"));
+  TEST_ASSERT_TRUE(ota_cam_newer("0.9.0", "0.10.0"));            // numerisch, nicht als Text
+  TEST_ASSERT_FALSE(ota_cam_newer("0.1.0", "0.1.0"));            // gleich
+  TEST_ASSERT_FALSE(ota_cam_newer("1.0.0", "0.2.0"));            // Manifest älter
+  TEST_ASSERT_FALSE(ota_cam_newer("", "1.0.0"));                 // keine Verbindung = kein Angebot
+  TEST_ASSERT_FALSE(ota_cam_newer(nullptr, "1.0.0"));
+  TEST_ASSERT_FALSE(ota_cam_newer("0.1.0", ""));
+  TEST_ASSERT_FALSE(ota_cam_newer("0.1.0-broken", "0.1.0"));     // Zusatz hinter der Version = unbekannt
+  TEST_ASSERT_FALSE(ota_cam_newer("0.1.0-broken", "0.2.0"));
+  TEST_ASSERT_FALSE(ota_cam_newer("0.1.0", "0.2.0x"));
+  TEST_ASSERT_FALSE(ota_cam_newer("abc", "1.0.0"));
+  TEST_ASSERT_FALSE(ota_cam_newer("0.1", "1.0.0"));
+  TEST_ASSERT_FALSE(ota_cam_newer("0.1.0", "1.0.0.0"));
+}
 int main(int, char **) {
   UNITY_BEGIN();
   RUN_TEST(test_image_ok_esp32);
@@ -90,5 +107,6 @@ int main(int, char **) {
   RUN_TEST(test_notice_and_progress);
   RUN_TEST(test_notice_snooze_one_hour_and_2_31);
   RUN_TEST(test_image_chip_s3);
+  RUN_TEST(test_cam_newer);
   return UNITY_END();
 }

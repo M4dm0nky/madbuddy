@@ -64,8 +64,11 @@ static inline size_t cam_build_upd_err(const char *why, char *out, size_t cap) {
 static inline size_t cam_build_upd_cmd(const char *url, const char *sha, const char *ssid, const char *pass, char *out, size_t cap) {
   char c[CAM_LINE_MAX + 1];
   const int n = snprintf(c, sizeof c, "U\t%s\t%s\t%s\t%s", url, sha, ssid, pass);
-  if (n < 0 || (size_t)n >= sizeof c) return 0;
-  return cam_seal(c, out, cap);
+  size_t r = 0;
+  if (n >= 0 && (size_t)n < sizeof c) r = cam_seal(c, out, cap);
+  volatile char *w = c;   // enthält das Passwort: nicht auf dem Stapel liegen lassen
+  for (size_t i = 0; i < sizeof c; i++) w[i] = 0;
+  return r;
 }
 
 // Ganzzahl aus genau den Zeichen [s, e), nur Ziffern, 0..maxv

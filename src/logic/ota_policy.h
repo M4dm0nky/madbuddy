@@ -94,6 +94,28 @@ static inline bool ota_needs_update(const char *running_elf, const char *manifes
   return ota_hex_ok(running_elf, 64) && ota_hex_ok(manifest_elf, 64) && strcmp(running_elf, manifest_elf) != 0;
 }
 
+// Version "a.b.c" (nur Ziffern) nach 3 Zahlen; false bei allem anderen (Zusatz wie "-broken", zu wenige/viele Teile, leer).
+static inline bool ota_ver3(const char *s, unsigned long v[3]) {
+  if (!s) return false;
+  for (int k = 0; k < 3; k++) {
+    if (*s < '0' || *s > '9') return false;
+    unsigned long n = 0;
+    for (; *s >= '0' && *s <= '9'; s++) { n = n * 10 + (unsigned long)(*s - '0'); if (n > 1000000UL) return false; }
+    v[k] = n;
+    if (k < 2) { if (*s != '.') return false; s++; }
+  }
+  return *s == '\0';
+}
+
+// Gibt es eine neuere Kamera-Firmware? have = Version aus H des XIAO (leer = keine Verbindung), man = cam.version im Manifest.
+// Nur wenn beide gültig sind und man echt größer ist; unbekannt/kaputt = kein Angebot.
+static inline bool ota_cam_newer(const char *have, const char *man) {
+  unsigned long a[3], b[3];
+  if (!ota_ver3(have, a) || !ota_ver3(man, b)) return false;
+  for (int k = 0; k < 3; k++) if (a[k] != b[k]) return b[k] > a[k];
+  return false;
+}
+
 // Hinweis anzeigen? Nur wenn das Display wach ist (nicht dunkel/gedimmt: ein Tipp in ein dunkles Display darf nie zustimmen)
 // und die Schlummerzeit (nach "Später" eine Stunde) um ist.
 constexpr uint32_t OTA_NAG_MS = 3600000UL;

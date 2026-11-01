@@ -1,12 +1,15 @@
 #include "net.h"
 #include <Arduino.h>
 #include <WiFi.h>
+#include <esp_wifi.h>
 #include <WiFiManager.h>
 #include <HTTPClient.h>
 #include <NetworkClientSecure.h>
 #include <ArduinoJson.h>
 #include <string.h>
 #include <ctype.h>
+#include "../logic/cam_proto.h"
+#include "../logic/ota_policy.h"
 
 static constexpr const char *kApName = "MadBuddy";
 static constexpr const char *kTz = "CET-1CEST,M3.5.0,M10.5.0/3";
@@ -308,6 +311,27 @@ void net_loop() {
 }
 
 bool net_wifi_ok() { return s_wifi_ok; }
+
+size_t net_build_cam_upd(const char *url, const char *sha, char *buf, size_t cap) {
+  if (!ota_redirect_ok(url) || !ota_hex_ok(sha, 64)) return 0;
+  wifi_config_t c;
+  memset(&c, 0, sizeof c);
+  char ssid[33], pass[65];
+  size_t n = 0;
+  if (esp_wifi_get_config(WIFI_IF_STA, &c) == ESP_OK && c.sta.ssid[0] != 0) {
+    memcpy(ssid, c.sta.ssid, 32); ssid[32] = '\0';          // nicht garantiert terminiert
+    memcpy(pass, c.sta.password, 64); pass[64] = '\0';
+    bool ok = true;   // Tab/Zeilenumbruch würden die Felder der U-Zeile verschieben
+    for (const char *p : {(const char *)ssid, (const char *)pass}) for (; *p; p++) if (*p == '\t' || *p == '\n' || *p == '\r') ok = false;
+    if (ok) n = cam_build_upd_cmd(url, sha, ssid, pass, buf, cap);
+  }
+  volatile uint8_t *w = (volatile uint8_t *)&c;   // Passwort nicht liegen lassen
+  for (size_t i = 0; i < sizeof c; i++) w[i] = 0;
+  volatile char *sv = ssid, *pv = pass;
+  for (size_t i = 0; i < sizeof ssid; i++) sv[i] = 0;
+  for (size_t i = 0; i < sizeof pass; i++) pv[i] = 0;
+  return n;
+}
 bool net_portal_active() { return s_portal; }
 void net_open_portal() {
   s_param_place.setValue(s_p ? s_p->place : "", 47);

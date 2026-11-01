@@ -46,6 +46,7 @@ char g_slot[17] = "?", g_build[24] = "";
 int g_img_state = -1;
 char g_man_elf[65] = "", g_man_sha[65] = "", g_man_file[48] = "";
 uint32_t g_man_size = 0;
+CamInfo g_cam = {};   // geschützt durch g_mux (net_task schreibt, UI liest)
 
 void set_state(State s) { portENTER_CRITICAL(&g_mux); g_info.state = s; portEXIT_CRITICAL(&g_mux); }
 void set_error(const char *e) {
@@ -123,6 +124,7 @@ bool fetch_manifest(bool *newer) {
   // Standard-Allocator (kein PSRAM), Filter hält das Dokument klein
   JsonDocument filter;
   for (const char *k : {"project", "elf", "sha256", "size", "file", "built"}) filter[k] = true;
+  for (const char *k : {"version", "url", "sha256"}) filter["cam"][k] = true;
   JsonDocument doc;
   DeserializationError err = deserializeJson(doc, http.getStream(), DeserializationOption::Filter(filter));
   http.end();
@@ -144,6 +146,19 @@ bool fetch_manifest(bool *newer) {
   strlcpy(g_man_sha, sha, sizeof g_man_sha);
   strlcpy(g_man_file, file, sizeof g_man_file);
   g_man_size = size;
+  {   // Kamera-Eintrag (optional): nur übernehmen, wenn alles stimmt; sonst kein Angebot
+    const char *cv = doc["cam"]["version"] | "";
+    const char *cu = doc["cam"]["url"] | "";
+    const char *cs = doc["cam"]["sha256"] | "";
+    CamInfo ci = {};
+    if (cv[0] && strlen(cv) <= 15 && ota_redirect_ok(cu) && strlen(cu) < sizeof ci.url && ota_hex_ok(cs, 64)) {
+      ci.avail = true;
+      strlcpy(ci.version, cv, sizeof ci.version);
+      strlcpy(ci.url, cu, sizeof ci.url);
+      strlcpy(ci.sha, cs, sizeof ci.sha);
+    }
+    portENTER_CRITICAL(&g_mux); g_cam = ci; portEXIT_CRITICAL(&g_mux);
+  }
   *newer = ota_needs_update(g_running_elf, g_man_elf);
   if (*newer) {
     portENTER_CRITICAL(&g_mux);
@@ -332,6 +347,14 @@ Info info() {
   i = g_info;
   portEXIT_CRITICAL(&g_mux);
   return i;
+}
+
+CamInfo cam_info() {
+  CamInfo c;
+  portENTER_CRITICAL(&g_mux);
+  c = g_cam;
+  portEXIT_CRITICAL(&g_mux);
+  return c;
 }
 
 void consent() {

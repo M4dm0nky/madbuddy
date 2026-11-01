@@ -19,9 +19,18 @@ struct Info {
   bool last_failed;     // die letzte Abfrage ist fehlgeschlagen (Manifest nicht erreichbar/lesbar)
 };
 
+// Kamera-Firmware (XIAO) aus dem Manifest-Eintrag "cam": gilt nur, wenn Version, URL (ota_redirect_ok) und SHA-256 stimmen.
+struct CamInfo {
+  bool avail;
+  char version[16];     // z. B. "0.1.0"
+  char url[200];        // https://github.com/.../cam.bin
+  char sha[65];         // SHA-256 der cam.bin, 64 Kleinbuchstaben-Hexziffern
+};
+
 void begin();
 void loop();            // nur aus dem net_task (über net_task_hook; blockiert während des Ladens), intern gedrosselt
 Info info();            // threadsicher
+CamInfo cam_info();      // threadsichere Kopie; avail = false, wenn das Manifest keinen brauchbaren cam-Eintrag hat
 void consent();         // UI: "Jetzt aktualisieren" getippt (nur wirksam im Zustand AVAILABLE)
 void check_now();       // UI (Status-Seite): jetzt nach einem Update suchen; hebt das Schlummern auf
 bool check_busy();      // eine angeforderte oder laufende Suche (höchstens 60 s nach dem Tipp)

@@ -327,7 +327,8 @@ static bool cam_active(uint32_t now) {
 }
 
 static void on_cam_msg(const CamMsg &m, uint32_t now) {
-  presence_msg(s_presence, m, now, CAM_MIRROR_X);   // U-Meldungen (Update-Karte) kommen mit Task 6
+  presence_msg(s_presence, m, now, CAM_MIRROR_X);
+  if (m.kind == CAM_UPD_PCT || m.kind == CAM_UPD_OK || m.kind == CAM_UPD_ERR) ota_card_cam_msg(m, now);   // Kamera-Update (Karte)
 }
 
 // Stimmung läuft auf jedem Bildschirm weiter (Zeit vergeht), Licht und LED auch.
@@ -623,7 +624,8 @@ static void screen_frame(uint32_t now, uint32_t dt, Gesture g, int16_t tx, int16
       }
       if (s_manual_ota && !ota_pull::check_busy()) {
         s_manual_ota = false;
-        if (ota_pull::info().state == ota_pull::AVAILABLE) { open_ota_card(now); return; }
+        ota_card_unsnooze();
+        if (ota_pull::info().state == ota_pull::AVAILABLE || ota_card_cam_offer(now)) { open_ota_card(now); return; }
       }
       settings_tick(s_lcd, s_persist, now, settings_cam(now));
       return;

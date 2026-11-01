@@ -62,4 +62,6 @@ static inline void cam_link_upd_start(CamLink &l, uint32_t now) { l.upd = true; 
 static inline bool cam_link_upd_timed_out(const CamLink &l, uint32_t now) {
   return l.upd && due_since(now, l.upd_ms, CAM_UPD_WATCHDOG_MS);
 }
+// Nach der Anzeige des Ergebnisses (auch der Zeitüberschreitung): Überwachung beenden, sonst bleibt upd_timed_out wahr.
+static inline void cam_link_upd_end(CamLink &l) { l.upd = false; }
 static inline const char *cam_link_version(const CamLink &l) { return l.version; }
