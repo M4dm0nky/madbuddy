@@ -108,7 +108,10 @@ static inline bool cam_parse_upd_cmd(const char *c, size_t n, CamMsg *m) {
   if (p != end) return false;   // mehr als 4 Felder
   if (!cam_field(f[0], fe[0], 9, sizeof m->url - 1, m->url)) return false;
   if (!cam_field(f[1], fe[1], 64, 64, m->sha)) return false;
-  for (int i = 0; i < 64; i++) if (!((m->sha[i] >= '0' && m->sha[i] <= '9') || (m->sha[i] >= 'a' && m->sha[i] <= 'f'))) return false;
+  for (int i = 0; i < 64; i++) {   // Hex, groß oder klein; gespeichert wird klein
+    if (cam_hexval(m->sha[i]) < 0) return false;
+    if (m->sha[i] >= 'A' && m->sha[i] <= 'F') m->sha[i] = (char)(m->sha[i] - 'A' + 'a');
+  }
   if (!cam_field(f[2], fe[2], 1, 32, m->ssid)) return false;
   if (!cam_field(f[3], fe[3], 0, 63, m->pass)) return false;
   m->kind = CAM_UPD_CMD;
@@ -181,7 +184,7 @@ static inline bool cam_parse(const char *line, size_t n, CamMsg *m) {
 // Sammelt Bytes zu Zeilen. feed() == true: line()/len() enthalten eine vollständige Zeile (ohne '\n' und '\r'),
 // gültig bis zum nächsten feed(). Zu lange Zeilen werden bis zum nächsten '\n' verworfen.
 struct CamLineBuf {
-  char buf[CAM_LINE_MAX + 1];
+  char buf[CAM_LINE_MAX + 1] = {};
   size_t n = 0, done = 0;
   bool over = false;
   bool feed(char c) {

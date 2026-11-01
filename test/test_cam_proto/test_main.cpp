@@ -104,7 +104,7 @@ void test_update_cmd_rejects() {
   snprintf(line, sizeof line, "U\thttps://github.com/x\t%.63s\tW\tp", sha);
   TEST_ASSERT_FALSE(parse_str(seal(line), &m));   // SHA zu kurz
   snprintf(line, sizeof line, "U\thttps://github.com/x\t%s\tW", sha);
-  TEST_ASSERT_FALSE(parse_str(seal(line), &m));   // nur 4 Felder
+  TEST_ASSERT_FALSE(parse_str(seal(line), &m));   // nur 3 Felder
   snprintf(line, sizeof line, "U\thttps://github.com/x\t%s\t\tp", sha);
   TEST_ASSERT_FALSE(parse_str(seal(line), &m));   // SSID leer
   snprintf(line, sizeof line, "U\thttps://github.com/x\t%s\t%s\tp", sha, ssid33);
@@ -112,6 +112,72 @@ void test_update_cmd_rejects() {
   sha[3] = 'G';
   snprintf(line, sizeof line, "U\thttps://github.com/x\t%s\tW\tp", sha);
   TEST_ASSERT_FALSE(parse_str(seal(line), &m));   // SHA kein Hex
+  sha[3] = 'a';
+  snprintf(line, sizeof line, "U\thttps://github.com/x\t%s\tW\tp\tzuviel", sha);
+  TEST_ASSERT_FALSE(parse_str(seal(line), &m));   // 5 Felder
+  snprintf(line, sizeof line, "U\thttps://github.com/x\t%s\tW\tp", sha);
+  TEST_ASSERT_TRUE(parse_str(seal(line), &m));    // Kontrolle: 4 Felder gehen
+}
+void test_update_cmd_sha_case() {
+  char sha[65]; memset(sha, 'A', 64); sha[64] = '\0';
+  sha[0] = 'F'; sha[1] = '9'; sha[2] = 'c';
+  char line[CAM_LINE_MAX];
+  snprintf(line, sizeof line, "U\thttps://github.com/x\t%s\tW\tp", sha);
+  CamMsg m;
+  TEST_ASSERT_TRUE(parse_str(seal(line), &m));    // Großbuchstaben erlaubt
+  TEST_ASSERT_EQUAL_CHAR('f', m.sha[0]);          // gespeichert klein
+  TEST_ASSERT_EQUAL_CHAR('9', m.sha[1]);
+  TEST_ASSERT_EQUAL_CHAR('c', m.sha[2]);
+  TEST_ASSERT_EQUAL_CHAR('a', m.sha[63]);
+}
+void test_update_cmd_worst_case() {
+  char url[200], sha[65], ssid[33], pass[64];
+  memset(url, 'u', 199); url[199] = '\0';
+  memset(sha, '7', 64); sha[64] = '\0';
+  memset(ssid, 's', 32); ssid[32] = '\0';
+  memset(pass, 'p', 63); pass[63] = '\0';
+  char b[CAM_LINE_MAX + 8];
+  size_t n = cam_build_upd_cmd(url, sha, ssid, pass, b, sizeof b);
+  TEST_ASSERT_TRUE(n > 0);
+  TEST_ASSERT_TRUE(n - 1 <= CAM_LINE_MAX);
+  CamMsg m;
+  TEST_ASSERT_TRUE(cam_parse(b, n - 1, &m));
+  TEST_ASSERT_EQUAL_STRING(url, m.url); TEST_ASSERT_EQUAL_STRING(sha, m.sha);
+  TEST_ASSERT_EQUAL_STRING(ssid, m.ssid); TEST_ASSERT_EQUAL_STRING(pass, m.pass);
+  memset(url, 'u', 200); url[200] = '\0';          // 200 Zeichen URL: zu lang
+  n = cam_build_upd_cmd(url, sha, ssid, pass, b, sizeof b);
+  if (n > 0) TEST_ASSERT_FALSE(cam_parse(b, n - 1, &m));
+}
+void test_length_boundary() {
+  char content[CAM_LINE_MAX + 8];
+  char out[CAM_LINE_MAX + 8];
+  CamMsg m;
+  // genau CAM_LINE_MAX: cam_seal nimmt an, bei +1 nicht
+  memset(content, 'a', CAM_LINE_MAX - 3); content[CAM_LINE_MAX - 3] = '\0';
+  size_t n = cam_seal(content, out, sizeof out);
+  TEST_ASSERT_EQUAL(CAM_LINE_MAX + 1, n);
+  TEST_ASSERT_EQUAL(CAM_LINE_MAX, strlen(out) - 1);
+  memset(content, 'a', CAM_LINE_MAX - 2); content[CAM_LINE_MAX - 2] = '\0';
+  TEST_ASSERT_EQUAL(0, cam_seal(content, out, sizeof out));
+  // 401 Zeichen mit richtiger Prüfsumme von Hand: abgelehnt (sonst unbekannter Befehl, daher nur Längenregel getestet)
+  memset(content, 'a', CAM_LINE_MAX - 2); content[CAM_LINE_MAX - 2] = '\0';
+  const uint8_t x = cam_xor(content, CAM_LINE_MAX - 2);
+  static const char kHex[] = "0123456789ABCDEF";
+  memcpy(out, content, CAM_LINE_MAX - 2);
+  out[CAM_LINE_MAX - 2] = '*'; out[CAM_LINE_MAX - 1] = kHex[x >> 4]; out[CAM_LINE_MAX] = kHex[x & 15];
+  TEST_ASSERT_FALSE(cam_parse(out, CAM_LINE_MAX + 1, &m));
+}
+void test_linebuf_boundary() {
+  CamLineBuf lb;
+  for (size_t i = 0; i < CAM_LINE_MAX; i++) TEST_ASSERT_FALSE(lb.feed('a'));
+  TEST_ASSERT_TRUE(lb.feed('\n'));                // genau 400 gehen durch
+  TEST_ASSERT_EQUAL(CAM_LINE_MAX, lb.len());
+  for (size_t i = 0; i < CAM_LINE_MAX + 1; i++) TEST_ASSERT_FALSE(lb.feed('a'));
+  TEST_ASSERT_FALSE(lb.feed('\n'));               // 401 werden verworfen
+  bool ok = false;
+  for (const char *p = "N*4E\n"; *p; p++) ok = lb.feed(*p);
+  TEST_ASSERT_TRUE(ok);                           // danach läuft der Puffer wieder
+  TEST_ASSERT_EQUAL_STRING("N*4E", lb.line());
 }
 void test_update_progress() {
   char b[64];
@@ -162,6 +228,10 @@ int main(int, char **) {
   RUN_TEST(test_length_limit);
   RUN_TEST(test_update_cmd_roundtrip);
   RUN_TEST(test_update_cmd_rejects);
+  RUN_TEST(test_update_cmd_sha_case);
+  RUN_TEST(test_update_cmd_worst_case);
+  RUN_TEST(test_length_boundary);
+  RUN_TEST(test_linebuf_boundary);
   RUN_TEST(test_update_progress);
   RUN_TEST(test_linebuf_split_and_cr);
   RUN_TEST(test_linebuf_overflow_recovers);
