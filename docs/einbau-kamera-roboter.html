@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>MadBuddy Roboter – Kamera und XIAO einbauen</title>
+<style>
+  @page { size: A4; margin: 12mm; }
+  :root {
+    --ink: #1d2433; --muted: #5a6475; --line: #e3e6ec;
+    --orange: #ff7a29; --red: #d03030; --yellow: #e0b400; --green: #2f9e4f; --blue: #3b8fb5;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", system-ui, sans-serif; color: var(--ink); margin: 0; background: #f4f5f8; font-size: 15px; line-height: 1.5; }
+  main { max-width: 900px; margin: 0 auto; padding: 24px; }
+  header { background: linear-gradient(120deg, #1d2433, #34405a); color: #fff; border-radius: 14px; padding: 22px 26px; }
+  header h1 { margin: 0 0 6px; font-size: 26px; }
+  header p { margin: 0; color: #cfd6e4; }
+  h2 { font-size: 20px; margin: 0 0 10px; }
+  .card { background: #fff; border-radius: 14px; padding: 20px 22px; margin-top: 18px; border: 1px solid var(--line); break-inside: avoid; }
+  table { border-collapse: collapse; width: 100%; }
+  td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  td:first-child { width: 34px; font-size: 20px; text-align: center; }
+  .chip { display: inline-block; padding: 1px 9px; border-radius: 99px; color: #fff; font-weight: 600; font-size: 13px; }
+  .c-orange { background: var(--orange); } .c-red { background: var(--red); } .c-yellow { background: var(--yellow); }
+  .c-green { background: var(--green); } .c-blue { background: var(--blue); }
+  .step { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+  .step img { width: 100%; border-radius: 10px; border: 1px solid var(--line); }
+  .num { display: inline-flex; width: 34px; height: 34px; border-radius: 50%; align-items: center; justify-content: center; color: #fff; font-weight: 700; margin-right: 10px; }
+  .step h2 { display: flex; align-items: center; }
+  ol { padding-left: 20px; margin: 8px 0; } li { margin: 4px 0; }
+  .note { border-radius: 10px; padding: 9px 12px; margin-top: 10px; font-size: 14px; }
+  .tip { background: #e9f7ee; border-left: 5px solid var(--green); }
+  .warn { background: #fff4e0; border-left: 5px solid #f0a020; }
+  .terms { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .terms dl { margin: 0; } .terms dt { font-weight: 700; margin-top: 8px; } .terms dd { margin: 2px 0 0; color: var(--muted); }
+  footer { color: var(--muted); font-size: 12px; margin: 18px 4px; }
+  @media print { body { background: #fff; } main { padding: 0; } .card { border-color: #d5d9e0; } }
+  @media (max-width: 700px) { .step, .terms { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>📷 Kamera und XIAO in den Roboter einbauen</h1>
+  <p>MadBuddy Stufe 3 „Roboter“ · Dauer ca. 10 Minuten · kein Kleber, kein Löten bei diesem Schritt</p>
+</header>
+
+<section class="card">
+  <h2>🧩 Das Prinzip</h2>
+  Die Kamera sitzt innen in der Brust und schaut durch ein kleines Loch (Ø 6,7 mm) nach vorn.
+  Ein flaches Druckteil, der <b>Riegel</b>, klemmt sie fest. Der XIAO darunter rastet zwischen vier Pfosten ein,
+  die Rückwand hält alles von hinten. Alle Bilder zeigen das Brust-Vorderteil <b>von hinten</b>, so wie es vor dir liegt, wenn die Rückwand ab ist.
+</section>
+
+<section class="card">
+  <h2>🧰 Was du brauchst</h2>
+  <table>
+    <tr><td>🟧</td><td><span class="chip c-orange">torso_front</span> Brust-Vorderteil, Hals und Kopf sind schon daran montiert</td></tr>
+    <tr><td>🟨</td><td><span class="chip c-yellow">cam_clip</span> der Riegel, 1 Stück (in <code>roboter_teile.3mf</code>; flach drucken, 3 Wände)</td></tr>
+    <tr><td>🟥</td><td><span class="chip c-red">Kamera</span> das kleine Kameramodul mit Flachkabel, liegt dem XIAO Sense bei</td></tr>
+    <tr><td>🟩</td><td><span class="chip c-green">XIAO</span> XIAO ESP32S3 mit aufgesteckter Kameraplatine, Drähte schon angelötet</td></tr>
+    <tr><td>🟦</td><td><span class="chip c-blue">torso_back</span> Brust-Rückwand</td></tr>
+    <tr><td>🔩</td><td>4 Schrauben M3 × 28 und ein Kreuzschlitz-Schraubendreher</td></tr>
+  </table>
+  <div class="note warn">⚠️ Die Rückwand muss <b>ab</b> sein. Bei geschlossener Brust kommst du nicht an die Kamera.</div>
+</section>
+
+<section class="card">
+  <div class="terms">
+    <img src="../case/render/einbau_kamera_1.png" alt="Leere Kameratasche von hinten" style="width:100%;border-radius:10px;border:1px solid var(--line)">
+    <div>
+      <h2>🔍 Was ist was?</h2>
+      <dl>
+        <dt>Tasche</dt><dd>Das kleine quadratische Kästchen in der Mitte. Vorn darin ist das Linsenloch.</dd>
+        <dt>Schlitze (Nuten)</dt><dd>Zwei schmale Spalten oben und unten im Rand der Tasche. Darin gleitet der Riegel.</dd>
+        <dt>Kabelöffnung</dt><dd>Die <b>linke</b> Seite der Tasche ist offen. Dort kommt das Flachkabel heraus.</dd>
+        <dt>Pfosten</dt><dd>Die vier schrägen Stege rund um die Tasche. Dazwischen rastet der XIAO ein.</dd>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<section class="card step">
+  <img src="../case/render/einbau_kamera_2.png" alt="Kamera vor der Tasche">
+  <div>
+    <h2><span class="num c-red">1</span>Kamera einlegen</h2>
+    <ol>
+      <li>Kamera so halten, dass die runde Linse von dir weg zum Loch zeigt.</li>
+      <li>Das Flachkabel zeigt nach <b>links</b>, zur offenen Seite.</li>
+      <li>Kamera gerade in die Tasche drücken, bis sie vorn anliegt. Die Linse steckt jetzt im Loch.</li>
+    </ol>
+    <div class="note tip">💡 Die Kamera sitzt jetzt noch locker. Das ist richtig, der Riegel hält sie gleich fest.</div>
+  </div>
+</section>
+
+<section class="card step">
+  <img src="../case/render/einbau_kamera_3.png" alt="Riegel halb eingeschoben">
+  <div>
+    <h2><span class="num c-yellow">2</span>Riegel einschieben</h2>
+    <ol>
+      <li>Den gelben Riegel von <b>links</b> in die beiden Schlitze schieben. Die geschlossene Seite des U geht voran.</li>
+      <li>Das Flachkabel liegt zwischen den beiden Armen des U, es wird nicht eingeklemmt.</li>
+      <li>Schieben, bis der Riegel auf der anderen Seite anliegt. Er drückt die Kamera nach vorn.</li>
+    </ol>
+    <div class="note tip">💡 Der Riegel geht stramm, er soll klemmen. Kleber brauchst du nicht.</div>
+    <div class="note warn">⚠️ Geht er gar nicht rein: die Arme mit feinem Schleifpapier etwas dünner schleifen. Zu locker: ein dünnes doppelseitiges Klebepad hinten auf die Kamera.</div>
+  </div>
+</section>
+
+<section class="card step">
+  <img src="../case/render/einbau_kamera_4.png" alt="XIAO vor den Pfosten">
+  <div>
+    <h2><span class="num c-green">3</span>XIAO einrasten</h2>
+    <ol>
+      <li>Flachkabel in den Klappstecker der Kameraplatine stecken und den Bügel zuklappen.</li>
+      <li>XIAO so halten, dass die Kameraplatine nach vorn zur Kamera zeigt.</li>
+      <li>Gerade zwischen die vier Pfosten drücken, bis es <b>klick</b> macht.</li>
+    </ol>
+    <div class="note warn">⚠️ Das Flachkabel macht eine lockere Schleife. Nicht knicken!</div>
+    <div class="note tip">💡 Die langen Seiten des XIAO bleiben frei, dort sitzen die Drähte. Sie laufen nach oben durch den Hals zum Kopf.</div>
+  </div>
+</section>
+
+<section class="card step">
+  <img src="../case/render/einbau_kamera_5.png" alt="Rückwand wird aufgesetzt">
+  <div>
+    <h2><span class="num c-blue">4</span>Brust schließen</h2>
+    <ol>
+      <li>💡 Vorher einschalten und prüfen, ob die Kamera am Display erkannt wird.</li>
+      <li>Rückwand gerade von hinten aufsetzen. Keine Drähte einklemmen.</li>
+      <li>Mit den 4 Schrauben M3 × 28 festschrauben.</li>
+    </ol>
+    <div class="note tip">💡 Innen in der Rückwand sitzt ein Steg genau hinter dem XIAO. So kann er nicht herausfallen.</div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>✅ Fertig</h2>
+  Weiter geht es mit Armen, Händen und Ohren (Schritt 4 der Montagereihenfolge in <code>case/README.md</code>).
+  Wie XIAO und Display verkabelt werden, steht in <code>docs/verkabelung.md</code>.
+</section>
+
+<footer>MadBuddy · Bilder aus dem Gehäusemodell (<code>case/tools/render_guide.ps1</code>) · Stand 2026-11-02</footer>
+</main>
+</body>
+</html>

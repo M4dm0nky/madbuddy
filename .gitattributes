@@ -2,3 +2,4 @@
 case/stl/*.stl -diff linguist-generated
 case/3mf/*.3mf binary
 case/render/*.png binary
+*.pdf binary

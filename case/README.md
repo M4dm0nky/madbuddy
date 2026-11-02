@@ -113,7 +113,7 @@ Summe: 4 × M3×8, 12 × M3×10, 4 × M3×28. Das passt zur Massenliste „20 ×
 
 1. Hals von oben mit 2 × M3×10 auf `torso_front` schrauben (`torso_back` ist dabei verschraubt, der Kopf fehlt).
 2. Rückwand des Oberkörpers abnehmen, Kopf auf den Hals setzen, 2 × M3×10 von unten durch die Halsschlitze eindrehen.
-3. Kamera und XIAO einbauen, solange `torso_back` noch abgenommen ist (bei geschlossenem Oberkörper kommt man nicht an die Tasche). **Bebilderte Anleitung: [`docs/einbau-kamera-roboter.md`](../docs/einbau-kamera-roboter.md).** Kurzfassung:
+3. Kamera und XIAO einbauen, solange `torso_back` noch abgenommen ist (bei geschlossenem Oberkörper kommt man nicht an die Tasche). **Bebilderte Anleitung: [PDF](../docs/einbau-kamera-roboter.pdf)** (Text: [`docs/einbau-kamera-roboter.md`](../docs/einbau-kamera-roboter.md)). Kurzfassung:
    1. Kameramodul von hinten in die Tasche schieben (Linse durch das Loch), FPC durch den Schlitz nach +X führen.
    2. `cam_clip` (Riegel) von der +X-Seite in die Nuten schieben (Übermaß 0,1 mm, Presssitz).
    3. XIAO-Stapel von hinten zwischen die Pfosten schieben, die Lippen der Pfosten rasten über die Rückseite ein (FPC in den Stecker).
