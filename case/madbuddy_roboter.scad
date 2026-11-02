@@ -504,9 +504,8 @@ module cam_fill() translate([-cam_outer_h, -cam_outer_h, 0.4]) cube([2 * cam_out
 stop_u0 = 0.5; stop_u1 = 7.5;      // VORLÄUFIG (Entwurf): Anschlag in u: mittig am USB-Ende, X -3,0 ... 4,0 -- zwischen den Werkzeugkanaelen (Kanalkanten X +-4,7), frei von den Loetstellen am Rand
 stop_v0 = -4; stop_v1 = 5;         // VORLÄUFIG (Entwurf): Anschlag in v (die Platinenkanten mit den Loetstellen -8,25 / 9,53 bleiben frei)
 module cam_post_roots() cam_frame() for (sy = [-1, 1]) {
-  x0 = xiao_post_u0 - xiao_u_lens; x1 = xiao_post_u1 - xiao_u_lens;
   yin = sy > 0 ? xiao_vmax + xiao_play : xiao_vmin - xiao_play;
-  translate([xiao_flip ? -x1 : x0, sy > 0 ? yin : yin - xiao_post_t, 0.4]) cube([x1 - x0, xiao_post_t, cam_wt + 4]);   // Pfostenwurzeln bis zur Aussenhuelle (sonst waere der Pfostenanfang im Druck eine freitragende Flaeche)
+  translate([xiao_post_x(sy)[0], sy > 0 ? yin : yin - xiao_post_t, 0.4]) cube([xiao_post_x(sy)[1], xiao_post_t, cam_wt + 4]);   // Pfostenwurzeln bis zur Aussenhuelle (sonst waere der Pfostenanfang im Druck eine freitragende Flaeche)
 }
 module cam_stop() {   // Anschlag im Rueckteil: Anschlagflaeche xiao_stop_gap hinter der XIAO-Unterseite, Hull zur Rueckwand
   zw = xiao_zbot(cam_wt) - xiao_stop_gap;
@@ -1091,8 +1090,11 @@ else if (part == "deco") {                                                     /
 }
 else if (part == "torso_front") translate([0, 0, t_d / 2]) rotate([90, 0, 0]) torso_front();     // Brust (y = -22) auf dem Bett
 else if (part == "torso_back")  translate([0, 0, t_d / 2]) rotate([-90, 0, 0]) torso_back();     // Rueckseite (y = +22) auf dem Bett
-else if (part == "cam_test")   // Testausschnitt (ca. 15 min Druck): Brustwand +-14 mm um die Linse mit Tasche, Rahmen, Pfosten mit Lippen und Wurzeln; Aussenseite unten wie torso_front
-  translate([0, 0, t_d / 2]) rotate([90, 0, 0]) intersection() { torso_front(false); cam_frame() translate([-14, -14, cam_zrear(cam_wt) - 13]) cube([28, 28, 13 + cam_wt + 6]); }
+else if (part == "cam_test")   // Testausschnitt (ca. 15 min Druck): Brustwand X +-18 / Y +-14 mm um die Linse (X 18, damit die Rippen am Rand nicht frei haengen) mit Tasche, Rahmen, Pfosten mit Lippen und Wurzeln; Aussenseite unten wie torso_front
+  difference() {   // ohne die zwei Randstuecke bei |X| > 12,3 (gehoeren am ganzen Teil zur Schale ausserhalb des Ausschnitts, hingen im Test frei)
+  translate([0, 0, t_d / 2]) rotate([90, 0, 0]) intersection() { torso_front(false); cam_frame() translate([-18, -14, cam_zrear(cam_wt) - 13]) cube([36, 28, 13 + cam_wt + 6]); }
+    for (sx = [-1, 1]) translate([sx > 0 ? 12.3 : -18.1, -11.85, -1]) cube([5.8, 10, 30]);
+  }
 else if (part == "neck")        translate([0, 0, -neck_lo_z]) neck();                              // stehend auf dem unteren Flansch
 else if (part == "arm") { if (side > 0) arm_print(); else mirror([0, 1, 0]) arm_print(); }       // liegend auf der Aussenseite
 else if (part == "hand")        translate([0, 0, hand_cut]) hand_l();                              // abgeflachte Unterseite auf dem Bett

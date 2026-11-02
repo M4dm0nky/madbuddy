@@ -100,11 +100,15 @@ module cam_pocket_cut(wall_t = cam_wall_t) {
 // Unterseite. Der Block wird von hinten eingeschoben: die Pfosten federn nach aussen, die Lippen rasten ueber der XIAO-Unterseite ein
 // und halten ihn nach hinten (Schnappmass je Seite = Lippe - Spiel). Im Roboter schliesst zusaetzlich der Anschlag im Rueckteil.
 xiao_vmin = -8.25; xiao_vmax = 9.53;    // QUELLE: STEP -- XIAO-Platine in v
+// Oberer Pfosten (+Y): im Bereich u 7,0 ... 12,5 schneidet ihn im Roboter der Werkzeugkanal der Kopfschraube (X 4,7 ... 11,3) ab (Pfostenteile hingen frei).
+// Darum liegt er hinter dem Kanal bei u 15,0 ... 17,2 (zwischen Pin 6 ohne Draht und Pin 7 mit D6/D7 bei u ca. 18,1). Entscheidung 2026-11-02 nach Testdruck.
+xiao_post_u0_pos = 15.0; xiao_post_u1_pos = 17.2;
+function xiao_post_x(sy) = let(u0 = sy > 0 ? xiao_post_u0_pos : xiao_post_u0, u1 = sy > 0 ? xiao_post_u1_pos : xiao_post_u1,
+                               x0 = u0 - xiao_u_lens, x1 = u1 - xiao_u_lens) [xiao_flip ? -x1 : x0, x1 - x0];   // [Anfang X, Breite]
 module xiao_cradle_add(wall_t = cam_wall_t) {
   zb = xiao_zbot(wall_t);
-  x0 = xiao_post_u0 - xiao_u_lens; x1 = xiao_post_u1 - xiao_u_lens;
-  px0 = xiao_flip ? -x1 : x0; pw = x1 - x0;
   if (!cam_dbg_nocradle) for (sy = [-1, 1]) {   // cam_dbg_nocradle nur fuer die Gegenprobe der Wiege-Pruefung
+    px0 = xiao_post_x(sy)[0]; pw = xiao_post_x(sy)[1];
     yin = sy > 0 ? xiao_vmax + xiao_play : xiao_vmin - xiao_play;       // Innenflaeche des Pfostens
     yp = sy > 0 ? yin : yin - xiao_post_t;
     translate([px0, yp, zb - xiao_lip_gap]) cube([pw, xiao_post_t, 0.5 - zb + xiao_lip_gap]);
