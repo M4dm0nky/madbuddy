@@ -101,6 +101,7 @@ Sitzende Roboterfigur: Kopf mit CYD, Oberkörper mit der Kamera in der Brust, Ak
 - Teile (STL in Druckausrichtung): [`case/stl/roboter_*.stl`](case/stl/); Teileliste, Druckhinweise, Schrauben und Montage: [`case/README.md`](case/README.md#variante-2-roboter).
 - Für den Slicer: [`case/3mf/roboter_teile.3mf`](case/3mf/roboter_teile.3mf) (alle Teile getrennt) und [`case/3mf/roboter_ams.3mf`](case/3mf/roboter_ams.3mf) (Kopf mit Blende und Zierschrauben als Mehrfarbobjekt).
 - Druck: PETG, 0,2 mm, ohne Stützen, 20 M3-Schrauben (4× M3×8, 12× M3×10, 4× M3×28).
+- **Kamera und XIAO einbauen (mit Bildern): [`docs/einbau-kamera-roboter.md`](docs/einbau-kamera-roboter.md).**
 - Verkabelung CYD ↔ XIAO (Kabel ca. 150 mm durch den Hals, Strom vom Schalter zu CYD und XIAO): [`docs/verkabelung.md`](docs/verkabelung.md#stufe-3-roboter).
 - Spezifikationen: [`docs/superpowers/specs/2026-10-26-roboter-gehaeuse-design.md`](docs/superpowers/specs/2026-10-26-roboter-gehaeuse-design.md) (Form) und [`docs/superpowers/specs/2026-10-27-roboter-druckteile-design.md`](docs/superpowers/specs/2026-10-27-roboter-druckteile-design.md) (Druckteile).
 

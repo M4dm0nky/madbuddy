@@ -485,6 +485,7 @@ module xiao_dummy_r()  { place_torso() xiao_dummy_l(); }
 module camera_dummy_r() { place_torso() camera_dummy_l(); }
 module lens_cone_r()   { place_torso() lens_cone_l(); }
 module cam_clip_l()    cam_frame() cam_clip_place(cam_wt);
+module guide_c() { translate(-(torso_origin + [0, -t_d / 2, cam_z])) place_torso() children(); }   // nur Anzeige (Einbauanleitung): Kamera-Tasche in den Ursprung, damit die feste --camera sie mittig zeigt
 // Massiver Block zwischen der Tasche und der (senkrechten) Aussenflaeche: die Wand ist senkrecht, die Achse geneigt, die Innenebene schneidet
 // die Wand schraeg. torso_front schneidet das mit der Aussenhuelle ab (t_half), die Anschlagplatte wird so an jeder Stelle der Tasche massiv.
 module cam_body_probe(grow) {   // Kamerakoerper + Tubus (ohne FPC), um grow groesser, fuer die Montagewege
@@ -1203,6 +1204,35 @@ else if (part == "cam_section")    // Schnitt durch die Kamera-Tasche bei X = 0 
     intersection() { color("#d03030") camera_dummy_l(); translate(cb) cube([25, 40, 52]); }
     intersection() { color("#8a4fc9") xiao_dummy_l(); translate(cb) cube([25, 40, 52]); }
     intersection() { color("#263238") neck(); translate(cb) cube([25, 40, 52]); }
+  }
+// ---- Anzeige-Teile fuer die Einbauanleitung (nur Ansicht, keine Druckteile; _l = Oberkoerper-Koordinaten, unter place_torso())
+else if (part == "guide_1_pocket")   // Schritt 1: leere Tasche in torso_front (Pfosten, Nuten, FPC-Schlitz)
+  guide_c() color("#ff7a29") torso_front();
+else if (part == "guide_2_cam")      // Schritt 2: Kamera 10 mm hinter der Sitzlage (lokal -Z), wird von hinten in die Tasche geschoben
+  guide_c() {
+    color("#ff7a29") torso_front();
+    color("#d03030") cam_frame() translate([0, 0, -10]) cam_dummy(cam_wt);
+  }
+else if (part == "guide_3_clip")     // Schritt 3: Kamera sitzt, Riegel 5 mm in lokal +X aus der Endlage (halb eingeschoben)
+  guide_c() {
+    color("#ff7a29") torso_front();
+    color("#d03030") camera_dummy_l();
+    color("#ffd400") cam_frame() translate([5, 0, 0]) cam_clip_place(cam_wt);
+  }
+else if (part == "guide_4_stack")    // Schritt 4: Kamera und Riegel sitzen, XIAO-Stapel 20 mm hinter der Sitzlage (lokal -Z)
+  guide_c() {
+    color("#ff7a29") torso_front();
+    color("#d03030") camera_dummy_l();
+    color("#ffd400") cam_clip_l();
+    color("#3fbf5f") cam_frame() translate([0, 0, -20]) xiao_stack_dummy(cam_wt);
+  }
+else if (part == "guide_5_close")    // Schritt 5: alles sitzt, torso_back 45 mm in +Y abgesetzt (halbtransparent)
+  guide_c() {
+    color("#ff7a29") torso_front();
+    color("#d03030") camera_dummy_l();
+    color("#ffd400") cam_clip_l();
+    color("#3fbf5f") xiao_dummy_l();
+    color([0.31, 0.66, 0.79, 0.2]) translate([0, 45, 0]) torso_back();
   }
 else if (part == "assembly") assembly_parts();
 else if (part == "exploded") exploded_parts();
