@@ -16,7 +16,7 @@ New-Item -ItemType Directory -Force $stlDir, $pngDir | Out-Null
 $script:fails = 0
 
 # Druckteile. Spaetere Tasks haengen ihre Teile hier an (Task 3: neck, torso_front, torso_back, arm, hand; Task 4: seat, bottom, foot, jetzt enthalten).
-$parts = @("head_front", "bezel", "head_back", "ear", "deco", "torso_front", "torso_back", "neck", "arm", "hand", "seat", "bottom", "foot", "cam_clip")
+$parts = @("head_front", "bezel", "head_back", "ear", "deco", "torso_front", "torso_back", "neck", "arm", "hand", "seat", "bottom", "foot", "cam_test")
 
 function Want([string]$k) { return ($Only.Count -eq 0 -or $Only -contains $k) }
 function Ok($m)   { Write-Host "[ OK ] $m" -ForegroundColor Green }
@@ -73,7 +73,7 @@ foreach ($p in $parts) {
   if ($r.Code -ne 0)                { Bad "STL $p : Exitcode $($r.Code) $($r.Text.Trim())" }
   elseif ($r.Text -match 'WARNING') { Bad "STL $p : WARNING in Ausgabe: $(($r.Text -split "`n" | Select-String WARNING | Select-Object -First 3) -join ' | ')" }
   elseif ($r.Text -match 'ERROR')   { Bad "STL $p : ERROR in Ausgabe" }
-  elseif ($n -lt $(if ($p -eq 'cam_clip') { 20 } else { 100 })) { Bad "STL $p : zu wenige Facetten ($n)" }   # Riegel ist ein einfacher U-Koerper
+  elseif ($n -lt 100) { Bad "STL $p : zu wenige Facetten ($n)" }
   else                              { Ok "STL $p ($n Facetten)" }
 }
 }
@@ -307,7 +307,7 @@ if (-not $custom) {
 }
 }
 
-# 3i) Kamera-Tasche, Riegel, Wiege (K2). Jede "muss leer sein"-Pruefung hat eine Positiv-Kontrolle ("muss treffen"),
+# 3i) Kamera-Tasche, Wiege, Anschlag, Montagewege (Kamera v2). Jede "muss leer sein"-Pruefung hat eine Positiv-Kontrolle ("muss treffen"),
 if (Want '3i') {
 #     damit eine leere/falsch sitzende Geometrie nicht still als "gruen" durchgeht. Laeuft auch mit -Define (Gegenproben).
 function Scad-Facets([string]$part, [string[]]$extra = @(), [int]$TimeoutSec = 900) {
@@ -344,32 +344,27 @@ if ($w.Ok) { Ok "Selbsttest Chk-Empty: sauber leeres Ergebnis wird als gruen gew
 $w = Eval-Empty 'asm_close' @() 1
 if (-not $w.Ok -and $w.Msg -match 'TIMEOUT') { Ok "Selbsttest Chk-Empty: Timeout wird als Fehler erkannt (nie als leer = gruen)" } else { Bad "Selbsttest Chk-Empty: Timeout NICHT als Fehler erkannt (Pruefung taugt nichts): Ok=$($w.Ok) Msg=$($w.Msg)" }
 Chk-Hit   'cam_selftest' "Kamera-Selbsttest: Kamerakoerper +0,6 mm trifft die Tasche (Pruefung wirkt)" "Kamera-Selbsttest: zu grosser Kamerakoerper NICHT erkannt"
-Chk-Hit   'cam_collision_ctrl' "Kontrolle Kollision: um 0,6 mm nach vorn geschobener Kamera-Pruefkoerper trifft die Anschlagplatte" "Kontrolle Kollision: verschobener Kamera-Pruefkoerper NICHT erkannt (Pruefung taugt nichts)"
-Chk-Hit   'clip_test'    "Riegel: sitzt in den Nuten (Schnittmenge Riegel/Oberkoerper > 0)" "Riegel: keine Schnittmenge mit dem Oberkoerper (Nuten/Uebermass falsch)"
-Chk-Empty 'clip_band'    "Riegel: Schnittmenge liegt nur im 0,1-mm-Uebermassband (Obergrenze, Nut ist wirklich da)" "Riegel: Schnittmenge ausserhalb des Uebermassbands (Nut fehlt oder zu klein)"
-Chk-Hit   'clip_band'    "Gegenprobe Riegel: ohne Nuten (cam_dbg_nogroove) liegt der Riegel im vollen Material" "Gegenprobe Riegel: ohne Nuten bleibt die Obergrenze trotzdem leer (Pruefung taugt nichts)" @('-D', 'cam_dbg_nogroove=true')
-Chk-Hit   'cradle_fit'   "Wiege: Pfosten/Klemmsteg umschliessen den Stapel (Positiv-Kontrolle)" "Wiege: beruehrt den aufgeweiteten Stapel NICHT (leer oder falsche Lage)"
+Chk-Hit   'cam_collision_ctrl' "Kontrolle Kollision: um 0,6 mm nach vorn geschobener Kamera-Pruefkoerper trifft den Taschenboden" "Kontrolle Kollision: verschobener Kamera-Pruefkoerper NICHT erkannt (Pruefung taugt nichts)"
+Chk-Empty 'lens_tip'     "Linse: Spitze liegt in der Achse hinter der Aussenhuelle (Wand 3,9 = Linse 3,6 + 0,3)" "Linse: Spitze ragt ueber die Aussenhuelle (Wand zu duenn)"
+Chk-Hit   'lens_tip_ctrl' "Kontrolle Linse: um 0,5 mm laengere Linse ragt ueber die Aussenhuelle und wird erkannt" "Kontrolle Linse: zu lange Linse NICHT erkannt (Pruefung taugt nichts)"
+Chk-Hit   'cradle_fit'   "Wiege: Pfosten/Lippen umschliessen den Block (Positiv-Kontrolle)" "Wiege: beruehrt den aufgeweiteten Block NICHT (leer oder falsche Lage)"
 Chk-Empty 'cradle_fit'   "Gegenprobe Wiege: ohne Wiege (cam_dbg_nocradle) beruehrt die Positiv-Kontrolle nichts (Kontrolle misst wirklich die Wiege)" "Gegenprobe Wiege: auch ohne Wiege trifft die Kontrolle (Pruefung taugt nichts)" @('-D', 'cam_dbg_nocradle=true')
-Chk-Empty 'cam_inside'   "Rahmen, Wiege und Rippen liegen innerhalb der Brusthaut (Abstand >= 0,2 mm)" "Rahmen/Wiege/Rippen ragt aus der Brusthaut"
+Chk-Empty 'cam_inside'   "Rahmen, Wiege und Anschlag liegen innerhalb der Brusthaut (Abstand >= 0,2 mm)" "Rahmen/Wiege/Anschlag ragt aus der Brusthaut"
 Chk-Hit   'inside_ctrl_z' "Kontrolle Brusthaut: um 30 mm nach oben verschobene Wiege wird erkannt" "Kontrolle Brusthaut (Z): verschobene Wiege NICHT erkannt (Pruefung taugt nichts)"
 Chk-Hit   'inside_ctrl_x' "Kontrolle Brusthaut: um 30 mm zur Seite verschobene Wiege wird erkannt" "Kontrolle Brusthaut (X): verschobene Wiege NICHT erkannt (Pruefung taugt nichts)"
-Chk-Empty 'cam_present'  "Rahmen, Wiege und Rippen sind in torso_front/torso_back vollstaendig vorhanden (nichts weggeschnitten)" "Rahmen/Wiege/Rippen fehlt teilweise in torso_front/torso_back"
+Chk-Empty 'cam_present'  "Rahmen, Wiege und Anschlag sind in torso_front/torso_back vollstaendig vorhanden (nichts weggeschnitten, Rundungs-Splitter < 0,08 mm ausgenommen)" "Rahmen/Wiege/Anschlag fehlt teilweise in torso_front/torso_back"
 Chk-Hit   'cam_present_ctrl' "Kontrolle Vollstaendigkeit: frei im Raum stehende Wiege wird als fehlend erkannt" "Kontrolle Vollstaendigkeit: fehlende Wiege NICHT erkannt (Pruefung taugt nichts)"
-Chk-Empty 'stack_inside' "XIAO-Stapel liegt ganz im Innenraum der Brust" "XIAO-Stapel ragt aus der Brusthaut"
-Chk-Hit   'stack_inside_ctrl' "Kontrolle Stapel: um 40 mm nach vorn verschobener Stapel wird erkannt" "Kontrolle Stapel: verschobener Stapel NICHT erkannt (Pruefung taugt nichts)"
+Chk-Empty 'stack_inside' "XIAO-Block liegt ganz im Innenraum der Brust" "XIAO-Block ragt aus der Brusthaut"
+Chk-Hit   'stack_inside_ctrl' "Kontrolle Block: um 40 mm nach vorn verschobener Block wird erkannt" "Kontrolle Block: verschobener Block NICHT erkannt (Pruefung taugt nichts)"
 Chk-Hit   'cone_ctrl'    "Kontrolle Sichtkegel: um 8 mm nach hinten verschobener Kegel trifft die Brustwand" "Kontrolle Sichtkegel: verschobener Kegel NICHT erkannt (Pruefung taugt nichts)"
-Chk-Empty 'cam_channels' "Werkzeugkanaele (X +-8, Y -1...-7) und Kabelloch Ø10 sind frei von Tasche, Rahmen und Wiege" "Tasche/Rahmen/Wiege ragt in Werkzeugkanal oder Kabelloch"
-Chk-Hit   'cam_channels_ctrl' "Kontrolle Kanaele: um 17 mm (Wiege-Versatz + 8) in den Kanal geschobene Wiege wird erkannt" "Kontrolle Kanaele: verschobene Wiege NICHT erkannt (Pruefung taugt nichts)"
-# Montagewege (Reihenfolge: Kamera, Riegel, XIAO bei abgenommener Rueckwand, dann torso_back schliessen); jede Reihe Zwischenstellungen + Kontrolle
-Chk-Empty 'asm_cam'      "Montage: Kameramodul (Koerper + Tubus) laesst sich von hinten durch Rahmen und Tasche schieben (Zwischenstellungen bis 30 mm)" "Montage: Kameramodul stoesst beim Einsetzen an"
-Chk-Hit   'asm_cam_ctrl' "Kontrolle Montage Kamera: um 0,6 mm groesserer Koerper stoesst an" "Kontrolle Montage Kamera: zu grosser Koerper NICHT erkannt (Pruefung taugt nichts)"
-Chk-Empty 'asm_clip'     "Montage: Riegel gleitet aus der Nut nach +X (nur Uebermassband beruehrt)" "Montage: Riegel stoesst beim Herausgleiten an"
-Chk-Hit   'asm_clip_ctrl' "Kontrolle Montage Riegel: Weg von der geschlossenen Seite stoesst an" "Kontrolle Montage Riegel: falsche Richtung NICHT erkannt (Pruefung taugt nichts)"
-Chk-Empty 'asm_stack'    "Montage: XIAO-Stapel laesst sich von hinten zwischen die Pfosten schieben (Lippen weichen um 0,7 mm je Seite aus)" "Montage: XIAO-Stapel stoesst beim Einsetzen an"
-Chk-Hit   'asm_stack_lip' "Kontrolle Montage Stapel: voller Stapel trifft die Pfostenlippen (Schnapp-Ueberdeckung wird gemessen)" "Kontrolle Montage Stapel: Lippen werden NICHT getroffen (Pruefung taugt nichts)"
-Chk-Hit   'asm_stack_ctrl' "Kontrolle Montage Stapel: 1,15-fach breiter Stapel trifft die Pfosten" "Kontrolle Montage Stapel: zu breiter Stapel NICHT erkannt (Pruefung taugt nichts)"
-Chk-Empty 'asm_close'    "Montage: torso_back (Steg, Lippen, Stuetzwand) laesst sich bei sitzendem Stapel und Kamera aufschieben" "Montage: torso_back stoesst beim Schliessen an Stapel/Kamera"
-Chk-Hit   'asm_close_ctrl' "Kontrolle Montage Schliessen: um 1 mm zum Steg verschobener Stapel wird getroffen" "Kontrolle Montage Schliessen: verschobener Stapel NICHT erkannt (Pruefung taugt nichts)"
+Chk-Empty 'cam_channels' "Werkzeugkanaele (X +-8, Y -1...-7) und Kabelloch Ø10 sind frei von Tasche, Rahmen, Wiege und Anschlag" "Tasche/Rahmen/Wiege/Anschlag ragt in Werkzeugkanal oder Kabelloch"
+Chk-Hit   'cam_channels_ctrl' "Kontrolle Kanaele: um 8 mm zur Mitte verschobene Kanaele treffen Wiege/Anschlag" "Kontrolle Kanaele: verschobene Kanaele NICHT erkannt (Pruefung taugt nichts)"
+# Montagewege (der ganze Block wird bei abgenommener Rueckwand von hinten eingeschoben, dann torso_back schliessen); jede Reihe Zwischenstellungen + Kontrolle
+Chk-Empty 'asm_block'    "Montage: Block (Kamera + XIAO) laesst sich von hinten durch Tasche und zwischen die Pfosten schieben (Zwischenstellungen bis 30 mm; Lippen weichen um 0,7 mm je Seite aus)" "Montage: Block stoesst beim Einsetzen an"
+Chk-Hit   'asm_block_ctrl' "Kontrolle Montage Block: um 0,6 mm groesserer Kamerakoerper stoesst an" "Kontrolle Montage Block: zu grosser Kamerakoerper NICHT erkannt (Pruefung taugt nichts)"
+Chk-Hit   'asm_block_lip' "Kontrolle Montage Block: voller Block trifft die Pfostenlippen (Schnapp-Ueberdeckung wird gemessen)" "Kontrolle Montage Block: Lippen werden NICHT getroffen (Pruefung taugt nichts)"
+Chk-Empty 'asm_close'    "Montage: torso_back (Anschlag) laesst sich bei sitzendem Block aufschieben" "Montage: torso_back stoesst beim Schliessen an Block/Kamera"
+Chk-Hit   'asm_close_ctrl' "Kontrolle Montage Schliessen: um 1 mm zum Anschlag verschobener Block wird getroffen" "Kontrolle Montage Schliessen: verschobener Block NICHT erkannt (Pruefung taugt nichts)"
 }
 
 # 3j) Druckbarkeit der Kamera-Geometrie in torso_front/torso_back (Druckausrichtung, ohne Stuetzen): neue Ueberhaenge > 45 Grad und Bruecken > 15 mm (tools\overhang.ps1).

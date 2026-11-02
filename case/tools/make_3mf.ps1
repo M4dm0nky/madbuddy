@@ -20,7 +20,7 @@ $single = @(
   @('head_back', 'head_back'), @('ear_r', 'ear'), @('ear_l', 'ear'), @('deco', 'deco'),
   @('torso_front', 'torso_front'), @('torso_back', 'torso_back'), @('neck', 'neck'),
   @('arm_r', 'arm'), @('arm_l', 'arm_l'), @('hand_r', 'hand'), @('hand_l', 'hand'),
-  @('seat', 'seat'), @('bottom', 'bottom'), @('foot_r', 'foot'), @('foot_l', 'foot'), @('cam_clip', 'cam_clip')
+  @('seat', 'seat'), @('bottom', 'bottom'), @('foot_r', 'foot'), @('foot_l', 'foot'), @('cam_test', 'cam_test')
 ) | ForEach-Object { "{0}={1}" -f $_[0], (S $_[1]) }
 
 function Build([string]$out, [string[]]$specs, [int]$expItems, [int]$expComp) {
@@ -42,12 +42,12 @@ function Build([string]$out, [string[]]$specs, [int]$expItems, [int]$expComp) {
   else { Ok "$name : $len Byte, $items Bauobjekte, $comp Bauteile in Gruppen" }
 }
 
-foreach ($f in @('head_front', 'bezel', 'head_back', 'ear', 'deco', 'torso_front', 'torso_back', 'neck', 'arm', 'arm_l', 'hand', 'seat', 'bottom', 'foot', 'cam_clip', 'head_front_ams', 'bezel_inlay', 'screws_inlay')) {
+foreach ($f in @('head_front', 'bezel', 'head_back', 'ear', 'deco', 'torso_front', 'torso_back', 'neck', 'arm', 'arm_l', 'hand', 'seat', 'bottom', 'foot', 'cam_test', 'head_front_ams', 'bezel_inlay', 'screws_inlay')) {
   if (-not (Test-Path (S $f))) { Bad "3MF: Eingabe fehlt: $(S $f)" }
 }
 if ($fails -gt 0) { exit 1 }
 
-# 1) Alle Einzelteile nebeneinander (head_front, bezel, head_back ... je getrennt; Ohr/Arm/Hand/Fuss 2x, Kamera-Riegel 1x, Arm gespiegelt): 18 Objekte, keine Gruppen
+# 1) Alle Einzelteile nebeneinander (head_front, bezel, head_back ... je getrennt; Ohr/Arm/Hand/Fuss 2x, Kamera-Testteil 1x, Arm gespiegelt): 18 Objekte, keine Gruppen
 Build (Join-Path $OutDir 'roboter_teile.3mf') (@("head_front=$(S 'head_front')", "bezel=$(S 'bezel')") + $single) 18 0
 # 2) AMS: Gruppe Kopf (Kopfschale + Blende + 4 Zierschrauben als Bauteile) und die uebrigen 16 Teile einzeln
 $ams = @('--group', 'kopf', "head_front=$(S 'head_front_ams')", "bezel=$(S 'bezel_inlay')", "screws=$(S 'screws_inlay')", '--end') + $single
