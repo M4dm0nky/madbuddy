@@ -1,9 +1,10 @@
 #pragma once
 #include <stdint.h>
+#include "cam_xiao.h"
 
 // Bewegungserkennung der XIAO-Firmware (cam/): grobes Helligkeitsraster, Vergleich mit dem vorigen Bild.
 // Ohne Arduino-/IDF-Includes, Host-Test test/test_motion.
-constexpr int MOT_W = 30, MOT_H = 40;          // Raster (Breite x Höhe) für ein aufrechtes 240x320-Bild, je Zelle 8x8 Pixel
+constexpr int MOT_W = 30, MOT_H = 40;          // Raster (Breite x Höhe) für ein aufrechtes Hochformatbild; Zellgröße hängt vom Bild ab: 8x8 Pixel bei 240x320, 5x6 bei 176x240
 constexpr int MOT_CELLS = MOT_W * MOT_H;
 constexpr int MOT_DELTA = 18;                  // Helligkeitsänderung (0..255), ab der eine Zelle als bewegt gilt
 constexpr int MOT_MIN_CELLS = 6;               // so viele bewegte Zellen mindestens
@@ -26,6 +27,41 @@ static inline void motion_grid(const uint8_t *px, int w, int h, uint8_t *grid) {
       for (int dy = 0; dy < 2; dy++) {
         for (int dx = 0; dx < 2; dx++) {
           const uint8_t *p = px + 2 * ((long)(y0 + dy) * w + (x0 + dx));
+          const int v = (p[0] << 8) | p[1];
+          const int r = ((v >> 11) & 31) << 3, g = ((v >> 5) & 63) << 2, b = (v & 31) << 3;
+          sum += (r * 77 + g * 150 + b * 29) >> 8;
+        }
+      }
+      grid[gy * MOT_W + gx] = (uint8_t)(sum / 4);
+    }
+  }
+}
+
+// Wie motion_grid auf dem um rot (0/90/180/270, im Uhrzeigersinn) gedrehten Bild, liest die 2x2 Punkte aber direkt aus dem
+// ungedrehten Bild raw (rw x rh), ohne es zu drehen. Quellkoordinaten wie in cam_rotate_px2.
+static inline void motion_grid_rot(const uint8_t *raw, int rw, int rh, int rot_cw, uint8_t *grid) {
+  int w, h;
+  cam_rot_dims(rw, rh, rot_cw, &w, &h);
+  const int cw = w / MOT_W, ch = h / MOT_H;
+  for (int gy = 0; gy < MOT_H; gy++) {
+    for (int gx = 0; gx < MOT_W; gx++) {
+      int x0 = gx * cw + cw / 2 - 1, y0 = gy * ch + ch / 2 - 1;
+      if (x0 < 0) x0 = 0;
+      if (y0 < 0) y0 = 0;
+      if (x0 > w - 2) x0 = w - 2;
+      if (y0 > h - 2) y0 = h - 2;
+      int sum = 0;
+      for (int dy = 0; dy < 2; dy++) {
+        for (int dx = 0; dx < 2; dx++) {
+          const int x = x0 + dx, y = y0 + dy;   // Koordinate im gedrehten Bild
+          int sx, sy;
+          switch (rot_cw) {
+            case 90:  sx = y;         sy = rh - 1 - x; break;
+            case 180: sx = rw - 1 - x; sy = rh - 1 - y; break;
+            case 270: sx = rw - 1 - y; sy = x;          break;
+            default:  sx = x;         sy = y;          break;
+          }
+          const uint8_t *p = raw + 2 * ((long)sy * rw + sx);
           const int v = (p[0] << 8) | p[1];
           const int r = ((v >> 11) & 31) << 3, g = ((v >> 5) & 63) << 2, b = (v & 31) << 3;
           sum += (r * 77 + g * 150 + b * 29) >> 8;

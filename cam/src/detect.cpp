@@ -17,16 +17,14 @@ bool detect_init() {
   return g_det != nullptr;
 }
 
-bool detect_face(camera_fb_t *fb, CamFace *out, uint32_t *infer_ms) {
+bool detect_face(const uint8_t *px, int w, int h, CamFace *out, uint32_t *infer_ms) {
   if (!g_det) return false;  // detect_init() fehlgeschlagen
-  const uint32_t t0 = millis();
   dl::image::img_t img = {};
-  int w, h;
-  const uint8_t *px = camera_rotated(fb, &w, &h);   // aufrechtes Bild (Einbaulage)
   img.data = (void *)px;
   img.width = w;
   img.height = h;
   img.pix_type = dl::image::DL_IMAGE_PIX_TYPE_RGB565BE;   // esp32-camera liefert RGB565 big-endian
+  const uint32_t t0 = millis();
   std::list<dl::detect::result_t> &res = g_det->run(img);
   *infer_ms = millis() - t0;
   bool found = false;

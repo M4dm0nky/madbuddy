@@ -2,6 +2,14 @@
 
 Neueste Einträge oben. Format und Regeln: `docs/superpowers/plans/2026-10-25-cyd-buddy.md`, Abschnitt „Fortschritts-Protokoll“.
 
+## Kamera schneller (0.1.5) – ERLEDIGT (Stand 2026-11-03 abends)
+- Zeit: 2026-11-03 (Opus plant und prüft, Sonnet/Haiku setzen um), Branch `feature/kamera-schneller`, Releases `v20261103-2019` (CYD + Kamera 0.1.4) und `v20261103-2036` (Kamera 0.1.5). Spec `docs/superpowers/specs/2026-11-03-kamera-schneller-design.md`, Plan `docs/superpowers/plans/2026-11-03-kamera-schneller.md`.
+- Ursache der ~3 Bilder/s: XIAO lief mit 160 MHz, `-Og` (Debug), PSRAM 40 MHz; dazu wurde das Bild zweimal und byteweise gedreht.
+- Gemacht: `sdkconfig.defaults` 240 MHz, `-O2` (PERF), PSRAM 80 MHz, Datencache 64 KB/64 B; `cam_rotate_px2` in 16×16-Kacheln (bitgleich zur alten, Host-Test); `motion_grid_rot` liest das Bewegungsraster direkt aus dem ungedrehten Bild; Kamerabild `FRAMESIZE_HQVGA` (240×176); `CAM_DETECT_EVERY` (0.1.4: 2, 0.1.5: 1); Messzeile `S fps dps rot det` XIAO → CYD, in der `cam:`-Zeile am CYD-USB.
+- Gemessen am Gerät: vorher ~3 Bilder/s. 0.1.4: 10 Bilder/s, 5 Erkennungen/s. 0.1.5: **7 Bilder/s = 7 Erkennungen/s**, Erkennung 135 ms, Drehung 10 ms. Gesichtsbreite normal ~176–215, Höhe ~245–290 (Eichwerte `CAM_GAZE_Y0 300`, `CAM_NEAR_W 350` unverändert).
+- Prüfung: `pio test -e native` 240/240, `node --test` 12/12, Builds CYD 77,4 %, Kamera 86,2 % des Slots.
+- Offen: Blick am Gerät bei Gelegenheit ansehen (Nutzer konnte noch nichts sagen); Rest aus dem Review unten (Snap-Puffer, `send_heart` beim Snap, `write_timeout`).
+
 ## Kamera im Roboter eingerichtet – ERLEDIGT (Stand 2026-11-03 abends)
 - Zeit: 2026-11-03 (Opus mit Nutzer, Sonnet setzt um), Branch `feature/kamera-einrichtung`, letztes Release `v20261103-1747` (CYD) mit Kamera **0.1.3**.
 - Ursachen, warum die Kamera nie ein Gesicht meldete (alle am Gerät belegt):

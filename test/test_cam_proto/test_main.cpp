@@ -299,8 +299,64 @@ void test_rotate_px2() {
   cam_rotate_px2(s, 3, 2, d, 270); rot_expect(d, e270, 6);
 }
 
+// Referenz: die bisherige Drehung (Pixel für Pixel mit switch)
+static void ref_rotate_px2(const uint8_t *src, int w, int h, uint8_t *dst, int rot_cw) {
+  int ow, oh;
+  cam_rot_dims(w, h, rot_cw, &ow, &oh);
+  for (int y = 0; y < oh; y++) {
+    for (int x = 0; x < ow; x++) {
+      int sx, sy;
+      switch (rot_cw) {
+        case 90:  sx = y;         sy = h - 1 - x; break;
+        case 180: sx = w - 1 - x; sy = h - 1 - y; break;
+        case 270: sx = w - 1 - y; sy = x;         break;
+        default:  sx = x;         sy = y;         break;
+      }
+      const uint8_t *p = src + 2 * ((long)sy * w + sx);
+      uint8_t *q = dst + 2 * ((long)y * ow + x);
+      q[0] = p[0]; q[1] = p[1];
+    }
+  }
+}
+void test_rotate_px2_matches_reference() {
+  static uint16_t sbuf[320 * 240], rbuf[320 * 240], dbuf[320 * 240];   // uint16_t: 2-Byte-ausgerichtet wie die Kamerapuffer
+  const int sizes[][2] = {{320, 240}, {240, 176}, {37, 23}, {1, 1}, {16, 16}, {17, 33}};
+  const int rots[] = {0, 90, 180, 270, 45};   // 45 = ungültig = Kopie
+  uint32_t s = 987654321u;
+  for (const auto &sz : sizes) {
+    const int w = sz[0], h = sz[1];
+    for (int i = 0; i < w * h; i++) { s = s * 1664525u + 1013904223u; sbuf[i] = (uint16_t)(s >> 16); }
+    for (int rot : rots) {
+      memset(rbuf, 0xA5, sizeof rbuf); memset(dbuf, 0xA5, sizeof dbuf);
+      ref_rotate_px2((const uint8_t *)sbuf, w, h, (uint8_t *)rbuf, rot);
+      cam_rotate_px2((const uint8_t *)sbuf, w, h, (uint8_t *)dbuf, rot);
+      char msg[40]; snprintf(msg, sizeof msg, "%dx%d rot %d", w, h, rot);
+      TEST_ASSERT_EQUAL_MEMORY_MESSAGE(rbuf, dbuf, sizeof rbuf, msg);   // auch hinter dem Bildende unverändert
+    }
+  }
+}
+void test_stats_roundtrip_and_strict() {
+  char b[64];
+  CamMsg m;
+  size_t n = cam_build_stats(25, 12, 3, 80, b, sizeof b);
+  TEST_ASSERT_EQUAL_STRING("S 25 12 3 80", (snprintf(g_buf, sizeof g_buf, "%.*s", (int)(n - 4), b), g_buf));
+  TEST_ASSERT_TRUE(cam_parse(b, n - 1, &m));
+  TEST_ASSERT_EQUAL(CAM_STATS, m.kind);
+  TEST_ASSERT_EQUAL(25, m.fps); TEST_ASSERT_EQUAL(12, m.dps); TEST_ASSERT_EQUAL(3, m.rot_ms); TEST_ASSERT_EQUAL(80, m.det_ms);
+  TEST_ASSERT_TRUE(parse_str(seal("S 0 9999 0 9999"), &m));
+  TEST_ASSERT_EQUAL(9999, m.dps);
+  const char *bad[] = {"S 1 2 3", "S 1 2 3 4 5", "S -1 0 0 0", "S 10000 0 0 0", "S 0 0 0 10000", "S  1 2 3 4", "S 1a 2 3 4", "S"};
+  for (const char *s : bad) TEST_ASSERT_FALSE_MESSAGE(parse_str(seal(s), &m), s);
+  // falsche Prüfsumme
+  n = cam_build_stats(1, 2, 3, 4, b, sizeof b);
+  b[n - 3] = (b[n - 3] == '0') ? '1' : '0';
+  TEST_ASSERT_FALSE(cam_parse(b, n - 1, &m));
+}
+
 int main(int, char **) {
   UNITY_BEGIN();
+  RUN_TEST(test_rotate_px2_matches_reference);
+  RUN_TEST(test_stats_roundtrip_and_strict);
   RUN_TEST(test_rotate_px2);
   RUN_TEST(test_snap_cmd);
   RUN_TEST(test_xor_known);

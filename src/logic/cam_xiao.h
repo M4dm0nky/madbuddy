@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include <string.h>
 
 // Reine Logik der XIAO-Firmware (cam/): Gesichtsbox -> Protokollwerte, Entscheidung im Probelauf nach einem Update.
 // Ohne Arduino-/IDF-Includes, Host-Test test/test_cam_proto.
@@ -27,24 +28,36 @@ static inline void cam_rot_dims(int w, int h, int rot, int *ow, int *oh) {
   *oh = sw ? w : h;
 }
 
+// Eine Drehrichtung in 16x16-Kacheln (cache-freundlich, kein switch im Innern). R = Winkel im Uhrzeigersinn.
+// Jedes Pixel (2 Byte) wird per memcpy kopiert, der Compiler macht daraus einen 16-Bit-Zugriff.
+template <int R>
+static inline void cam_rotate_tiles(const uint8_t *src, int w, int h, uint8_t *dst, int ow, int oh) {
+  for (int ty = 0; ty < oh; ty += 16) {
+    const int ye = ty + 16 < oh ? ty + 16 : oh;
+    for (int tx = 0; tx < ow; tx += 16) {
+      const int xe = tx + 16 < ow ? tx + 16 : ow;
+      for (int y = ty; y < ye; y++) {
+        uint8_t *q = dst + 2 * ((long)y * ow + tx);
+        for (int x = tx; x < xe; x++, q += 2) {
+          const int sx = R == 90 ? y : R == 180 ? w - 1 - x : w - 1 - y;
+          const int sy = R == 90 ? h - 1 - x : R == 180 ? h - 1 - y : x;
+          memcpy(q, src + 2 * ((long)sy * w + sx), 2);
+        }
+      }
+    }
+  }
+}
+
 // Dreht ein Bild mit 2 Byte je Pixel (Bytes bleiben unverändert, RGB565-BE-Reihenfolge bleibt) im Uhrzeigersinn.
 // dst darf nicht auf src zeigen. 90°: linke Quellspalte wird oberste Zeile. Ungültiger Winkel = Kopie.
 static inline void cam_rotate_px2(const uint8_t *src, int w, int h, uint8_t *dst, int rot_cw) {
   int ow, oh;
   cam_rot_dims(w, h, rot_cw, &ow, &oh);
-  for (int y = 0; y < oh; y++) {
-    for (int x = 0; x < ow; x++) {
-      int sx, sy;
-      switch (rot_cw) {
-        case 90:  sx = y;         sy = h - 1 - x; break;
-        case 180: sx = w - 1 - x; sy = h - 1 - y; break;
-        case 270: sx = w - 1 - y; sy = x;         break;
-        default:  sx = x;         sy = y;         break;
-      }
-      const uint8_t *p = src + 2 * ((long)sy * w + sx);
-      uint8_t *q = dst + 2 * ((long)y * ow + x);
-      q[0] = p[0]; q[1] = p[1];
-    }
+  switch (rot_cw) {
+    case 90:  cam_rotate_tiles<90>(src, w, h, dst, ow, oh); break;
+    case 180: cam_rotate_tiles<180>(src, w, h, dst, ow, oh); break;
+    case 270: cam_rotate_tiles<270>(src, w, h, dst, ow, oh); break;
+    default:  memcpy(dst, src, 2 * (size_t)w * (size_t)h); break;
   }
 }
 

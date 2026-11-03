@@ -1,5 +1,6 @@
 #include <unity.h>
 #include <string.h>
+#include <stdio.h>
 #include "logic/motion.h"
 void setUp() {}
 void tearDown() {}
@@ -81,11 +82,49 @@ void test_below_threshold_is_nothing() {
   TEST_ASSERT_FALSE(motion_compare(a, b).found);
 }
 
+// Referenz: die bisherige Drehung (Bild für Bild mit switch), nur für den Vergleich
+static void ref_rotate(const uint8_t *src, int w, int h, uint8_t *dst, int rot) {
+  int ow, oh;
+  cam_rot_dims(w, h, rot, &ow, &oh);
+  for (int y = 0; y < oh; y++) for (int x = 0; x < ow; x++) {
+    int sx, sy;
+    switch (rot) {
+      case 90:  sx = y;         sy = h - 1 - x; break;
+      case 180: sx = w - 1 - x; sy = h - 1 - y; break;
+      case 270: sx = w - 1 - y; sy = x;         break;
+      default:  sx = x;         sy = y;         break;
+    }
+    memcpy(dst + 2 * ((long)y * ow + x), src + 2 * ((long)sy * w + sx), 2);
+  }
+}
+
+void test_grid_rot_equals_rotate_then_grid() {
+  static uint8_t raw[320 * 240 * 2], rotd[320 * 240 * 2];
+  const int sizes[2][2] = {{320, 240}, {240, 176}};
+  const int rots[4] = {0, 90, 180, 270};
+  uint32_t s = 12345;
+  for (const auto &sz : sizes) {
+    const int rw = sz[0], rh = sz[1];
+    for (int i = 0; i < rw * rh * 2; i++) { s = s * 1664525u + 1013904223u; raw[i] = (uint8_t)(s >> 24); }
+    for (int rot : rots) {
+      int ow, oh;
+      cam_rot_dims(rw, rh, rot, &ow, &oh);
+      ref_rotate(raw, rw, rh, rotd, rot);
+      uint8_t a[MOT_CELLS], b[MOT_CELLS];
+      motion_grid(rotd, ow, oh, a);
+      motion_grid_rot(raw, rw, rh, rot, b);
+      char msg[40]; snprintf(msg, sizeof msg, "%dx%d rot %d", rw, rh, rot);
+      TEST_ASSERT_EQUAL_UINT8_ARRAY_MESSAGE(a, b, MOT_CELLS, msg);
+    }
+  }
+}
+
 int main(int, char **) {
   UNITY_BEGIN();
   RUN_TEST(test_grid_brightness);
   RUN_TEST(test_moved_blob_centroid);
   RUN_TEST(test_whole_image_change_is_no_motion);
   RUN_TEST(test_below_threshold_is_nothing);
+  RUN_TEST(test_grid_rot_equals_rotate_then_grid);
   return UNITY_END();
 }

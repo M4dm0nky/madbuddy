@@ -20,7 +20,7 @@ bool camera_start() {
   c.xclk_freq_hz = 20000000;
   c.ledc_timer = LEDC_TIMER_0; c.ledc_channel = LEDC_CHANNEL_0;
   c.pixel_format = PIXFORMAT_RGB565;
-  c.frame_size = FRAMESIZE_QVGA;
+  c.frame_size = CAM_FRAME_SIZE;
   c.fb_count = 2;
   c.fb_location = CAMERA_FB_IN_PSRAM;
   c.grab_mode = CAMERA_GRAB_LATEST;

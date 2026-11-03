@@ -27,10 +27,18 @@
 #define CAM_ROTATE_CW 90   // Einbaulage im Roboter: Bild im Uhrzeigersinn drehen (0/90/180/270)
 
 #ifndef CAM_FW_VERSION
-#define CAM_FW_VERSION "0.1.3"   // Phase C setzt die Version beim Release
+#define CAM_FW_VERSION "0.1.5"   // Phase C setzt die Version beim Release
 #endif
 
 // Gesichtsmodell: 0 = MSR + MNP (bisher), 1 = espdet_pico_224_224_face (muss im Flash liegen, siehe sdkconfig.defaults)
 #ifndef CAM_FACE_MODEL
 #define CAM_FACE_MODEL 1
+#endif
+
+// Aufloesung der Kamera (HQVGA 240x176 ist schneller als QVGA 320x240) und Erkennung nur jedes n-te Bild (Bewegung jedes Bild)
+#ifndef CAM_FRAME_SIZE
+#define CAM_FRAME_SIZE FRAMESIZE_HQVGA
+#endif
+#ifndef CAM_DETECT_EVERY
+#define CAM_DETECT_EVERY 1   // 0.1.4 gemessen: mit 2 nur 5 statt ~7 Erkennungen/s, Bewegung braucht keine Extrabilder
 #endif
