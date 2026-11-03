@@ -334,9 +334,11 @@ static uint32_t s_cam_log_t = 0;
 static void cam_log_tick(uint32_t now) {
   if (!due_since(now, s_cam_log_t, 1000)) return;
   s_cam_log_t = now;
-  if (!s_persist.cam_on || cam_uart_snap_active(now)) return;   // während des Schnappschusses keine Textzeilen zwischen den J-Zeilen
-  Serial.printf("cam: conn=%d F=%u N=%u H=%u last=%d,%d,%d\n", (int)cam_link_conn(cam_uart_link(), now, true),
-                s_cam_nf, s_cam_nn, s_cam_nh, s_cam_last.x, s_cam_last.y, s_cam_last.w);
+  if (cam_uart_snap_active(now)) return;   // während des Schnappschusses keine Textzeilen zwischen den J-Zeilen
+  const CamLink &l = cam_uart_link();
+  Serial.printf("cam: user=%d conn=%d xiao=%s %s F=%u N=%u H=%u last=%d,%d,%d\n", s_persist.cam_on ? 1 : 0,
+                (int)cam_link_conn(l, now, true), l.version, cam_state_name(l.state), s_cam_nf, s_cam_nn, s_cam_nh,
+                s_cam_last.x, s_cam_last.y, s_cam_last.w);
   s_cam_nf = s_cam_nn = s_cam_nh = 0;
 }
 

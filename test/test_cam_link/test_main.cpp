@@ -82,7 +82,7 @@ void test_update_watchdog() {
   TEST_ASSERT_FALSE(cam_link_upd_timed_out(l, 19999));
   TEST_ASSERT_TRUE(cam_link_upd_timed_out(l, 20000));
   cam_link_upd_start(l, 0);
-  feed_line(l, "U 40", 15000, &m);                     // jede U- oder H-Zeile stößt den Watchdog an
+  feed_line(l, "U 40", 15000, &m);                     // jede U-Zeile (und H mit Kamera aus) stößt den Watchdog an
   TEST_ASSERT_FALSE(cam_link_upd_timed_out(l, 34999));
   TEST_ASSERT_TRUE(cam_link_upd_timed_out(l, 35000));
   feed_line(l, "U ok", 35001, &m);                     // Ergebnis beendet die Überwachung
@@ -93,6 +93,19 @@ void test_update_watchdog() {
   TEST_ASSERT_FALSE(cam_link_upd_timed_out(l, 90000));
 }
 
+// Nimmt der XIAO den U-Befehl nicht an, sucht er weiter Gesichter und meldet "on": das darf den Watchdog nicht anstoßen.
+void test_update_watchdog_ignores_running_camera() {
+  CamLink l;
+  CamMsg m;
+  cam_link_upd_start(l, 0);
+  feed_line(l, "H 0.1.0 on", 10000, &m);
+  feed_line(l, "N", 15000, &m);
+  TEST_ASSERT_TRUE(cam_link_upd_timed_out(l, 20000));
+  cam_link_upd_start(l, 0);
+  feed_line(l, "H 0.1.0 off", 15000, &m);              // echtes Update: Kamera aus, H stößt an
+  TEST_ASSERT_FALSE(cam_link_upd_timed_out(l, 20000));
+}
+
 int main(int, char **) {
   UNITY_BEGIN();
   RUN_TEST(test_line_across_chunks);
@@ -101,5 +114,6 @@ int main(int, char **) {
   RUN_TEST(test_conn_states);
   RUN_TEST(test_restart_detect);
   RUN_TEST(test_update_watchdog);
+  RUN_TEST(test_update_watchdog_ignores_running_camera);
   return UNITY_END();
 }

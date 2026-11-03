@@ -39,7 +39,8 @@ static inline bool cam_link_feed(CamLink &l, char c, uint32_t now, CamMsg *out) 
   }
   if (l.upd) {
     if (out->kind == CAM_UPD_OK || out->kind == CAM_UPD_ERR) l.upd = false;
-    else if (out->kind == CAM_UPD_PCT || out->kind == CAM_HEART) l.upd_ms = now;
+    // H nur mit Kamera aus: läuft sie weiter, hat der XIAO den Befehl nicht angenommen, und der Watchdog soll greifen
+    else if (out->kind == CAM_UPD_PCT || (out->kind == CAM_HEART && out->state != CAM_ST_ON)) l.upd_ms = now;
   }
   return true;
 }
