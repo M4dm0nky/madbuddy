@@ -2,6 +2,7 @@
 #include <Arduino.h>
 #include "../config.h"
 #include "../logic/deadline.h"
+#include "../logic/cam_snapbuf.h"
 
 static CamLink s_link;
 static void (*s_cb)(const CamMsg &, uint32_t) = nullptr;
@@ -15,31 +16,32 @@ static Deadline s_snap;   // Durchleitung der J-Zeilen an USB
 // USB läuft mit derselben Baudrate wie die Kamera: Byte für Byte durchgereicht staut jede Zeichenpause auf und
 // Zeilen gehen verloren. Darum das ganze Bild sammeln und nach "J E"/"J X" (oder Zeitablauf) in einem Stück ausgeben.
 static constexpr size_t kSnapCap = 24576;
-static char *s_sbuf = nullptr;
-static size_t s_slen = 0, s_sline = 0;   // Füllstand, Beginn der aktuellen Zeile
+static SnapBuf s_sb{nullptr, kSnapCap};
+
+// Fehlerzeile mit Prüfsumme, sonst verwirft tools/cam-snap.py sie als fehlerhaft
+static void snap_error(const char *content) {
+  char b[48];
+  const size_t n = cam_seal(content, b, sizeof b);
+  if (n) Serial.write((const uint8_t *)b, n);
+}
 
 static void snap_flush() {
-  if (!s_sbuf) return;
-  Serial.write((const uint8_t *)s_sbuf, s_slen);
-  free(s_sbuf);
-  s_sbuf = nullptr;
-  s_slen = s_sline = 0;
+  if (!s_sb.buf) return;
+  Serial.write((const uint8_t *)s_sb.buf, s_sb.len);
+  free(s_sb.buf);
+  s_sb = SnapBuf{nullptr, kSnapCap};
   s_snap.clear();
 }
 
 void cam_uart_poll(uint32_t now) {
   const bool pass = s_snap.active(now);
-  if (!pass && s_sbuf) snap_flush();   // Zeit abgelaufen: ausgeben, was da ist
+  if (!pass && s_sb.buf) snap_flush();   // Zeit abgelaufen: ausgeben, was da ist
   for (int i = 0; i < 1024 && Serial2.available(); i++) {
     const char ch = (char)Serial2.read();
-    if (pass && s_sbuf && s_slen < kSnapCap) {
-      s_sbuf[s_slen++] = ch;
-      if (ch == '\n') {
-        const char *l = s_sbuf + s_sline;
-        const bool end = s_slen - s_sline >= 3 && l[0] == 'J' && l[1] == ' ' && (l[2] == 'E' || l[2] == 'X');
-        s_sline = s_slen;
-        if (end) snap_flush();
-      }
+    if (pass && s_sb.buf) {
+      const SnapStep st = snap_feed(s_sb, ch);
+      if (st == SnapStep::END) snap_flush();
+      else if (st == SnapStep::FULL) { snap_flush(); snap_error("J X cyd_puffer_voll"); }
     }
     CamMsg m;
     if (cam_link_feed(s_link, ch, now, &m) && s_cb) s_cb(m, now);
@@ -47,10 +49,9 @@ void cam_uart_poll(uint32_t now) {
 }
 
 void cam_uart_snap(uint32_t now) {
-  if (s_sbuf) return;   // läuft schon
-  s_sbuf = (char *)malloc(kSnapCap);
-  if (!s_sbuf) { Serial.println("J X cyd_kein_speicher"); return; }
-  s_slen = s_sline = 0;
+  if (s_sb.buf) return;   // läuft schon
+  s_sb = SnapBuf{(char *)malloc(kSnapCap), kSnapCap};
+  if (!s_sb.buf) { snap_error("J X cyd_kein_speicher"); return; }
   s_snap.arm(now, 8000);
   char line[16];
   const size_t n = cam_build_snap_cmd(line, sizeof line);
