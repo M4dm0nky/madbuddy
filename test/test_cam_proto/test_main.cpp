@@ -2,6 +2,7 @@
 #include <string.h>
 #include "logic/cam_proto.h"
 #include "logic/cam_xiao.h"
+#include "logic/cam_snapbuf.h"
 void setUp() {}
 void tearDown() {}
 
@@ -353,8 +354,36 @@ void test_stats_roundtrip_and_strict() {
   TEST_ASSERT_FALSE(cam_parse(b, n - 1, &m));
 }
 
+static SnapStep feed_str(SnapBuf &s, const char *t) {
+  SnapStep r = SnapStep::MORE;
+  for (; *t; t++) if ((r = snap_feed(s, *t)) != SnapStep::MORE) return r;
+  return r;
+}
+
+static void test_snapbuf_end_lines() {
+  char mem[64];
+  SnapBuf s{mem, sizeof mem};
+  TEST_ASSERT_EQUAL(SnapStep::MORE, (int)feed_str(s, "H 0.1.5 run*00\nJ B 5*00\n"));
+  TEST_ASSERT_EQUAL(SnapStep::END, (int)feed_str(s, "J E*00\n"));
+  SnapBuf x{mem, sizeof mem};
+  TEST_ASSERT_EQUAL(SnapStep::END, (int)feed_str(x, "J X cam_off*00\n"));
+  SnapBuf d{mem, sizeof mem};   // "J D" ist kein Ende
+  TEST_ASSERT_EQUAL(SnapStep::MORE, (int)feed_str(d, "J D 0 AAAA*00\nJE\n"));
+}
+
+static void test_snapbuf_full_keeps_whole_lines() {
+  char mem[16];
+  SnapBuf s{mem, sizeof mem};
+  TEST_ASSERT_EQUAL(SnapStep::MORE, (int)feed_str(s, "J B 99*00\n"));   // 10 Zeichen
+  TEST_ASSERT_EQUAL(SnapStep::FULL, (int)feed_str(s, "J D 0 AAAAAA"));   // passt nicht mehr
+  TEST_ASSERT_EQUAL(10, (int)s.len);   // halbe Zeile verworfen
+  TEST_ASSERT_EQUAL_MEMORY("J B 99*00\n", mem, 10);
+}
+
 int main(int, char **) {
   UNITY_BEGIN();
+  RUN_TEST(test_snapbuf_end_lines);
+  RUN_TEST(test_snapbuf_full_keeps_whole_lines);
   RUN_TEST(test_rotate_px2_matches_reference);
   RUN_TEST(test_stats_roundtrip_and_strict);
   RUN_TEST(test_rotate_px2);

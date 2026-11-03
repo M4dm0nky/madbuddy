@@ -71,6 +71,8 @@ static void send_snapshot() {
     if (mbedtls_base64_encode((unsigned char *)c + h, sizeof c - h, &olen, jpg + off, chunk) != 0) { send_j("J X b64_fail"); free(jpg); return; }
     c[h + olen] = '\0';
     send_j(c);
+    // Ein großes Bild dauert über 2 s: Lebenszeichen nicht ausfallen lassen (cam-snap.py überliest Nicht-J-Zeilen)
+    if (millis() - g_last_heart >= CAM_HEART_MS) { g_last_heart = millis(); send_heart(); }
   }
   free(jpg);
   send_j("J E");

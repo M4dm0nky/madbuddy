@@ -89,6 +89,7 @@ def main():
     s.port = a.port
     s.baudrate = 115200
     s.timeout = 0.5
+    s.write_timeout = 2   # hängt der Port, nicht ewig im write() warten
     s.dtr = False   # kein Reset des Geraets beim Oeffnen
     s.rts = False
     s.open()
