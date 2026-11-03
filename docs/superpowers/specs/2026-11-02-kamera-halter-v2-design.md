@@ -46,3 +46,5 @@ Je Prüfung eine Gegenprobe, die anschlagen muss.
 - 3MF neu (`make_3mf.ps1`), `cam_clip` raus.
 - Einbaubilder (`render_guide.ps1`), Anleitung MD/HTML/PDF und beide READMEs nachziehen.
 - Druck testet der Nutzer: zuerst nur den Bereich um die Tasche (Testausschnitt `cam_test`, ca. 15 min).
+
+> **Nachtrag 2026-11-03:** In Lieferlage ist das Kamerabild um **90°** gedreht (nicht 180°) und seitenverkehrt. Die Firmware dreht per Software (`CAM_ROTATE_CW`). Bei künftigen Haltern die Bildlage gleich mitplanen.
