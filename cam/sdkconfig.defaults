@@ -13,4 +13,7 @@ CONFIG_MBEDTLS_PSK_MODES=y
 CONFIG_MBEDTLS_KEY_EXCHANGE_PSK=y
 # Version im App-Deskriptor: muss CAM_FW_VERSION in src/cam_config.h entsprechen (ota-publish prüft das und liest sie ins Manifest)
 CONFIG_APP_PROJECT_VER_FROM_CONFIG=y
-CONFIG_APP_PROJECT_VER="0.1.0"
+CONFIG_APP_PROJECT_VER="0.1.3"
+# Gesichtsmodell espdet_pico_224 (CAM_FACE_MODEL 1 in cam_config.h) zusätzlich zu MSR+MNP ins Flash; Vorgabe ist das Pico-Modell.
+CONFIG_FLASH_ESPDET_PICO_224_224_FACE=y
+CONFIG_ESPDET_PICO_224_224_FACE=y

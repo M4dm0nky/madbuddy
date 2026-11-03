@@ -1,5 +1,5 @@
-﻿# Rendert die Bilder der Einbauanleitung "Kamera + XIAO in den Oberkoerper" (Teile guide_1_pocket ... guide_5_close)
-# nach case\render\einbau_kamera_1.png ... _5.png. -Only <n> rendert nur ein Bild. Abbruch (Exit 1) bei OpenSCAD-Fehler oder WARNING.
+﻿# Rendert die Bilder der Einbauanleitung "Kamera + XIAO in den Oberkoerper" (Teile guide_1_pocket ... guide_4_close)
+# nach case\render\einbau_kamera_1.png ... _4.png. -Only <n> rendert nur ein Bild. Abbruch (Exit 1) bei OpenSCAD-Fehler oder WARNING.
 param([int]$Only = 0)
 $ErrorActionPreference = 'Stop'
 $case   = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
@@ -12,13 +12,12 @@ New-Item -ItemType Directory -Force $pngDir | Out-Null
 # --camera = Gimbal: Zielpunkt x,y,z, rx,ry,rz, Abstand. rz=180: Blick von hinten (+Y) nach vorn, rx: Neigung von oben.
 $views = @{
   1 = @{ part = 'guide_1_pocket'; cam = '0,0,-3,70,0,160,130' }
-  2 = @{ part = 'guide_2_cam';    cam = '0,0,-3,70,0,160,130' }
-  3 = @{ part = 'guide_3_clip';   cam = '0,0,-3,70,0,160,130' }
-  4 = @{ part = 'guide_4_stack';  cam = '0,0,-3,70,0,160,130' }
-  5 = @{ part = 'guide_5_close';  cam = '0,25,0,62,0,125,300' }
+  2 = @{ part = 'guide_2_block';    cam = '0,0,-3,70,0,160,130' }
+  3 = @{ part = 'guide_3_seated';   cam = '0,0,-3,70,0,160,130' }
+  4 = @{ part = 'guide_4_close';  cam = '0,25,0,62,0,125,300' }
 }
 $fails = 0
-foreach ($n in 1..5) {
+foreach ($n in 1..4) {
   if ($Only -ne 0 -and $Only -ne $n) { continue }
   $v = $views[$n]
   $png = Join-Path $pngDir ("einbau_kamera_{0}.png" -f $n)

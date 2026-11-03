@@ -9,12 +9,13 @@
 // Zeile: <inhalt>*<xx>\n, xx = XOR über <inhalt> als zwei Hexziffern (gesendet groß, gelesen beides).
 constexpr size_t CAM_LINE_MAX = 400;   // ohne '\n'; die U-Zeile (URL, SHA, SSID, Passwort) braucht mehr als 200
 
-enum CamKind : uint8_t { CAM_NONE = 0, CAM_FACE, CAM_NOFACE, CAM_HEART, CAM_CTRL, CAM_UPD_CMD, CAM_UPD_PCT, CAM_UPD_OK, CAM_UPD_ERR };
+enum CamKind : uint8_t { CAM_NONE = 0, CAM_FACE, CAM_NOFACE, CAM_HEART, CAM_CTRL, CAM_UPD_CMD, CAM_UPD_PCT, CAM_UPD_OK, CAM_UPD_ERR, CAM_SNAP_CMD, CAM_MOTION };
 enum CamState : uint8_t { CAM_ST_ON = 0, CAM_ST_OFF, CAM_ST_ERR };
 
 struct CamMsg {
   CamKind kind = CAM_NONE;
   int16_t x = 0, y = 0, w = 0;     // FACE, je 0..1000
+  int16_t n = 0;                   // MOTION: Zahl bewegter Zellen 0..9999 (x, y = Schwerpunkt 0..1000)
   char version[16] = "";           // HEART
   CamState state = CAM_ST_OFF;     // HEART
   bool on = false;                 // CTRL
@@ -48,12 +49,19 @@ static inline size_t cam_seal(const char *content, char *out, size_t cap) {
 static inline size_t cam_build_face(int x, int y, int w, char *out, size_t cap) {
   char c[24]; snprintf(c, sizeof c, "F %d %d %d", x, y, w); return cam_seal(c, out, cap);
 }
+// Bewegung im aufrechten Bild: Schwerpunkt x/y 0..1000, n bewegte Zellen
+static inline size_t cam_build_motion(int x, int y, int n, char *out, size_t cap) {
+  char c[28]; snprintf(c, sizeof c, "M %d %d %d", x, y, n); return cam_seal(c, out, cap);
+}
 static inline size_t cam_build_noface(char *out, size_t cap) { return cam_seal("N", out, cap); }
 static inline const char *cam_state_name(CamState s) { return s == CAM_ST_ON ? "on" : s == CAM_ST_ERR ? "err" : "off"; }
 static inline size_t cam_build_heart(const char *version, CamState st, char *out, size_t cap) {
   char c[40]; snprintf(c, sizeof c, "H %.15s %s", version, cam_state_name(st)); return cam_seal(c, out, cap);
 }
 static inline size_t cam_build_ctrl(bool on, char *out, size_t cap) { return cam_seal(on ? "C 1" : "C 0", out, cap); }
+// Diagnose-Schnappschuss (nur auf ausdrückliche Anfrage über USB): "P" CYD -> XIAO. Die Antwort (J-Zeilen: J B <len>, J D <seq> <b64>,
+// J E bzw. J X <grund>) wird vom CYD roh an USB durchgereicht und von cam_parse nicht angenommen.
+static inline size_t cam_build_snap_cmd(char *out, size_t cap) { return cam_seal("P", out, cap); }
 static inline size_t cam_build_upd_pct(int pct, char *out, size_t cap) {
   char c[12]; snprintf(c, sizeof c, "U %d", pct); return cam_seal(c, out, cap);
 }
@@ -132,6 +140,7 @@ static inline bool cam_parse(const char *line, size_t n, CamMsg *m) {
   const char *c = line, *end = line + cn;
   *m = CamMsg();
   if (cn == 1 && c[0] == 'N') { m->kind = CAM_NOFACE; return true; }
+  if (cn == 1 && c[0] == 'P') { m->kind = CAM_SNAP_CMD; return true; }
   if (cn >= 2 && c[0] == 'U' && c[1] == '\t') return cam_parse_upd_cmd(c, cn, m);
   if (cn < 3 || c[1] != ' ') return false;
   const char *a = c + 2;
@@ -144,6 +153,16 @@ static inline bool cam_parse(const char *line, size_t n, CamMsg *m) {
       int x, y, w;
       if (!cam_num(a, s1, 1000, &x) || !cam_num(s1 + 1, s2, 1000, &y) || !cam_num(s2 + 1, end, 1000, &w)) return false;
       m->kind = CAM_FACE; m->x = (int16_t)x; m->y = (int16_t)y; m->w = (int16_t)w;
+      return true;
+    }
+    case 'M': {
+      const char *s1 = (const char *)memchr(a, ' ', end - a);
+      if (!s1) return false;
+      const char *s2 = (const char *)memchr(s1 + 1, ' ', end - s1 - 1);
+      if (!s2 || memchr(s2 + 1, ' ', end - s2 - 1)) return false;
+      int x, y, n;
+      if (!cam_num(a, s1, 1000, &x) || !cam_num(s1 + 1, s2, 1000, &y) || !cam_num(s2 + 1, end, 9999, &n)) return false;
+      m->kind = CAM_MOTION; m->x = (int16_t)x; m->y = (int16_t)y; m->n = (int16_t)n;
       return true;
     }
     case 'H': {

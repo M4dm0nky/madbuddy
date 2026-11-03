@@ -24,7 +24,13 @@
 #define CAM_HEART_MS  2000
 #define CAM_RETRY_MS  10000   // Kamera-Init nach Fehler erneut versuchen
 #define CAM_FLIP_180  0       // 1 = Bild um 180 Grad drehen (Einbaulage), wird beim Einbau festgelegt
+#define CAM_ROTATE_CW 90   // Einbaulage im Roboter: Bild im Uhrzeigersinn drehen (0/90/180/270)
 
 #ifndef CAM_FW_VERSION
-#define CAM_FW_VERSION "0.1.0"   // Phase C setzt die Version beim Release
+#define CAM_FW_VERSION "0.1.3"   // Phase C setzt die Version beim Release
+#endif
+
+// Gesichtsmodell: 0 = MSR + MNP (bisher), 1 = espdet_pico_224_224_face (muss im Flash liegen, siehe sdkconfig.defaults)
+#ifndef CAM_FACE_MODEL
+#define CAM_FACE_MODEL 1
 #endif

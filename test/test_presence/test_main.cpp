@@ -187,8 +187,96 @@ void test_gaze_mapping_and_smoothing() {
   TEST_ASSERT_FALSE(presence_tick(p, true, 2900 + PRES_GAZE_HOLD_MS, NEAR).gaze);   // ohne frisches F kein Kamerablick
 }
 
+// Nullpunkt der Höhe: Die Kamera ist nach oben gekippt, das Gesicht der sitzenden Person liegt bei y0 → geradeaus.
+void test_gaze_y_zero_point() {
+  float gx, gy;
+  presence_gaze_raw(500, 300, false, &gx, &gy, 300);
+  TEST_ASSERT_FLOAT_WITHIN(0.01f, 0, gy);
+  presence_gaze_raw(500, 500, false, &gx, &gy, 300);
+  TEST_ASSERT_TRUE(gy > 0);                              // tiefer als die Sitzhöhe → schaut nach unten
+  presence_gaze_raw(500, 300, false, &gx, &gy);          // ohne Angabe Bildmitte wie bisher
+  TEST_ASSERT_TRUE(gy < 0);
+}
+
+static CamMsg motion(int16_t x, int16_t y, int16_t n = 20) { CamMsg m; m.kind = CAM_MOTION; m.x = x; m.y = y; m.n = n; return m; }
+
+// Verstärkung: halber Weg aus der Mitte ergibt 2,5-fachen Ausschlag (bis zur Grenze).
+void test_gaze_gain() {
+  float gx, gy;
+  presence_gaze_raw(600, 500, false, &gx, &gy);
+  TEST_ASSERT_FLOAT_WITHIN(0.01f, 0.2f * PRES_GAZE_X_MAX * PRES_GAZE_GAIN, gx);   // 100/500 * 30 * 2,5 = 15
+  presence_gaze_raw(500, 560, false, &gx, &gy);
+  TEST_ASSERT_FLOAT_WITHIN(0.01f, 60 / 500.0f * PRES_GAZE_Y_MAX * PRES_GAZE_GAIN, gy);
+  presence_gaze_raw(900, 500, false, &gx, &gy);
+  TEST_ASSERT_FLOAT_WITHIN(0.01f, PRES_GAZE_X_MAX, gx);   // begrenzt
+}
+
+// Bewegung zählt für „da“ (Paar-Regel, Begrüßung), aber nicht für Nähe.
+void test_motion_counts_as_present_not_near() {
+  Presence p;
+  presence_tick(p, true, 0, NEAR);
+  presence_msg(p, motion(500, 500), 0);
+  TEST_ASSERT_FALSE(presence_tick(p, true, 0, NEAR).present);   // erst eine Meldung
+  presence_msg(p, motion(500, 500), 500);
+  PresenceOut o = presence_tick(p, true, 500, NEAR);
+  TEST_ASSERT_TRUE(o.present);
+  // ein altes Gesicht mit großer Breite darf durch Bewegung nicht als frisch gelten
+  presence_msg(p, face(500, 500, 600), 600);
+  presence_tick(p, true, 600 + PRES_NEAR_GAP_MS + 5000, NEAR);
+  for (uint32_t t = 40000; t <= 41000; t += 100) { presence_msg(p, motion(500, 500), t); o = presence_tick(p, true, t, NEAR); TEST_ASSERT_FALSE(o.near); }
+  // Bewegung hält die Anwesenheit über 30 s hinaus
+  Presence q;
+  presence_tick(q, true, 0, NEAR);
+  for (uint32_t t = 0; t <= 60000; t += 250) { presence_msg(q, motion(500, 500), t); o = presence_tick(q, true, t, NEAR); }
+  TEST_ASSERT_TRUE(o.present);
+  TEST_ASSERT_FALSE(o.unattended);
+}
+
+void test_motion_greets_after_absence() {
+  Presence p;
+  faces(p, 0, 200);
+  presence_tick(p, true, 200 + 30000, NEAR);
+  int n = 0;
+  for (uint32_t s = 200 + 30000 + 120000; s <= 200 + 30000 + 120000 + 500; s += 250) {
+    presence_msg(p, motion(500, 500), s);
+    n += presence_tick(p, true, s, NEAR).greet ? 1 : 0;
+  }
+  TEST_ASSERT_EQUAL(1, n);
+}
+
+// Blick: frisches Gesicht hat Vorrang, sonst frische Bewegung; beides läuft nach PRES_GAZE_HOLD_MS bzw. PRES_MOTION_HOLD_MS ab.
+void test_gaze_follows_motion_face_has_priority() {
+  Presence p;
+  presence_tick(p, true, 0, NEAR);
+  PresenceOut o{};
+  for (uint32_t t = 0; t <= 5000; t += 250) { presence_msg(p, motion(1000, 500), t); o = presence_tick(p, true, t, NEAR); }
+  TEST_ASSERT_TRUE(o.gaze);
+  TEST_ASSERT_TRUE(o.gx > 0.9f * PRES_GAZE_X_MAX);         // läuft zum Bewegungsschwerpunkt, rechts
+  TEST_ASSERT_FALSE(o.near);
+  presence_msg(p, face(0, 500, 300), 5100);                // Gesicht links: Vorrang
+  presence_msg(p, motion(1000, 500), 5100);
+  o = presence_tick(p, true, 5100, NEAR);
+  TEST_ASSERT_TRUE(o.gaze);
+  TEST_ASSERT_TRUE(o.gx < 0.9f * PRES_GAZE_X_MAX);         // vom Gesichtswert, nicht vom Bewegungswert
+  const float face_gx = o.gx;
+  o = presence_tick(p, true, 5100 + PRES_GAZE_HOLD_MS, NEAR);   // Gesicht abgelaufen, Bewegung noch frisch
+  TEST_ASSERT_TRUE(o.gaze);
+  TEST_ASSERT_TRUE(o.gx > face_gx);
+  TEST_ASSERT_FALSE(presence_tick(p, true, 5100 + PRES_MOTION_HOLD_MS, NEAR).gaze);   // auch Bewegung abgelaufen
+  // Bewegung stärker geglättet als das Gesicht
+  Presence a, b;
+  presence_tick(a, true, 0, NEAR); presence_tick(b, true, 0, NEAR);
+  presence_msg(a, face(1000, 500, 300), 0); presence_msg(b, motion(1000, 500), 0);
+  TEST_ASSERT_TRUE(presence_tick(b, true, 0, NEAR).gx < presence_tick(a, true, 0, NEAR).gx);
+}
+
 int main(int, char **) {
   UNITY_BEGIN();
+  RUN_TEST(test_gaze_gain);
+  RUN_TEST(test_motion_counts_as_present_not_near);
+  RUN_TEST(test_motion_greets_after_absence);
+  RUN_TEST(test_gaze_follows_motion_face_has_priority);
+  RUN_TEST(test_gaze_y_zero_point);
   RUN_TEST(test_present_needs_two_faces_in_1s);
   RUN_TEST(test_gone_after_30s);
   RUN_TEST(test_greet_after_2min_away_with_cooldown);

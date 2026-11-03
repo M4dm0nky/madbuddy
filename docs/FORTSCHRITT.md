@@ -2,6 +2,26 @@
 
 Neueste Einträge oben. Format und Regeln: `docs/superpowers/plans/2026-10-25-cyd-buddy.md`, Abschnitt „Fortschritts-Protokoll“.
 
+## Kamera im Roboter eingerichtet – ERLEDIGT (Stand 2026-11-03 abends)
+- Zeit: 2026-11-03 (Opus mit Nutzer, Sonnet setzt um), Branch `feature/kamera-einrichtung`, letztes Release `v20261103-1747` (CYD) mit Kamera **0.1.3**.
+- Ursachen, warum die Kamera nie ein Gesicht meldete (alle am Gerät belegt):
+  1. **Bild um 90° gedreht** (Kamera sitzt in Lieferlage quer zum XIAO, Halter v2). Belegt per Schnappschuss. Lösung: Software-Drehung `CAM_ROTATE_CW 90` vor Erkennung und Schnappschuss (`camera_rotated`, `cam_rotate_px2`). `CAM_FLIP_180` bleibt 0.
+  2. **Bild seitenverkehrt** (Schrift „LOS“ im Schnappschuss gespiegelt) → `CAM_MIRROR_X = false`.
+  3. **XIAO-Update am PC-USB:** Der XIAO startet beim WLAN-Start neu (Spannungseinbruch), meldet nur `U 0`. Mit Netzteil ≥ 2 A läuft es durch. Leitung CYD↔XIAO in Ordnung (lange Zeilen kommen an, `utest`).
+- Eingemessen: Sitzhöhe y ≈ 300 → `CAM_GAZE_Y0 = 300`; Gesichtsbreite normal ≈ 210, 20 cm ≈ 400 → `CAM_NEAR_W = 350`; Pupillen-Verstärkung 2,5; Glättung 0,6 (Gesicht) / 0,4 (Bewegung).
+- Neu: Anwesenheit auch per **Bewegung** (`M x y n`, Raster 30×40 auf dem XIAO), Gesichtsmodell **espdet_pico_224** statt MSR+MNP (erkennt auch beim Arbeiten am Monitor 2–3 Gesichter/s; nur ~3 Bilder/s). Diagnose über USB am CYD: `snap` (`tools/cam-snap.py`, JPEG), `uinfo`, `utest`, `utestslow`; Zeile `cam:` jede Sekunde.
+- Behobene Fehler: Update-Watchdog am CYD (blieb bei 0 % hängen; Fehlalarm nach 100 %), CYD gleicht Kamera-Zustand nach XIAO-Neustart ab, `cam-build.ps1` erzeugt `sdkconfig.cam` neu, wenn `sdkconfig.defaults` neuer ist, Schnappschuss am CYD gepuffert.
+- Prüfung: `pio test -e native` 237/237 (Stand 0.1.3), Builds CYD 75,8 %, XIAO 86,9 %.
+- Branch-Review 2026-11-03 (Sonnet, nur Quellcode): nichts Kritisches, gemergt nach `main`. Hinweise für später: (a) `camera_rotated()` dreht jedes Bild **zweimal** (in `detect_face` und `motion_detect`) → einmal pro Bild drehen, erster Schritt zum Beschleunigen; (b) Snap-Puffer am CYD 24 KB reicht nur für ~17,7 KB JPEG, Überlauf geht still verloren → Qualität 60–70 oder `J X cyd_puffer_voll` melden; (c) Kleinkram: `send_heart()` zwischen den Snap-Stücken, `write_timeout` in `tools/cam-snap.py`, Rotationspuffer (150 KB PSRAM) wird nie freigegeben.
+- Offen: Kamera nur ~3 Bilder/s (Drehung doppelt und byteweise, Pico 224) – bei Bedarf beschleunigen; eigenes Kopfmodell mit ESP-Detection (Bericht: RTX 5080, ~2–3 Arbeitstage, erst wenn Stufe 1 im Alltag nicht reicht); Mood „betrübt“ unabhängig von der Kamera; Branch-Review und Merge nach `main`.
+
+## Kamera-Halter v2 – Schacht statt Pfosten (Roboter) – ERLEDIGT bis Testdruck (Stand 2026-11-03)
+- Zeit: 2026-11-02/03 (Opus), Branch `feature/kamera-halter-v2`
+- Anlass: Testdruck 2026-11-02, Pfosten mit Rastlippen zu filigran.
+- Gemacht: `xiao_cam_block.scad` Schacht `xiao_tray()` (6 Wandstücke, 3,0 mm, Spiel 0,3, Lücken für Lötstellen, USB-C, U.FL, Werkzeugkanal), `xiao_lip = 0`; den Block hält der Anschlag im Rückteil. Neue Prüfung `tray_fit` je Seite (Bauteil um Spiel + 0,05 muss die Wand treffen, Gegenprobe Spiel − 0,05 leer) ersetzt `asm_block_lip`. `cam_test` reicht jetzt bis zur Wand am Klappstecker-Ende (X 21,02), dünne Schalenrippe dort entfernt.
+- Prüfung: `check_roboter.ps1 -Only 1,3i,3j` ALLES GRÜN (51); `-Only 1,1b,1c` und `-Only 3,3b,3f` grün; Gegenprobe `asm_block` mit Spiel −0,1 trifft; Überhang `cam_test` 0 steile Flanken, 0 Decken; Querschnitte z 0,5…15 angesehen (nichts frei hängend, obere Längswand verschmilzt mit der Schalenwand); Lötstellen 5V/GND/D6/D7 ≥ 1,0 mm frei.
+- Offen: Testdruck `case/stl/roboter_cam_test.stl` (Nutzer); danach Task 3 (Kopf Stufe 2) und Task 4 des Plans `2026-11-02-kamera-halter-v2.md`.
+
 ## Kamera-Firmware Phase B – Task 7: Release und erster Gerätetest – IN ARBEIT (Stand 2026-11-01 abends)
 - Zeit: 2026-11-01 (Opus mit Nutzer), Branch `feature/kamera-firmware` (d38a35b)
 - Volle Prüfung: `pio test -e native` 223/223, `node --test tools/gen-phrases.test.mjs tools/ota-publish.test.mjs` 12/12, `cyd2usb` SUCCESS (Flash 75,5 %), `tools\cam-build.ps1` SUCCESS (72,1 %).

@@ -1,8 +1,11 @@
 #include <Arduino.h>
 #include <esp_camera.h>
+#include <img_converters.h>
+#include <mbedtls/base64.h>
 #include "cam_config.h"
 #include "camera.h"
 #include "detect.h"
+#include "motion.h"
 #include "link.h"
 #include "updater.h"
 #include "logic/cam_proto.h"
@@ -21,6 +24,7 @@ static uint32_t g_last_heart = 0, g_last_retry = 0, g_beats = 0, g_fb_fail = 0;
 static uint32_t g_stat_t0 = 0, g_frames = 0, g_ms_sum = 0;
 static CamFace g_last = {0, 0, 0};
 static bool g_has = false;
+static uint32_t g_last_motion = 0, g_motions = 0;
 
 static void wipe_msg(CamMsg &m) {
   volatile char *p = m.pass;
@@ -34,6 +38,43 @@ static void send_heart() {
   g_beats++;
 }
 
+// Eine Textzeile versiegelt an den CYD (J-Zeilen des Schnappschusses)
+static void send_j(const char *content) {
+  char b[CAM_LINE_MAX + 8];
+  const size_t n = cam_seal(content, b, sizeof b);
+  if (n) link_send(b, n, false);
+}
+
+// Diagnose-Schnappschuss auf ausdrückliche Anfrage (P): ein Bild als JPEG in Textzeilen. Sonst verlassen Bilder den XIAO nie.
+static void send_snapshot() {
+  if (!camera_running()) { send_j("J X cam_off"); return; }
+  camera_fb_t *fb = esp_camera_fb_get();
+  if (!fb) { send_j("J X no_frame"); return; }
+  uint8_t *jpg = nullptr;
+  size_t len = 0;
+  int rw, rh;
+  camera_fb_t rot = *fb;   // gedrehte Sicht auf das Bild (Puffer aus camera_rotated)
+  rot.buf = (uint8_t *)camera_rotated(fb, &rw, &rh);
+  rot.width = rw; rot.height = rh;
+  const bool ok = frame2jpg(&rot, 80, &jpg, &len);
+  esp_camera_fb_return(fb);
+  if (!ok || !jpg || len == 0) { if (jpg) free(jpg); send_j("J X jpeg_fail"); return; }
+  char c[CAM_LINE_MAX];
+  snprintf(c, sizeof c, "J B %u", (unsigned)len);
+  send_j(c);
+  uint32_t seq = 0;
+  for (size_t off = 0; off < len; off += 222, seq++) {
+    const size_t chunk = len - off < 222 ? len - off : 222;
+    int h = snprintf(c, sizeof c, "J D %u ", (unsigned)seq);
+    size_t olen = 0;
+    if (mbedtls_base64_encode((unsigned char *)c + h, sizeof c - h, &olen, jpg + off, chunk) != 0) { send_j("J X b64_fail"); free(jpg); return; }
+    c[h + olen] = '\0';
+    send_j(c);
+  }
+  free(jpg);
+  send_j("J E");
+}
+
 static void set_err() {
   camera_stop();
   g_state = CAM_ST_ERR;
@@ -42,6 +83,7 @@ static void set_err() {
 }
 
 static void apply_camera() {
+  motion_reset();   // nach Kamera aus/an kein Vergleich mit einem alten Bild
   if (!g_want_on) {
     camera_stop();
     g_state = CAM_ST_OFF;
@@ -70,6 +112,8 @@ void loop() {
       g_want_on = m.on;
       apply_camera();
       send_heart();
+    } else if (m.kind == CAM_SNAP_CMD) {
+      send_snapshot();
     } else if (m.kind == CAM_UPD_CMD) {
       camera_stop();               // Speicher und Rechenzeit fürs Update
       g_state = CAM_ST_OFF;
@@ -94,11 +138,20 @@ void loop() {
     CamFace f;
     uint32_t ms = 0;
     g_has = detect_face(fb, &f, &ms);
+    MotionResult mo;
+    const bool moving = motion_detect(fb, &mo);   // vor dem Zurückgeben des Bildes
     esp_camera_fb_return(fb);
     if (g_has) g_last = f;
     char b[32];
     const size_t n = g_has ? cam_build_face(f.x, f.y, f.w, b, sizeof b) : cam_build_noface(b, sizeof b);
     link_send(b, n, false);   // F/N nicht auf USB, dafür die Messzeile unten
+    if (moving && (g_motions == 0 || now - g_last_motion >= MOT_SEND_MS)) {   // höchstens alle 250 ms ein M
+      char mb[32];
+      const size_t mn = cam_build_motion(mo.x, mo.y, mo.n, mb, sizeof mb);
+      link_send(mb, mn, false);
+      g_last_motion = now;
+      g_motions++;
+    }
     g_frames++;
     g_ms_sum += ms;
   } else {

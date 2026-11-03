@@ -59,6 +59,19 @@ void test_checksum_rules() {
   for (size_t i = n - 3; i < n - 1; i++) if (b[i] >= 'A' && b[i] <= 'F') b[i] = (char)(b[i] - 'A' + 'a');
   TEST_ASSERT_TRUE(cam_parse(b, n - 1, &m));      // Kleinbuchstaben gelten auch
 }
+void test_motion_roundtrip_and_strict() {
+  char b[64];
+  CamMsg m;
+  size_t n = cam_build_motion(512, 430, 37, b, sizeof b);
+  TEST_ASSERT_EQUAL_STRING("M 512 430 37", (snprintf(g_buf, sizeof g_buf, "%.*s", (int)(n - 4), b), g_buf));
+  TEST_ASSERT_TRUE(cam_parse(b, n - 1, &m));
+  TEST_ASSERT_EQUAL(CAM_MOTION, m.kind);
+  TEST_ASSERT_EQUAL(512, m.x); TEST_ASSERT_EQUAL(430, m.y); TEST_ASSERT_EQUAL(37, m.n);
+  TEST_ASSERT_TRUE(parse_str(seal("M 0 1000 9999"), &m));
+  TEST_ASSERT_EQUAL(9999, m.n);
+  const char *bad[] = {"M 1 2", "M 1 2 3 4", "M 1001 0 5", "M 0 1001 5", "M 0 0 10000", "M -1 0 5", "M 1a 2 3", "M  1 2 3", "M"};
+  for (const char *s : bad) TEST_ASSERT_FALSE_MESSAGE(parse_str(seal(s), &m), s);
+}
 void test_rejects_garbage() {
   CamMsg m;
   const char *raw[] = {"", "*", "N", "N*4", "N*4EE", "N*G1"};
@@ -244,8 +257,52 @@ void test_health_decision() {
   TEST_ASSERT_EQUAL(CAM_HEALTH_VALID, cam_health(60000, true, 5));   // gesund geht vor Zeitablauf
 }
 
+void test_snap_cmd() {
+  char b[16];
+  TEST_ASSERT_EQUAL(5, cam_build_snap_cmd(b, sizeof b));
+  CamMsg m;
+  TEST_ASSERT_TRUE(parse_str(seal("P"), &m));
+  TEST_ASSERT_EQUAL(CAM_SNAP_CMD, m.kind);
+  TEST_ASSERT_FALSE(parse_str(seal("P x"), &m));
+  TEST_ASSERT_FALSE(parse_str(seal("P 1"), &m));
+  // Bildzeilen (J) nimmt cam_parse nicht an, auch nicht mit gültiger Prüfsumme
+  TEST_ASSERT_FALSE(parse_str(seal("J D 0 QUJD"), &m));
+  TEST_ASSERT_FALSE(parse_str(seal("J E"), &m));
+}
+
+// 3x2-Bild, 2 Byte je Pixel: Pixel k hat die Bytes {k, 0x80+k}
+//   0 1 2
+//   3 4 5
+static void rot_src(uint8_t *s) { for (int k = 0; k < 6; k++) { s[2 * k] = (uint8_t)k; s[2 * k + 1] = (uint8_t)(0x80 + k); } }
+static void rot_expect(const uint8_t *d, const int *px, int n) {
+  for (int i = 0; i < n; i++) {
+    TEST_ASSERT_EQUAL_UINT8(px[i], d[2 * i]);
+    TEST_ASSERT_EQUAL_UINT8(0x80 + px[i], d[2 * i + 1]);
+  }
+}
+void test_rotate_px2() {
+  uint8_t s[12], d[12];
+  rot_src(s);
+  int ow, oh;
+  cam_rot_dims(3, 2, 0, &ow, &oh);   TEST_ASSERT_EQUAL(3, ow); TEST_ASSERT_EQUAL(2, oh);
+  cam_rot_dims(3, 2, 90, &ow, &oh);  TEST_ASSERT_EQUAL(2, ow); TEST_ASSERT_EQUAL(3, oh);
+  cam_rot_dims(3, 2, 180, &ow, &oh); TEST_ASSERT_EQUAL(3, ow); TEST_ASSERT_EQUAL(2, oh);
+  cam_rot_dims(3, 2, 270, &ow, &oh); TEST_ASSERT_EQUAL(2, ow); TEST_ASSERT_EQUAL(3, oh);
+
+  const int e0[]   = {0, 1, 2, 3, 4, 5};
+  const int e90[]  = {3, 0, 4, 1, 5, 2};   // linke Quellspalte (0,3) wird oberste Zeile: 3 0
+  const int e180[] = {5, 4, 3, 2, 1, 0};
+  const int e270[] = {2, 5, 1, 4, 0, 3};
+  cam_rotate_px2(s, 3, 2, d, 0);   rot_expect(d, e0, 6);
+  cam_rotate_px2(s, 3, 2, d, 90);  rot_expect(d, e90, 6);
+  cam_rotate_px2(s, 3, 2, d, 180); rot_expect(d, e180, 6);
+  cam_rotate_px2(s, 3, 2, d, 270); rot_expect(d, e270, 6);
+}
+
 int main(int, char **) {
   UNITY_BEGIN();
+  RUN_TEST(test_rotate_px2);
+  RUN_TEST(test_snap_cmd);
   RUN_TEST(test_xor_known);
   RUN_TEST(test_build_fixed_lines);
   RUN_TEST(test_roundtrip_face_and_heart);
@@ -264,5 +321,6 @@ int main(int, char **) {
   RUN_TEST(test_box_center);
   RUN_TEST(test_box_clamped_and_degenerate);
   RUN_TEST(test_health_decision);
+  RUN_TEST(test_motion_roundtrip_and_strict);
   return UNITY_END();
 }

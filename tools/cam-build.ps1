@@ -22,6 +22,14 @@ if ($LASTEXITCODE -ge 8) { throw "robocopy cam fehlgeschlagen ($LASTEXITCODE)" }
 robocopy (Join-Path $repo "src\logic") (Join-Path $work "src\logic") /MIR /NFL /NDL /NJH /NJS /NP | Out-Null
 if ($LASTEXITCODE -ge 8) { throw "robocopy src/logic fehlgeschlagen ($LASTEXITCODE)" }
 
+# sdkconfig.cam wird nur einmal aus sdkconfig.defaults erzeugt; ist defaults neuer (z. B. Version), neu erzeugen lassen
+$cfg = Join-Path $work "cam\sdkconfig.cam"
+$def = Join-Path $work "cam\sdkconfig.defaults"
+if ((Test-Path $cfg) -and (Get-Item $def).LastWriteTime -gt (Get-Item $cfg).LastWriteTime) {
+  Remove-Item $cfg
+  Write-Host "sdkconfig.defaults geaendert: sdkconfig.cam wird neu erzeugt"
+}
+
 $pioArgs = @("run", "-d", (Join-Path $work "cam"))
 if ($Upload) {
   $pioArgs += @("-t", "upload")

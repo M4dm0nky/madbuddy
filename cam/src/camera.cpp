@@ -1,6 +1,8 @@
 #include <esp_camera.h>
 #include "camera.h"
+#include <esp_heap_caps.h>
 #include "cam_config.h"
+#include "logic/cam_xiao.h"
 
 static bool g_on = false;
 
@@ -40,3 +42,24 @@ void camera_stop() {
 }
 
 bool camera_running() { return g_on; }
+
+const uint8_t *camera_rotated(const camera_fb_t *fb, int *w, int *h) {
+  *w = fb->width; *h = fb->height;
+#if CAM_ROTATE_CW
+  static uint8_t *buf = nullptr;
+  static size_t cap = 0;
+  const size_t need = (size_t)fb->width * fb->height * 2;
+  if (fb->format != PIXFORMAT_RGB565 || fb->len < need) return fb->buf;   // nur RGB565 (2 Byte je Pixel)
+  if (!buf) {
+    cap = 320 * 240 * 2;
+    buf = (uint8_t *)heap_caps_malloc(cap, MALLOC_CAP_SPIRAM);
+    if (!buf) cap = 0;
+  }
+  if (!buf || need > cap) return fb->buf;   // kein Puffer: ungedreht weiterarbeiten
+  cam_rotate_px2(fb->buf, fb->width, fb->height, buf, CAM_ROTATE_CW);
+  cam_rot_dims(fb->width, fb->height, CAM_ROTATE_CW, w, h);
+  return buf;
+#else
+  return fb->buf;
+#endif
+}

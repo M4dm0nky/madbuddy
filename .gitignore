@@ -4,3 +4,5 @@
 ota-out/
 *.tmp
 .superpowers/
+
+.claude/settings.local.json
