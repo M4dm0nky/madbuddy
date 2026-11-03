@@ -3,7 +3,7 @@
 Neueste Einträge oben. Format und Regeln: `docs/superpowers/plans/2026-10-25-cyd-buddy.md`, Abschnitt „Fortschritts-Protokoll“.
 
 ## Nächste Aufgaben (Stand 2026-11-03 nachts, alles auf `main` e7ed638)
-Für jede Aufgabe einen neuen Branch von `main`. Geräte-Stand: Release `v20261103-2036` (CYD + Kamera 0.1.5). Kamera-Updates nur am Netzteil ≥ 2 A. Releases (`node tools/ota-publish.mjs --release`, vorher Branch pushen) und das Löschen von Branches braucht das ausdrückliche Ja des Nutzers.
+Für jede Aufgabe einen neuen Branch von `main`. Geräte-Stand: Release `v20261103-2108` (CYD + Kamera 0.1.6). Kamera-Updates nur am Netzteil ≥ 2 A. Releases (`node tools/ota-publish.mjs --release`, vorher Branch pushen) und das Löschen von Branches braucht das ausdrückliche Ja des Nutzers.
 
 1. **Kamera-Halter v2 fertig machen** – wartet auf den Nutzer (Testdruck `case/stl/roboter_cam_test.stl`).
    - Danach Task 3 (Kopf Stufe 2: `case/madbuddy_case.scad`, `case/check.ps1`) und Task 4 (Ausgaben, Anleitung, Schlussprüfung) aus `docs/superpowers/plans/2026-11-02-kamera-halter-v2.md`. Task 1–2 sind erledigt.
@@ -11,7 +11,7 @@ Für jede Aufgabe einen neuen Branch von `main`. Geräte-Stand: Release `v202611
 2. **Stimmung „betrübt“ klären** – zuerst mit dem Nutzer, was genau stört.
    - Bekannt: `Emotion::SAD` kommt, sobald `affection < 20` (`src/logic/mood.h:160`); die Zuneigung sinkt ohne Streicheln/Füttern.
    - Vermutung: Beim Arbeiten am Schreibtisch (Kamera sieht den Nutzer) wirkt er oft betrübt. Idee: Anwesenheit per Kamera hält die Zuneigung langsam oben oder bremst den Abfall. Erst brainstorming, dann TDD in `test/test_mood`.
-3. **Kamera-Kleinkram aus dem Review** – ERLEDIGT auf `feature/kamera-kleinkram`, wartet auf Release.
+3. **Kamera-Kleinkram aus dem Review** – ERLEDIGT, Release `v20261103-2108`.
    - Snap-Puffer am CYD (24 KB, `src/hw/cam_uart.cpp:~331`) läuft bei großen JPEG still über → `J X cyd_puffer_voll` melden; mit HQVGA ist das Bild jetzt kleiner, Dringlichkeit gering.
    - `send_heart()` zwischen den Snap-Stücken (`cam/src/main.cpp` `send_snapshot`), `write_timeout` in `tools/cam-snap.py`.
 4. **Blick am Gerät abnehmen** – mit dem Nutzer, kein Code.
@@ -19,13 +19,14 @@ Für jede Aufgabe einen neuen Branch von `main`. Geräte-Stand: Release `v202611
 5. **Später, nur bei Bedarf**
    - Kamera noch schneller: Erkennung braucht 135 ms je Bild (Pico 224). Nächste Hebel: kleineres Modell-Eingangsbild, eigenes Kopfmodell mit ESP-Detection (~2–3 Arbeitstage, RTX 5080).
    - CYD: Bildrate 24–26 fps (SPI 80 MHz, Ring-Spur, Brillen-Raster), `src/app.cpp` aufteilen.
-   - Aufräumen: Branches `feature/kamera-einrichtung`, `feature/kamera-halter-v2`, `feature/kamera-schneller` (lokal + GitHub) sind gemergt und können weg (Nutzer-Ja).
+   - Aufräumen: Branches `feature/kamera-*` (einrichtung, firmware, gehaeuse, halter-v2, kleinkram, schneller) und `rename-madbuddy` (lokal + GitHub) sind gemergt und können weg (Nutzer-Ja).
 
-## Kamera-Kleinkram (0.1.6) – ERLEDIGT bis Release (Stand 2026-11-03 spät)
+## Kamera-Kleinkram (0.1.6) – ERLEDIGT (Stand 2026-11-03 spät)
 - Zeit: 2026-11-03 (Opus), Branch `feature/kamera-kleinkram`.
 - Gemacht: Schnappschuss-Sammeln am CYD als reine Logik `src/logic/cam_snapbuf.h` (`snap_feed`, Tests in `test_cam_proto`). Läuft der 24-KB-Puffer über, gibt der CYD die ganzen Zeilen aus und meldet `J X cyd_puffer_voll` (vorher still verloren). Fehlerzeilen des CYD jetzt mit Prüfsumme (sonst hat `cam-snap.py` sie verworfen). XIAO schickt beim Schnappschuss alle 2 s ein Lebenszeichen. `cam-snap.py`: `write_timeout = 2`. Kamera-Version 0.1.6.
 - Prüfung: `pio test -e native` 242/242, Gegenprobe (halbe Zeile nicht verwerfen) wird rot; `cam_snap_test` OK; Builds CYD SUCCESS, Kamera 86,2 %.
-- Offen: Release (Nutzer-Ja), danach am Netzteil Kamera-Update auf 0.1.6 und einmal `python tools/cam-snap.py COM6 --out bild.jpg`.
+- Release `v20261103-2108` (CYD + Kamera 0.1.6), auf `main` gemergt (047c0e4).
+- Offen: am Netzteil Kamera-Update auf 0.1.6 und einmal `python tools/cam-snap.py COM6 --out bild.jpg`.
 
 ## Kamera schneller (0.1.5) – ERLEDIGT (Stand 2026-11-03 abends)
 - Zeit: 2026-11-03 (Opus plant und prüft, Sonnet/Haiku setzen um), Branch `feature/kamera-schneller`, Releases `v20261103-2019` (CYD + Kamera 0.1.4) und `v20261103-2036` (Kamera 0.1.5). Spec `docs/superpowers/specs/2026-11-03-kamera-schneller-design.md`, Plan `docs/superpowers/plans/2026-11-03-kamera-schneller.md`.
