@@ -836,6 +836,12 @@ void app_loop() {
   cam_uart_poll(now);
   cam_log_tick(now);
   if (cam_uart_take_restart()) cam_uart_send_ctrl(s_persist.cam_on);
+  {   // XIAO kurz neu gestartet (Lücke unter 5 s) und Kamera-Zustand passt nicht zur Einstellung: C erneut, höchstens alle 5 s
+    static uint32_t s_ctrl_t = 0;
+    const CamLink &cl = cam_uart_link();
+    const bool mismatch = cam_link_connected(cl, now) && cl.state != CAM_ST_ERR && (cl.state == CAM_ST_ON) != s_persist.cam_on;
+    if (mismatch && !cl.upd && due_since(now, s_ctrl_t, 5000)) { s_ctrl_t = now; cam_uart_send_ctrl(s_persist.cam_on); }
+  }
   apply_elapsed_once();
 
   int16_t tx, ty;

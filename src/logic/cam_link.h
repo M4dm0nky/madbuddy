@@ -19,6 +19,7 @@ struct CamLink {
   bool restart = false;       // erstes H nach Trennung: C erneut senden
   bool upd = false;           // Update läuft
   uint32_t upd_ms = 0;        // letzte U/H-Zeile während des Updates
+  bool upd_100 = false;       // U 100 gesehen: Neustart und Probelauf, dann zählt jedes H
 };
 
 static inline bool cam_link_connected(const CamLink &l, uint32_t now) {
@@ -39,8 +40,10 @@ static inline bool cam_link_feed(CamLink &l, char c, uint32_t now, CamMsg *out) 
   }
   if (l.upd) {
     if (out->kind == CAM_UPD_OK || out->kind == CAM_UPD_ERR) l.upd = false;
-    // H nur mit Kamera aus: läuft sie weiter, hat der XIAO den Befehl nicht angenommen, und der Watchdog soll greifen
-    else if (out->kind == CAM_UPD_PCT || (out->kind == CAM_HEART && out->state != CAM_ST_ON)) l.upd_ms = now;
+    // H nur mit Kamera aus: läuft sie weiter, hat der XIAO den Befehl nicht angenommen, und der Watchdog soll greifen.
+    // Nach U 100 läuft die neue Firmware ~20 s auf Probe mit Kamera an, bis U ok kommt: dann zählt jedes H.
+    else if (out->kind == CAM_UPD_PCT) { l.upd_ms = now; if (out->pct == 100) l.upd_100 = true; }
+    else if (out->kind == CAM_HEART && (l.upd_100 || out->state != CAM_ST_ON)) l.upd_ms = now;
   }
   return true;
 }
@@ -59,7 +62,7 @@ static inline bool cam_link_take_restart(CamLink &l) {
   return r;
 }
 
-static inline void cam_link_upd_start(CamLink &l, uint32_t now) { l.upd = true; l.upd_ms = now; }
+static inline void cam_link_upd_start(CamLink &l, uint32_t now) { l.upd = true; l.upd_ms = now; l.upd_100 = false; }
 static inline bool cam_link_upd_timed_out(const CamLink &l, uint32_t now) {
   return l.upd && due_since(now, l.upd_ms, CAM_UPD_WATCHDOG_MS);
 }
