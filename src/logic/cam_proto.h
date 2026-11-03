@@ -9,7 +9,7 @@
 // Zeile: <inhalt>*<xx>\n, xx = XOR über <inhalt> als zwei Hexziffern (gesendet groß, gelesen beides).
 constexpr size_t CAM_LINE_MAX = 400;   // ohne '\n'; die U-Zeile (URL, SHA, SSID, Passwort) braucht mehr als 200
 
-enum CamKind : uint8_t { CAM_NONE = 0, CAM_FACE, CAM_NOFACE, CAM_HEART, CAM_CTRL, CAM_UPD_CMD, CAM_UPD_PCT, CAM_UPD_OK, CAM_UPD_ERR };
+enum CamKind : uint8_t { CAM_NONE = 0, CAM_FACE, CAM_NOFACE, CAM_HEART, CAM_CTRL, CAM_UPD_CMD, CAM_UPD_PCT, CAM_UPD_OK, CAM_UPD_ERR, CAM_SNAP_CMD };
 enum CamState : uint8_t { CAM_ST_ON = 0, CAM_ST_OFF, CAM_ST_ERR };
 
 struct CamMsg {
@@ -54,6 +54,9 @@ static inline size_t cam_build_heart(const char *version, CamState st, char *out
   char c[40]; snprintf(c, sizeof c, "H %.15s %s", version, cam_state_name(st)); return cam_seal(c, out, cap);
 }
 static inline size_t cam_build_ctrl(bool on, char *out, size_t cap) { return cam_seal(on ? "C 1" : "C 0", out, cap); }
+// Diagnose-Schnappschuss (nur auf ausdrückliche Anfrage über USB): "P" CYD -> XIAO. Die Antwort (J-Zeilen: J B <len>, J D <seq> <b64>,
+// J E bzw. J X <grund>) wird vom CYD roh an USB durchgereicht und von cam_parse nicht angenommen.
+static inline size_t cam_build_snap_cmd(char *out, size_t cap) { return cam_seal("P", out, cap); }
 static inline size_t cam_build_upd_pct(int pct, char *out, size_t cap) {
   char c[12]; snprintf(c, sizeof c, "U %d", pct); return cam_seal(c, out, cap);
 }
@@ -132,6 +135,7 @@ static inline bool cam_parse(const char *line, size_t n, CamMsg *m) {
   const char *c = line, *end = line + cn;
   *m = CamMsg();
   if (cn == 1 && c[0] == 'N') { m->kind = CAM_NOFACE; return true; }
+  if (cn == 1 && c[0] == 'P') { m->kind = CAM_SNAP_CMD; return true; }
   if (cn >= 2 && c[0] == 'U' && c[1] == '\t') return cam_parse_upd_cmd(c, cn, m);
   if (cn < 3 || c[1] != ' ') return false;
   const char *a = c + 2;

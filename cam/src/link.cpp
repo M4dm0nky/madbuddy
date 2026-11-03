@@ -19,7 +19,7 @@ void link_send(const char *s, size_t n, bool mirror) {
 static bool poll_one(Stream &st, CamLineBuf &lb, CamMsg *m) {
   while (st.available()) {
     if (!lb.feed((char)st.read())) continue;
-    if (cam_parse(lb.line(), lb.len(), m) && (m->kind == CAM_CTRL || m->kind == CAM_UPD_CMD)) return true;
+    if (cam_parse(lb.line(), lb.len(), m) && (m->kind == CAM_CTRL || m->kind == CAM_UPD_CMD || m->kind == CAM_SNAP_CMD)) return true;
   }
   return false;
 }

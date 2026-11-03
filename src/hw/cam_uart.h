@@ -14,4 +14,6 @@ const CamLink &cam_uart_link();
 void cam_uart_upd_start(uint32_t now);                         // Update-Überwachung starten (U-Zeile wurde gesendet)
 bool cam_uart_upd_timed_out(uint32_t now);                     // bleibt wahr, bis cam_uart_upd_end() gerufen wird
 void cam_uart_upd_end();
+void cam_uart_snap(uint32_t now);                              // Diagnose-Schnappschuss anfordern (P), 8 s lang alle XIAO-Bytes roh an USB durchreichen
+bool cam_uart_snap_active(uint32_t now);
 void cam_uart_on_msg(void (*fn)(const CamMsg &, uint32_t now));

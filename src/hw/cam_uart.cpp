@@ -1,6 +1,7 @@
 #include "cam_uart.h"
 #include <Arduino.h>
 #include "../config.h"
+#include "../logic/deadline.h"
 
 static CamLink s_link;
 static void (*s_cb)(const CamMsg &, uint32_t) = nullptr;
@@ -10,12 +11,25 @@ void cam_uart_begin() {
   Serial2.begin(CAM_BAUD, SERIAL_8N1, CAM_RX, CAM_TX);
 }
 
+static Deadline s_snap;   // Durchleitung der J-Zeilen an USB
+
 void cam_uart_poll(uint32_t now) {
+  const bool pass = s_snap.active(now);
   for (int i = 0; i < 1024 && Serial2.available(); i++) {
+    const char ch = (char)Serial2.read();
+    if (pass) Serial.write((uint8_t)ch);
     CamMsg m;
-    if (cam_link_feed(s_link, (char)Serial2.read(), now, &m) && s_cb) s_cb(m, now);
+    if (cam_link_feed(s_link, ch, now, &m) && s_cb) s_cb(m, now);
   }
 }
+
+void cam_uart_snap(uint32_t now) {
+  s_snap.arm(now, 8000);
+  char line[16];
+  const size_t n = cam_build_snap_cmd(line, sizeof line);
+  if (n) Serial2.write((const uint8_t *)line, n);
+}
+bool cam_uart_snap_active(uint32_t now) { return s_snap.active(now); }
 
 void cam_uart_send(const char *content) {
   char line[CAM_LINE_MAX + 4];

@@ -1,5 +1,7 @@
 #include <Arduino.h>
 #include <esp_camera.h>
+#include <img_converters.h>
+#include <mbedtls/base64.h>
 #include "cam_config.h"
 #include "camera.h"
 #include "detect.h"
@@ -32,6 +34,39 @@ static void send_heart() {
   const size_t n = cam_build_heart(CAM_FW_VERSION, g_state, b, sizeof b);
   link_send(b, n);
   g_beats++;
+}
+
+// Eine Textzeile versiegelt an den CYD (J-Zeilen des Schnappschusses)
+static void send_j(const char *content) {
+  char b[CAM_LINE_MAX + 8];
+  const size_t n = cam_seal(content, b, sizeof b);
+  if (n) link_send(b, n, false);
+}
+
+// Diagnose-Schnappschuss auf ausdrückliche Anfrage (P): ein Bild als JPEG in Textzeilen. Sonst verlassen Bilder den XIAO nie.
+static void send_snapshot() {
+  if (!camera_running()) { send_j("J X cam_off"); return; }
+  camera_fb_t *fb = esp_camera_fb_get();
+  if (!fb) { send_j("J X no_frame"); return; }
+  uint8_t *jpg = nullptr;
+  size_t len = 0;
+  const bool ok = frame2jpg(fb, 80, &jpg, &len);
+  esp_camera_fb_return(fb);
+  if (!ok || !jpg || len == 0) { if (jpg) free(jpg); send_j("J X jpeg_fail"); return; }
+  char c[CAM_LINE_MAX];
+  snprintf(c, sizeof c, "J B %u", (unsigned)len);
+  send_j(c);
+  uint32_t seq = 0;
+  for (size_t off = 0; off < len; off += 222, seq++) {
+    const size_t chunk = len - off < 222 ? len - off : 222;
+    int h = snprintf(c, sizeof c, "J D %u ", (unsigned)seq);
+    size_t olen = 0;
+    if (mbedtls_base64_encode((unsigned char *)c + h, sizeof c - h, &olen, jpg + off, chunk) != 0) { send_j("J X b64_fail"); free(jpg); return; }
+    c[h + olen] = '\0';
+    send_j(c);
+  }
+  free(jpg);
+  send_j("J E");
 }
 
 static void set_err() {
@@ -70,6 +105,8 @@ void loop() {
       g_want_on = m.on;
       apply_camera();
       send_heart();
+    } else if (m.kind == CAM_SNAP_CMD) {
+      send_snapshot();
     } else if (m.kind == CAM_UPD_CMD) {
       camera_stop();               // Speicher und Rechenzeit fürs Update
       g_state = CAM_ST_OFF;

@@ -244,8 +244,22 @@ void test_health_decision() {
   TEST_ASSERT_EQUAL(CAM_HEALTH_VALID, cam_health(60000, true, 5));   // gesund geht vor Zeitablauf
 }
 
+void test_snap_cmd() {
+  char b[16];
+  TEST_ASSERT_EQUAL(5, cam_build_snap_cmd(b, sizeof b));
+  CamMsg m;
+  TEST_ASSERT_TRUE(parse_str(seal("P"), &m));
+  TEST_ASSERT_EQUAL(CAM_SNAP_CMD, m.kind);
+  TEST_ASSERT_FALSE(parse_str(seal("P x"), &m));
+  TEST_ASSERT_FALSE(parse_str(seal("P 1"), &m));
+  // Bildzeilen (J) nimmt cam_parse nicht an, auch nicht mit gültiger Prüfsumme
+  TEST_ASSERT_FALSE(parse_str(seal("J D 0 QUJD"), &m));
+  TEST_ASSERT_FALSE(parse_str(seal("J E"), &m));
+}
+
 int main(int, char **) {
   UNITY_BEGIN();
+  RUN_TEST(test_snap_cmd);
   RUN_TEST(test_xor_known);
   RUN_TEST(test_build_fixed_lines);
   RUN_TEST(test_roundtrip_face_and_heart);

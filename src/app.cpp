@@ -334,10 +334,28 @@ static uint32_t s_cam_log_t = 0;
 static void cam_log_tick(uint32_t now) {
   if (!due_since(now, s_cam_log_t, 1000)) return;
   s_cam_log_t = now;
-  if (!s_persist.cam_on) return;
+  if (!s_persist.cam_on || cam_uart_snap_active(now)) return;   // während des Schnappschusses keine Textzeilen zwischen den J-Zeilen
   Serial.printf("cam: conn=%d F=%u N=%u H=%u last=%d,%d,%d\n", (int)cam_link_conn(cam_uart_link(), now, true),
                 s_cam_nf, s_cam_nn, s_cam_nh, s_cam_last.x, s_cam_last.y, s_cam_last.w);
   s_cam_nf = s_cam_nn = s_cam_nh = 0;
+}
+
+// USB-Befehle vom PC, zeilenweise und nichtblockierend: "snap" = Kamerabild über USB holen (tools/cam-snap.py).
+static void usb_cmd_poll(uint32_t now) {
+  static char buf[16];
+  static uint8_t n = 0;
+  static bool over = false;
+  for (int i = 0; i < 64 && Serial.available(); i++) {
+    const char c = (char)Serial.read();
+    if (c == '\r') continue;
+    if (c == '\n') {
+      buf[n] = '\0';
+      if (!over && strcmp(buf, "snap") == 0) cam_uart_snap(now);
+      n = 0;
+      over = false;
+    } else if (n < sizeof buf - 1) buf[n++] = c;
+    else over = true;
+  }
 }
 
 static void on_cam_msg(const CamMsg &m, uint32_t now) {
@@ -770,6 +788,7 @@ void app_loop() {
 
   net_loop();
   claude_api_loop();
+  usb_cmd_poll(now);
   cam_uart_poll(now);
   cam_log_tick(now);
   if (cam_uart_take_restart()) cam_uart_send_ctrl(s_persist.cam_on);
