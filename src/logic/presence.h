@@ -41,18 +41,19 @@ static inline void presence_reset(Presence &p) {
 }
 
 // Bildposition 0..1000 → Blickziel in Gazer-Einheiten (±30/±15), +x rechts, +y unten.
-static inline void presence_gaze_raw(int16_t x, int16_t y, bool mirror, float *gx, float *gy) {
+// y0 = Bildhöhe, die "geradeaus" bedeutet (Kamera gekippt: Gesicht der sitzenden Person liegt nicht in der Mitte).
+static inline void presence_gaze_raw(int16_t x, int16_t y, bool mirror, float *gx, float *gy, int16_t y0 = 500) {
   const float fx = mirror ? (float)(1000 - x) : (float)x;
   *gx = pres_clampf((fx - 500) / 500.0f * PRES_GAZE_X_MAX, -PRES_GAZE_X_MAX, PRES_GAZE_X_MAX);
-  *gy = pres_clampf((y - 500) / 500.0f * PRES_GAZE_Y_MAX, -PRES_GAZE_Y_MAX, PRES_GAZE_Y_MAX);
+  *gy = pres_clampf((float)(y - y0) / 500.0f * PRES_GAZE_Y_MAX, -PRES_GAZE_Y_MAX, PRES_GAZE_Y_MAX);
 }
 
 // Eine Meldung vom XIAO; zählt nur bei aktiver Kamera und nur F.
-static inline void presence_msg(Presence &p, const CamMsg &m, uint32_t now, bool mirror = false) {
+static inline void presence_msg(Presence &p, const CamMsg &m, uint32_t now, bool mirror = false, int16_t y0 = 500) {
   if (!p.active || m.kind != CAM_FACE) return;
   const bool pair = p.seen && !due_since(now, p.face_ms, PRES_PAIR_MS);
   float tx, ty;
-  presence_gaze_raw(m.x, m.y, mirror, &tx, &ty);
+  presence_gaze_raw(m.x, m.y, mirror, &tx, &ty, y0);
   p.gx += (tx - p.gx) * PRES_SMOOTH;
   p.gy += (ty - p.gy) * PRES_SMOOTH;
   p.seen = true;

@@ -403,7 +403,7 @@ static void on_cam_msg(const CamMsg &m, uint32_t now) {
   if (m.kind == CAM_FACE) { s_cam_nf++; s_cam_last = m; }
   else if (m.kind == CAM_NOFACE) s_cam_nn++;
   else if (m.kind == CAM_HEART) s_cam_nh++;
-  presence_msg(s_presence, m, now, CAM_MIRROR_X);
+  presence_msg(s_presence, m, now, CAM_MIRROR_X, CAM_GAZE_Y0);
   if (m.kind == CAM_UPD_PCT || m.kind == CAM_UPD_OK || m.kind == CAM_UPD_ERR) {
     Serial.printf("cam: U kind=%d pct=%u %s\n", (int)m.kind, (unsigned)m.pct, m.text);
     ota_card_cam_msg(m, now);   // Kamera-Update (Karte)

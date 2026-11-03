@@ -187,8 +187,20 @@ void test_gaze_mapping_and_smoothing() {
   TEST_ASSERT_FALSE(presence_tick(p, true, 2900 + PRES_GAZE_HOLD_MS, NEAR).gaze);   // ohne frisches F kein Kamerablick
 }
 
+// Nullpunkt der Höhe: Die Kamera ist nach oben gekippt, das Gesicht der sitzenden Person liegt bei y0 → geradeaus.
+void test_gaze_y_zero_point() {
+  float gx, gy;
+  presence_gaze_raw(500, 300, false, &gx, &gy, 300);
+  TEST_ASSERT_FLOAT_WITHIN(0.01f, 0, gy);
+  presence_gaze_raw(500, 500, false, &gx, &gy, 300);
+  TEST_ASSERT_TRUE(gy > 0);                              // tiefer als die Sitzhöhe → schaut nach unten
+  presence_gaze_raw(500, 300, false, &gx, &gy);          // ohne Angabe Bildmitte wie bisher
+  TEST_ASSERT_TRUE(gy < 0);
+}
+
 int main(int, char **) {
   UNITY_BEGIN();
+  RUN_TEST(test_gaze_y_zero_point);
   RUN_TEST(test_present_needs_two_faces_in_1s);
   RUN_TEST(test_gone_after_30s);
   RUN_TEST(test_greet_after_2min_away_with_cooldown);
