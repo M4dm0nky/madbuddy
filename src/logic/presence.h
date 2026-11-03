@@ -13,8 +13,8 @@ constexpr uint32_t PRES_NEAR_FOR_MS = 2000;    // Nähe-Ausdruck so lange
 constexpr uint32_t PRES_NEAR_GAP_MS = 30000;   // höchstens alle 30 s
 constexpr uint32_t PRES_GAZE_HOLD_MS = 500;    // Kamerablick gilt so lange nach dem letzten F
 constexpr float PRES_GAZE_X_MAX = 30, PRES_GAZE_Y_MAX = 15;   // wie GAZE_X_MAX/GAZE_Y_MAX
-constexpr float PRES_SMOOTH = 0.25f;           // Anteil des neuen Ziels je Meldung
-constexpr float PRES_MOTION_SMOOTH = 0.15f;     // Blick zur Bewegung: stärker geglättet als beim Gesicht
+constexpr float PRES_SMOOTH = 0.6f;            // Anteil des neuen Ziels je Meldung (Pico-Modell: nur ~3 F/s, sonst zu träge)
+constexpr float PRES_MOTION_SMOOTH = 0.4f;      // Blick zur Bewegung: stärker geglättet als beim Gesicht
 constexpr uint32_t PRES_MOTION_HOLD_MS = 1000; // Bewegungsblick gilt so lange nach dem letzten M (M kommt höchstens alle 250 ms)
 constexpr float PRES_GAZE_GAIN = 2.5f;         // Verstärkung der Abweichung von der Mitte (Pupillenweg größer)
 
