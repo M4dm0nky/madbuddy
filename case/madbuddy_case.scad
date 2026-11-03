@@ -23,7 +23,7 @@ $fn        = 64;
 
 // ---------------------------------------------------------------- Werte, die cyd_common.scad aus dem Gehaeuse erwartet bzw. die gehaeusespezifisch sind
 glass_gap  = 0.2;   // Luft zwischen Display-Oberkante und Frontplatte
-disp_x     = -1.0;  // Versatz des Displaymoduls (Platine+Glas+Fenster) im Gehaeuse in X, negativ = nach links
+disp_x     = 2.0;   // war -1; +3 gleicht aa_left 10 -> 13 aus (Platine bleibt, Fenster folgt der echten Bildflaeche). Versatz des Displaymoduls (Platine+Glas+Fenster) im Gehaeuse in X, negativ = nach links
 rear_extra  = 10.0; // Zusatztiefe hinten: verlegt die hintere Kippkante nach hinten (Standsicherheit bei 15 Grad), Platz fuer Akku/Kabel
 
 // CYD-Masse, Fenster und Pruefkoerper. Muss NACH front_t, glass_gap, fit, disp_x stehen: OpenSCAD wertet Zuweisungen der Reihe nach aus.
@@ -54,7 +54,9 @@ a_lip     = (wall - fit) / 2;                 // Aussenhaelfte der Wand im Falzb
 z_split   = z_pcb_bot;
 z_floor   = z_rear - rear_clear - rear_extra;
 z_back    = z_floor - back_t;
-hx_in     = max(abs(pcb_x0 - disp_x) + fit, pcb_x1 - disp_x + sock_over + usb_clear); // Gehaeusemass unabhaengig von disp_x
+// Gehaeusemass fest: bis 2026-11-03 aus der Platinenlage zur Bildmitte berechnet (= 47,4); mit aa_left 13 waere das Gehaeuse 6 mm geschrumpft
+hx_in     = 47.4;
+assert(hx_in >= pcb_x1 + sock_over + usb_clear && hx_in >= -pcb_x0 + fit, "Gehaeuse zu schmal fuer die Platine");
 dome_y    = pcb_h / 2 + fit + dome_d / 2 + 0.1;
 hy_in     = dome_y + dome_d / 2;
 hx        = hx_in + wall;
