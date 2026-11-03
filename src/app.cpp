@@ -342,7 +342,43 @@ static void cam_log_tick(uint32_t now) {
   s_cam_nf = s_cam_nn = s_cam_nh = 0;
 }
 
-// USB-Befehle vom PC, zeilenweise und nichtblockierend: "snap" = Kamerabild über USB holen (tools/cam-snap.py).
+// Diagnose der U-Zeile: Länge und Zeichenart der Felder (ohne Inhalt) und ob der CYD sie selbst parsen kann.
+static void usb_uinfo() {
+  const ota_pull::CamInfo c = ota_pull::cam_info();
+  char line[CAM_LINE_MAX + 8];
+  const size_t n = c.avail ? net_build_cam_upd(c.url, c.sha, line, sizeof line) : 0;
+  Serial.printf("uinfo: avail=%d n=%u", c.avail ? 1 : 0, (unsigned)n);
+  if (n) {
+    CamMsg m;
+    const bool ok = cam_parse(line, n - 1, &m);   // ohne '\n'
+    unsigned f = 0, len = 0, odd = 0;
+    for (size_t i = 0; i + 4 < n; i++) {           // ohne "*XX\n"
+      const uint8_t b = (uint8_t)line[i];
+      if (b == '\t') { Serial.printf(" f%u=%u/%u", f, len, odd); f++; len = odd = 0; continue; }
+      len++;
+      if (b < 0x20 || b >= 0x7f) odd++;
+    }
+    Serial.printf(" f%u=%u/%u parse=%d", f, len, odd, ok ? 1 : 0);
+    volatile char *p = m.pass;
+    for (size_t i = 0; i < sizeof m.pass; i++) p[i] = 0;
+  }
+  Serial.println();
+  volatile char *w = line;   // enthält das WLAN-Passwort
+  for (size_t i = 0; i < sizeof line; i++) w[i] = 0;
+}
+
+// Diagnose: U-Zeile mit Schein-WLAN senden (der XIAO muss mit "U err" antworten); slow = Byte für Byte mit Pausen.
+static void usb_utest(bool slow) {
+  const ota_pull::CamInfo c = ota_pull::cam_info();
+  char line[CAM_LINE_MAX + 8];
+  const size_t n = c.avail ? cam_build_upd_cmd(c.url, c.sha, "madbuddy-test", "x", line, sizeof line) : 0;
+  Serial.printf("utest: n=%u slow=%d\n", (unsigned)n, slow ? 1 : 0);
+  if (!slow) { cam_uart_write_sealed(line, n); return; }
+  for (size_t i = 0; i < n; i++) { cam_uart_write_sealed(line + i, 1); delayMicroseconds(400); }
+}
+
+// USB-Befehle vom PC, zeilenweise und nichtblockierend: "snap" = Kamerabild über USB holen (tools/cam-snap.py),
+// "uinfo"/"utest"/"utestslow" = Diagnose des Kamera-Updates.
 static void usb_cmd_poll(uint32_t now) {
   static char buf[16];
   static uint8_t n = 0;
@@ -353,6 +389,9 @@ static void usb_cmd_poll(uint32_t now) {
     if (c == '\n') {
       buf[n] = '\0';
       if (!over && strcmp(buf, "snap") == 0) cam_uart_snap(now);
+      else if (!over && strcmp(buf, "uinfo") == 0) usb_uinfo();
+      else if (!over && strcmp(buf, "utest") == 0) usb_utest(false);
+      else if (!over && strcmp(buf, "utestslow") == 0) usb_utest(true);
       n = 0;
       over = false;
     } else if (n < sizeof buf - 1) buf[n++] = c;
@@ -365,7 +404,10 @@ static void on_cam_msg(const CamMsg &m, uint32_t now) {
   else if (m.kind == CAM_NOFACE) s_cam_nn++;
   else if (m.kind == CAM_HEART) s_cam_nh++;
   presence_msg(s_presence, m, now, CAM_MIRROR_X);
-  if (m.kind == CAM_UPD_PCT || m.kind == CAM_UPD_OK || m.kind == CAM_UPD_ERR) ota_card_cam_msg(m, now);   // Kamera-Update (Karte)
+  if (m.kind == CAM_UPD_PCT || m.kind == CAM_UPD_OK || m.kind == CAM_UPD_ERR) {
+    Serial.printf("cam: U kind=%d pct=%u %s\n", (int)m.kind, (unsigned)m.pct, m.text);
+    ota_card_cam_msg(m, now);   // Kamera-Update (Karte)
+  }
 }
 
 // Stimmung läuft auf jedem Bildschirm weiter (Zeit vergeht), Licht und LED auch.
