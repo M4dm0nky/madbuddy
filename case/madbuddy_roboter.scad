@@ -24,6 +24,8 @@ wall       = 2.4;    // Wandstaerke (>= 2 mm)
 front_t    = 2.0;    // Dicke der Frontplatte (Gesicht)
 back_t     = 2.6;    // Dicke der Rueckwand (Platz fuer Schraubenkopf-Senkung)
 leg_h      = 33.6;   // Auftraggeber (Fix-Runde): Hoehe der Oberschenkel 32 (Konzept) + 1,6, damit ueber den Zellen 2 mm Luft bleiben; der ganze Oberbau (Oberkoerper, Hals, Kopf, Arme, Haende) wandert um 1,6 mit
+t_rise     = 0;      // Oberkoerper-Erhoehung fuer den Lautsprecher (Spec 2026-11-04); hebt alles oberhalb der unteren Dome an, Unterkante/Sitz/Arme bleiben
+t_h        = 48 + t_rise;   // QUELLE: Konzept (t_h) 48 + Erhoehung
 lift       = leg_h - 32;   // abgeleitet: Verschiebung des Oberbaus gegenueber dem Konzept (nur fuer die Massenliste)
 ch         = 4.0;    // 45-Grad-Fase rundum am Gesicht und an der Rueckseite (statt Kugelrundung, ohne Stuetzen druckbar)
 lip_h      = 3.0;    // Hoehe der Falz (Passlippe) zwischen Front und Rueckwand
@@ -88,7 +90,7 @@ cable_d      = 12;   // Kabelloch (>= 10, JST-Stecker passt hindurch)
 pad_h        = 11;   // Halssockel steht so weit unten aus dem Kopf (Kernloch 7,6 + Restboden im Material)
 neck_pilot_len = 7.6; // Kernloch M3 im Material (>= 7,5)
 bore_t       = 3;  // Tiefe der Flanschbohrung im Sockel
-neck_pt      = [0, -8, leg_h + 50];  // QUELLE: Konzept: Anschlusspunkt des Kopfes in der Weltlage (Mitte Sockelflaeche) = leg_h - 4 + t_h (48) + neck_h (6); folgt leg_h, die Form des Oberbaus bleibt gleich
+neck_pt      = [0, -8, leg_h - 4 + t_h + 6];  // QUELLE: Konzept: Anschlusspunkt des Kopfes in der Weltlage (Mitte Sockelflaeche) = leg_h - 4 + t_h (48) + neck_h (6); folgt leg_h, die Form des Oberbaus bleibt gleich
 
 // ================================================================= abgeleitete Werte
 a_lip     = (wall - fit) / 2;                 // Aussenhaelfte der Wand im Falzbereich
@@ -346,7 +348,7 @@ module neck_frame() { translate(neck_pt) rotate([-head_tilt, 0, 0]) children(); 
 //   Phase 3: XIAO von hinten in die Brust schieben, Rueckwand schliessen, Oberkoerper auf den Sitz stecken und von unten verschrauben.
 t_w        = 64;     // QUELLE: Konzept (t_w): Breite
 t_d        = 44;     // QUELLE: Konzept (t_d): Tiefe
-t_h        = 48;     // QUELLE: Konzept (t_h): Hoehe
+// t_rise und t_h stehen oben bei "Allgemein" (nach leg_h): OpenSCAD 2021.01 wertet Zuweisungen der Reihe nach aus, neck_pt braucht t_h
 t_r        = 10;     // QUELLE: Konzept (t_r): Eckradius oben (Frontansicht)
 t_y        = 14;     // QUELLE: Konzept (t_y): Rueckseite des Oberkoerpers
 // leg_h steht oben bei "Allgemein" (der Kopf-Anschlusspunkt neck_pt haengt davon ab)
@@ -354,16 +356,16 @@ t_ch       = 3.5;    // VORLÄUFIG (Entwurf): 45-Grad-Fase an Brust und Ruecksei
 torso_origin = [0, t_y - t_d / 2, leg_h - 4];   // QUELLE: Konzept: [0, t_y - t_d/2, leg_h - 4] = Mitte der Unterkante des Oberkoerpers in Weltlage (Task 4 baut darauf auf)
 t_plate_z  = 4;      // VORLÄUFIG (Entwurf): Bodenplatte 4 mm ueber der Unterkante, darunter die Steckkante (Rand), in die der Sitz (Task 4) greift
 t_cable_d  = 10;     // QUELLE: Aufgabe: Kabeldurchfuehrung unten >= 10
-t_dome_pts = [[-16, 8], [16, 8], [-16, 41], [16, 41]];   // VORLÄUFIG (Entwurf): M3-Dome (Teilung vorn/hinten), Lage X/Z; untere Dome von Z 10 auf 8 gesenkt, damit die XIAO-Wiege (Z ab 12,3) frei bleibt
+t_dome_pts = [[-16, 8], [16, 8], [-16, 41 + t_rise], [16, 41 + t_rise]];   // VORLÄUFIG (Entwurf): M3-Dome (Teilung vorn/hinten), Lage X/Z; untere Dome von Z 10 auf 8 gesenkt, damit die XIAO-Wiege (Z ab 12,3) frei bleibt
 t_dome_d   = 7.4;    // VORLÄUFIG (Entwurf): Dom aussen; Wand um die Durchgangsbohrung (Ø3,4) 2,0
 t_dome_pilot = 9;    // VORLÄUFIG (Entwurf): Kernloch im vorderen Dom (>= 7,5)
 t_seat_pts = [for (sx = [-1, 1], sy = [-1, 1]) [sx * 24, sy * 12]];   // VORLÄUFIG (Entwurf): 4 M3-Kernloecher unten fuer den Sitz (X/Y), Schrauben von unten
 t_seat_pilot = 8.0;  // VORLÄUFIG (Entwurf): Kernloch M3 (>= 7,5); 8,0 damit die Sitzschraube M3x10 (Spitze bei 7,5 ab Plattenunterseite) 0,5 mm Reserve hat; Restboden 1,5
 t_seat_blk_z = 13.5; // VORLÄUFIG (Entwurf): Oberkante der Sitzpfosten ueber der Unterkante
-t_deco_pts = [for (sx = [-1, 1], z = [12, 40.8]) [sx * 23, z]];   // QUELLE: Konzept: Brust-Schrauben (Einlagen) bei 0,25 und 0,85 t_h
+t_deco_pts = [for (sx = [-1, 1], z = [12, 40.8 + t_rise]) [sx * 23, z]];   // QUELLE: Konzept: Brust-Schrauben (Einlagen) bei 0,25 und 0,85 t_h
 // --- Kamera / XIAO: einfach gehalten und parametrisch, die Halterung wird nach Task 4 neu bestimmt
 cam_tilt   = 15;     // QUELLE: Aufgabe: Kamera nach oben gekippt
-cam_z      = 27;     // VORLÄUFIG (gerechnet): Linsenhoehe ueber der Unterkante (Konzept 0,6 * t_h = 28,8). Der gekippte Stapel (15 Grad, 21 mm Tiefe) belegt Z cam_z-14,8 ... cam_z+6,3: oben bleiben 1,7 mm zum Halsblock (Z 35), unten 0,5 mm ueber den unteren Domen (Oberkante Z 11,7)
+cam_z      = 27 + t_rise;     // VORLÄUFIG (gerechnet): Linsenhoehe ueber der Unterkante (Konzept 0,6 * t_h = 28,8). Der gekippte Stapel (15 Grad, 21 mm Tiefe) belegt Z cam_z-14,8 ... cam_z+6,3: oben bleiben 1,7 mm zum Halsblock (Z 35), unten 0,5 mm ueber den unteren Domen (Oberkante Z 11,7)
 // Linsenloch-Fase im Roboter: 45 Grad zur Achse (QUELLE: Spec 45 Grad; Entscheidung 2026-10-28: Stuetzen am Linsenloch beim Druck von torso_front akzeptiert, die Fase ist
 // die einzige Ausnahme der Ueberhang-Pruefung, siehe check_roboter.ps1 Schritt 3j). cam_chamfer_ang bleibt ungesetzt (Vorgabe 45 in xiao_cam_block.scad).
 cam_cone_l = 26;     // QUELLE: Entscheidung Auftraggeber 2026-10-28 (Spec: Roboter 26 mm statt 30 mm). Begruendung (gerechnet): Laenge des Sichtkegels (Spec: 30). Die Fuesse beginnen bei Y -62, 32 mm vor der Linse: der untere Bildrand (102 Grad diagonal) trifft sie ab etwa 27 mm Abstand; bis 26 mm ist die Sicht frei
@@ -385,9 +387,9 @@ neck_lobe_d = 6.6;   // VORLÄUFIG (Entwurf): Werkzeugkanal fuer die Kopfschraub
 drv_d      = 6;      // QUELLE: Aufgabe: Schraubendreher-Pruefkoerper Ø6
 drv_l      = 60;     // QUELLE: Aufgabe: Schraubendreher-Pruefkoerper 60 lang
 screw_head_h = 3;    // VORLÄUFIG (Datenblatt): M3-Linsenkopf, Hoehe
-neck_rec_floor = 45; // VORLÄUFIG (Entwurf): Boden der Flanschmulde im Oberkoerper (Mulde 3 tief)
+neck_rec_floor = 45 + t_rise; // VORLÄUFIG (Entwurf): Boden der Flanschmulde im Oberkoerper (Mulde 3 tief)
 neck_lo_z  = neck_rec_floor + 0.05;   // VORLÄUFIG (Entwurf): 0,05 Luft zum Muldenboden
-neck_blk_z = 35;     // VORLÄUFIG (Entwurf): Unterkante des Halsblocks im Oberkoerper
+neck_blk_z = 35 + t_rise;     // VORLÄUFIG (Entwurf): Unterkante des Halsblocks im Oberkoerper
 block_hw   = 24;     // VORLÄUFIG (Entwurf): Halbbreite des Halsblocks (Mulde + Laschen 20,65 + Wand >= 2)
 neck_pilot_t = 7.6;  // VORLÄUFIG (Entwurf): Kernloch M3 im Halsblock (>= 7,5)
 // --- Arm / Hand (Weltlage)
@@ -469,7 +471,7 @@ module t_cavity() {
     t_ext(-t_d / 2 + y_cf_t - 0.01, -t_d / 2 + y_cf_t) t_cav2d(wall);
   }
 }
-module t_half(front) { intersection() { t_solid(); translate([-40, front ? -t_d / 2 - 1 : 0, -10]) cube([80, t_d / 2 + 1, 70]); } }
+module t_half(front) { intersection() { t_solid(); translate([-40, front ? -t_d / 2 - 1 : 0, -10]) cube([80, t_d / 2 + 1, 70 + t_rise]); } }
 // Innenkontur des Steckrandes (XY-Schnitt bei z < t_plate_z) OHNE Spiel (fit nicht abgezogen): Task 4 zieht fit/2 je Seite ab, damit der Sitz hineingreift
 module torso_pocket2d() {
   hxp = t_w / 2 - wall; hyp = t_d / 2 - wall;
@@ -582,7 +584,7 @@ module torso_front(pilots = true) {
     for (p = t_deco_pts) translate([p[0], -t_d / 2 - 0.01, p[1]]) rotate([-90, 0, 0]) cylinder(d = deco_d + fit_peg, h = deco_in + 0.01);
   }
 }
-module vent_slots() for (x = [-8, -4, 0, 4, 8]) translate([x - 0.8, t_d / 2 - wall - 1, 17]) cube([1.6, wall + 2, 14]);   // Lueftungsschlitze (schneiden auch die Stuetzwand der Wiege an)
+module vent_slots() for (x = [-8, -4, 0, 4, 8]) translate([x - 0.8, t_d / 2 - wall - 1, 17 + t_rise]) cube([1.6, wall + 2, 14]);   // Lueftungsschlitze (schneiden auch die Stuetzwand der Wiege an)
 module torso_back(pilots = true) {
   difference() {
     union() {
