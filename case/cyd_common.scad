@@ -12,7 +12,7 @@ pcb_w      = 86.0;  // QUELLE: Originalzeichnung
 pcb_h      = 50.0;  // QUELLE: Originalzeichnung
 pcb_r      = 4.0;   // Eckradius der Platine -- QUELLE: Originalzeichnung (ca.)
 pcb_t      = 1.6;   // VORLÄUFIG (Datenblatt) Platinendicke
-hole_d     = 3.2;   // QUELLE: Originalzeichnung (R 1,6)
+hole_d     = 3.0;   // GEMESSEN am CYD (Nutzer 2026-11-03), Zeichnung sagte R 1,6 = 3,2. Zentrierstift = hole_d - 0,4
 hole_off   = 4.0;   // QUELLE: Originalzeichnung: Lochmitte 4,0 mm von beiden Kanten (Lochabstand 78 x 42)
 
 // ---------------------------------------------------------------- Displaymodul
