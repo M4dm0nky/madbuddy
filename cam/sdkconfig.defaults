@@ -13,4 +13,4 @@ CONFIG_MBEDTLS_PSK_MODES=y
 CONFIG_MBEDTLS_KEY_EXCHANGE_PSK=y
 # Version im App-Deskriptor: muss CAM_FW_VERSION in src/cam_config.h entsprechen (ota-publish prüft das und liest sie ins Manifest)
 CONFIG_APP_PROJECT_VER_FROM_CONFIG=y
-CONFIG_APP_PROJECT_VER="0.1.1"
+CONFIG_APP_PROJECT_VER="0.1.2"

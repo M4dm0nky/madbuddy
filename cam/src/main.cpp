@@ -50,7 +50,11 @@ static void send_snapshot() {
   if (!fb) { send_j("J X no_frame"); return; }
   uint8_t *jpg = nullptr;
   size_t len = 0;
-  const bool ok = frame2jpg(fb, 80, &jpg, &len);
+  int rw, rh;
+  camera_fb_t rot = *fb;   // gedrehte Sicht auf das Bild (Puffer aus camera_rotated)
+  rot.buf = (uint8_t *)camera_rotated(fb, &rw, &rh);
+  rot.width = rw; rot.height = rh;
+  const bool ok = frame2jpg(&rot, 80, &jpg, &len);
   esp_camera_fb_return(fb);
   if (!ok || !jpg || len == 0) { if (jpg) free(jpg); send_j("J X jpeg_fail"); return; }
   char c[CAM_LINE_MAX];

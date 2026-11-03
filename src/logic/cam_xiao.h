@@ -20,6 +20,34 @@ static inline bool cam_box_to_face(int x1, int y1, int x2, int y2, int img_w, in
   return true;
 }
 
+// Bildmaße nach Drehung um rot (0/90/180/270): bei 90/270 sind Breite und Höhe vertauscht.
+static inline void cam_rot_dims(int w, int h, int rot, int *ow, int *oh) {
+  const bool sw = (rot == 90 || rot == 270);
+  *ow = sw ? h : w;
+  *oh = sw ? w : h;
+}
+
+// Dreht ein Bild mit 2 Byte je Pixel (Bytes bleiben unverändert, RGB565-BE-Reihenfolge bleibt) im Uhrzeigersinn.
+// dst darf nicht auf src zeigen. 90°: linke Quellspalte wird oberste Zeile. Ungültiger Winkel = Kopie.
+static inline void cam_rotate_px2(const uint8_t *src, int w, int h, uint8_t *dst, int rot_cw) {
+  int ow, oh;
+  cam_rot_dims(w, h, rot_cw, &ow, &oh);
+  for (int y = 0; y < oh; y++) {
+    for (int x = 0; x < ow; x++) {
+      int sx, sy;
+      switch (rot_cw) {
+        case 90:  sx = y;         sy = h - 1 - x; break;
+        case 180: sx = w - 1 - x; sy = h - 1 - y; break;
+        case 270: sx = w - 1 - y; sy = x;         break;
+        default:  sx = x;         sy = y;         break;
+      }
+      const uint8_t *p = src + 2 * ((long)sy * w + sx);
+      uint8_t *q = dst + 2 * ((long)y * ow + x);
+      q[0] = p[0]; q[1] = p[1];
+    }
+  }
+}
+
 // Probelauf nach einem Update: gilt als gut nach 20 s ohne Kamerafehler mit mindestens 5 Lebenszeichen,
 // sonst Rollback nach 60 s. cam_ok = Kamera seit dem Start einmal gelaufen und seitdem kein Fehler.
 // up_ms = Zeit seit dem Start des neuen Images (kurz, höchstens ~60 s; kein Langzeitvergleich).

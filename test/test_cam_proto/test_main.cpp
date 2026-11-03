@@ -257,8 +257,38 @@ void test_snap_cmd() {
   TEST_ASSERT_FALSE(parse_str(seal("J E"), &m));
 }
 
+// 3x2-Bild, 2 Byte je Pixel: Pixel k hat die Bytes {k, 0x80+k}
+//   0 1 2
+//   3 4 5
+static void rot_src(uint8_t *s) { for (int k = 0; k < 6; k++) { s[2 * k] = (uint8_t)k; s[2 * k + 1] = (uint8_t)(0x80 + k); } }
+static void rot_expect(const uint8_t *d, const int *px, int n) {
+  for (int i = 0; i < n; i++) {
+    TEST_ASSERT_EQUAL_UINT8(px[i], d[2 * i]);
+    TEST_ASSERT_EQUAL_UINT8(0x80 + px[i], d[2 * i + 1]);
+  }
+}
+void test_rotate_px2() {
+  uint8_t s[12], d[12];
+  rot_src(s);
+  int ow, oh;
+  cam_rot_dims(3, 2, 0, &ow, &oh);   TEST_ASSERT_EQUAL(3, ow); TEST_ASSERT_EQUAL(2, oh);
+  cam_rot_dims(3, 2, 90, &ow, &oh);  TEST_ASSERT_EQUAL(2, ow); TEST_ASSERT_EQUAL(3, oh);
+  cam_rot_dims(3, 2, 180, &ow, &oh); TEST_ASSERT_EQUAL(3, ow); TEST_ASSERT_EQUAL(2, oh);
+  cam_rot_dims(3, 2, 270, &ow, &oh); TEST_ASSERT_EQUAL(2, ow); TEST_ASSERT_EQUAL(3, oh);
+
+  const int e0[]   = {0, 1, 2, 3, 4, 5};
+  const int e90[]  = {3, 0, 4, 1, 5, 2};   // linke Quellspalte (0,3) wird oberste Zeile: 3 0
+  const int e180[] = {5, 4, 3, 2, 1, 0};
+  const int e270[] = {2, 5, 1, 4, 0, 3};
+  cam_rotate_px2(s, 3, 2, d, 0);   rot_expect(d, e0, 6);
+  cam_rotate_px2(s, 3, 2, d, 90);  rot_expect(d, e90, 6);
+  cam_rotate_px2(s, 3, 2, d, 180); rot_expect(d, e180, 6);
+  cam_rotate_px2(s, 3, 2, d, 270); rot_expect(d, e270, 6);
+}
+
 int main(int, char **) {
   UNITY_BEGIN();
+  RUN_TEST(test_rotate_px2);
   RUN_TEST(test_snap_cmd);
   RUN_TEST(test_xor_known);
   RUN_TEST(test_build_fixed_lines);
