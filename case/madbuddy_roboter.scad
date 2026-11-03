@@ -497,15 +497,14 @@ module block_probe(narrow) intersection() {   // ganzer Block (Kamera + XIAO) fu
   translate([-100, xiao_vmin + narrow, -100]) cube([200, xiao_vmax - xiao_vmin - 2 * narrow, 200]);
 }
 module cam_fill() translate([-cam_outer_h, -cam_outer_h, 0.4]) cube([2 * cam_outer_h, 2 * cam_outer_h, cam_wt + 4]);
-// Wiege-Pfosten und Anschlag liegen in Bloecken der Seeed-Koordinaten (u/v): Pfosten an den Laengsseiten (u xiao_post_u0 ... u1), der Anschlag mittig unter der XIAO-Unterseite.
-// Der Block liegt (15 Grad geneigt) bei Y ca. -22 ... -4: die Pfosten gehoeren ganz zu torso_front. Der Anschlag kommt von der Rueckwand und reicht ueber die Teilungsebene in die
+// Schacht und Anschlag liegen in Bloecken der Seeed-Koordinaten (u/v): Schachtwaende um die XIAO-Platine (xiao_tray, Luecken fuer Loetstellen, USB-C, U.FL), der Anschlag mittig unter der XIAO-Unterseite.
+// Der Block liegt (15 Grad geneigt) bei Y ca. -22 ... -4: die Schachtwaende gehoeren ganz zu torso_front. Der Anschlag kommt von der Rueckwand und reicht ueber die Teilungsebene in die
 // Vorderhaelfte hinein (Falz-Prinzip): er gehoert nur zu torso_back und wird nicht an t_half geschnitten. Er ist ein Hull (Anschlagflaeche -> Rueckwand), seine Seitenflaechen
 // liegen in Ebenen X = const bzw. Z = const (im Druck von torso_back senkrecht), die Anschlagflaeche ist oben (Druckrichtung -Y), kein Ueberhang.
 stop_u0 = 0.5; stop_u1 = 7.5;      // VORLÄUFIG (Entwurf): Anschlag in u: mittig am USB-Ende, X -3,0 ... 4,0 -- zwischen den Werkzeugkanaelen (Kanalkanten X +-4,7), frei von den Loetstellen am Rand
 stop_v0 = -4; stop_v1 = 5;         // VORLÄUFIG (Entwurf): Anschlag in v (die Platinenkanten mit den Loetstellen -8,25 / 9,53 bleiben frei)
-module cam_post_roots() cam_frame() for (sy = [-1, 1]) {
-  yin = sy > 0 ? xiao_vmax + xiao_play : xiao_vmin - xiao_play;
-  translate([xiao_post_x(sy)[0], sy > 0 ? yin : yin - xiao_post_t, 0.4]) cube([xiao_post_x(sy)[1], xiao_post_t, cam_wt + 4]);   // Pfostenwurzeln bis zur Aussenhuelle (sonst waere der Pfostenanfang im Druck eine freitragende Flaeche)
+module cam_post_roots() cam_frame() for (r = xiao_tray()) {
+  xiao_tray_box(r, 0.4, cam_wt + 4);   // Wurzeln der Schachtwaende bis zur Aussenhuelle (sonst waere ihr Anfang im Druck eine freitragende Flaeche)
 }
 module cam_stop() {   // Anschlag im Rueckteil: Anschlagflaeche xiao_stop_gap hinter der XIAO-Unterseite, Hull zur Rueckwand
   zw = xiao_zbot(cam_wt) - xiao_stop_gap;
@@ -518,8 +517,10 @@ module cam_stop() {   // Anschlag im Rueckteil: Anschlagflaeche xiao_stop_gap hi
   }
 }
 module cam_stop_back() if (!cam_off) intersection() { t_solid(); cam_stop(); }   // nur fuer torso_back
+tray_side   = 0;      // nur Pruefhilfe (tray_fit): Seite des Schachts, die gemessen wird
+tray_extra  = 0.05;   // nur Pruefhilfe (tray_fit): Aufweitung ueber das Spiel hinaus (Gegenprobe -0,05: dann leer)
 cam_off     = false;  // nur Pruefhilfe (Ueberhang-Vergleich): true = ganze Kamera-Geometrie (Tasche, Wiege, Anschlag) entfaellt
-module cam_posts() difference() { cam_frame() xiao_cradle_add(cam_wt); cam_free_volumes(); }   // Wiege-Pfosten: der Werkzeugkanal der Kopfschraube (X +8) schneidet das Ende des oberen Pfostens an (dort bleibt nur der Teil links der Kanalkante, siehe Bericht)
+module cam_posts() difference() { cam_frame() xiao_cradle_add(cam_wt); cam_free_volumes(); }   // Schachtwaende: der Werkzeugkanal der Kopfschraube (X +8) bleibt frei (obere Laengswand liegt hinter dem Kanal, u 15,0 ... 17,2)
 module cam_mount() { if (!cam_off) { cam_frame() { cam_pocket_add(cam_wt); cam_fill(); } cam_posts(); cam_post_roots(); } }   // positiv (ungeschnitten), nur torso_front
 module cam_nofill() { cam_frame() cam_pocket_add(cam_wt); cam_posts(); cam_stop(); }   // Rahmen + Wiege + Anschlag ohne Fuellblock (fuer die Lage-Pruefungen)
 module cam_free_volumes() { drv_channel(); translate([0, 0, t_plate_z - 1]) cylinder(d = t_cable_d, h = wall + 2); }   // Werkzeugkanaele + Kabelloch Ø10
@@ -1090,10 +1091,13 @@ else if (part == "deco") {                                                     /
 }
 else if (part == "torso_front") translate([0, 0, t_d / 2]) rotate([90, 0, 0]) torso_front();     // Brust (y = -22) auf dem Bett
 else if (part == "torso_back")  translate([0, 0, t_d / 2]) rotate([-90, 0, 0]) torso_back();     // Rueckseite (y = +22) auf dem Bett
-else if (part == "cam_test")   // Testausschnitt (ca. 15 min Druck): Brustwand X +-18 / Y +-14 mm um die Linse (X 18, damit die Rippen am Rand nicht frei haengen) mit Tasche, Rahmen, Pfosten mit Lippen und Wurzeln; Aussenseite unten wie torso_front
-  difference() {   // ohne die zwei Randstuecke bei |X| > 12,3 (gehoeren am ganzen Teil zur Schale ausserhalb des Ausschnitts, hingen im Test frei)
-  translate([0, 0, t_d / 2]) rotate([90, 0, 0]) intersection() { torso_front(false); cam_frame() translate([-18, -14, cam_zrear(cam_wt) - 13]) cube([36, 28, 13 + cam_wt + 6]); }
-    for (sx = [-1, 1]) translate([sx > 0 ? 12.3 : -18.1, -11.85, -1]) cube([5.8, 10, 30]);
+else if (part == "cam_test")   // Testausschnitt (ca. 15 min Druck): Brustwand X -18 ... Aussenkante der Schachtwand am Klappstecker-Ende (X 21,02) / Y +-14 mm um die Linse mit Tasche, Rahmen, Schacht und Wurzeln; Aussenseite unten wie torso_front
+  difference() {   // ohne die Randstuecke bei |X| > 12,3 (gehoeren am ganzen Teil zur Schale ausserhalb des Ausschnitts, hingen im Test frei) und ohne die 0,6 mm duenne Schalenrippe neben dem Schacht am Klappstecker-Ende
+  translate([0, 0, t_d / 2]) rotate([90, 0, 0]) difference() {
+    intersection() { torso_front(false); cam_frame() translate([-18, -14, cam_zrear(cam_wt) - 13]) cube([18 + xiao_tray()[2][1] - xiao_u_lens, 28, 13 + cam_wt + 6]); }
+    cam_frame() translate([xiao_tray()[2][0] - xiao_u_lens - 0.5, -20, cam_zrear(cam_wt) - 20]) cube([10, xiao_tray()[2][2] - 0.01 + 20, 40]);
+  }
+    for (sx = [-1, 1]) translate([sx > 0 ? 12.3 : -18.1, -11.85, -1]) cube([sx > 0 ? 10 : 5.8, 10, 30]);
   }
 else if (part == "neck")        translate([0, 0, -neck_lo_z]) neck();                              // stehend auf dem unteren Flansch
 else if (part == "arm") { if (side > 0) arm_print(); else mirror([0, 1, 0]) arm_print(); }       // liegend auf der Aussenseite
@@ -1138,15 +1142,22 @@ else if (part == "empty_ctrl") intersection() { cube(1); translate([5, 5, 5]) cu
 else if (part == "ovh_ctrl_steep") translate([0, 0, 5]) rotate([35, 0, 0]) cube([10, 10, 3]);   // Kontrolle fuer die Ueberhang-Pruefung: Flanke mit 55 Grad Ueberhang (nz -0,82), MUSS als "steil" erkannt werden
 else if (part == "ovh_ctrl_steep_low") translate([0, 0, 0.3]) rotate([35, 0, 0]) cube([10, 3, 3]);   // Kontrolle zur Ausnahme: steile Flanke ganz unten (innerhalb der Hoehengrenze der Ausnahme), aber weit von der Linsenachse: MUSS trotz Ausnahme erkannt werden
 else if (part == "ovh_ctrl_flat") translate([0, 0, 5]) cube([20, 20, 2]);                       // Kontrolle: 20 mm freitragende Decke, MUSS als Bruecke > 15 mm erkannt werden
-// ---- Montagewege (Kamera v2): der ganze Block (Kamera + XIAO) wird bei abgenommener Rueckwand von hinten (lokal -Z) in die Tasche und zwischen die Pfosten geschoben, dann schliesst torso_back. Jeder Weg ist eine Reihe von Zwischenstellungen.
+// ---- Montagewege (Kamera v2): der ganze Block (Kamera + XIAO) wird bei abgenommener Rueckwand von hinten (lokal -Z) in die Tasche und in den Schacht geschoben, dann schliesst torso_back. Jeder Weg ist eine Reihe von Zwischenstellungen.
 else if (part == "asm_block")   // Block wird von hinten eingeschoben (Zwischenstellungen alle 1,5 mm bis 30 mm), torso_back ist abgenommen.
-  // Die Lippen der Pfosten (xiao_lip 1,0, Spiel 0,3) werden vom Block beim Einrasten um 0,7 mm je Seite weggedrueckt (Schnapper, siehe asm_block_lip): der Sondierkoerper ist deshalb um 2 x 0,7 schmaler.
-  place_torso() for (s = [0 : 1.5 : 30]) intersection() { torso_front(); cam_frame() translate([0, 0, -s]) block_probe(xiao_lip - xiao_play + 0.02); }
+  // Mit Rastlippe (xiao_lip > 0) wird der Sondierkoerper um 2 x (Lippe - Spiel) schmaler (Lippen federn weg); ohne Lippe (xiao_lip = 0, Schacht) volle Groesse.
+  place_torso() for (s = [0 : 1.5 : 30]) intersection() { torso_front(); cam_frame() translate([0, 0, -s]) block_probe(max(0, xiao_lip - xiao_play + 0.02)); }
 else if (part == "asm_block_ctrl")   // Kontrolle: Kamerakoerper +0,6 mm MUSS die Tasche treffen
   place_torso() for (s = [0 : 1.5 : 30]) intersection() { torso_front(); cam_frame() translate([0, 0, -s]) cam_body_probe(0.6); }
-else if (part == "asm_block_lip")   // Kontrolle und Nachweis: voller Block trifft die Lippen (Schnapp-Ueberdeckung 0,7 mm je Seite), MUSS treffen
-  place_torso() for (s = [0 : 1.5 : 30]) intersection() { torso_front(); cam_frame() translate([0, 0, -s]) block_probe(0); }
-else if (part == "asm_close")  // torso_back wird in -Y auf torso_front geschoben (Zwischenstellungen bis 30 mm), Block sitzt schon: Anschlag und Lippen duerfen ihn nicht treffen
+else if (part == "tray_fit")   // Schacht fuehrt an jeder Seite mit hoechstens Spiel + 0,05: das aussenliegende Bauteil der Seite tray_side, nur dort um e aufgeweitet, MUSS die Schachtwand treffen.
+  // 0 USB-Ende: microSD-Steckplatz (u -3,11); 1 Klappstecker-Ende: Sense-Platine (u 21,25); 2 U.FL-Laengsseite / 3 obere Laengsseite: XIAO-Platine (v -8,25 / 9,53)
+  let(e = xiao_play + tray_extra) place_torso() intersection() {
+    cam_posts();
+    cam_frame() if (tray_side == 0) xbox(-3.11 - e, -1, -5.77, 5.41, 6.85, xiao_h_cam, cam_wt);
+    else if (tray_side == 1) xbox(19, 21.25 + e, -7.75, 9.03, 4.18, 5.43, cam_wt);
+    else if (tray_side == 2) xbox(0, 20.96, xiao_vmin - e, -6, 0, 1.25, cam_wt);
+    else xbox(0, 20.96, 7, xiao_vmax + e, 0, 1.25, cam_wt);
+  }
+else if (part == "asm_close")  // torso_back wird in -Y auf torso_front geschoben (Zwischenstellungen bis 30 mm), Block sitzt schon: der Anschlag darf ihn nicht treffen
   for (s = [0.5, 1, 2, 3, 5, 8, 12, 20, 30]) intersection() { translate([0, s, 0]) place_torso() torso_back(); union() { xiao_dummy_r(); camera_dummy_r(); } }
 else if (part == "asm_close_ctrl")   // Kontrolle: Block 1 mm zum Anschlag hin verschoben (Luft 0,15) MUSS den Anschlag treffen
   for (s = [0, 0.5, 1, 2, 3]) intersection() { translate([0, s, 0]) place_torso() torso_back(); place_torso() cam_frame() translate([0, 0, -1]) xiao_stack_dummy(cam_wt); }
@@ -1163,7 +1174,7 @@ else if (part == "lens_tip")         // Linsenspitze (Achsen-Probe Ø1, bis cam_
   difference() { place_torso() cam_frame() translate([0, 0, cam_tip_ref - 1]) cylinder(d = 1, h = 1); place_torso() t_solid(); }
 else if (part == "lens_tip_ctrl")    // Kontrolle: Linse 0,5 mm laenger ragt ueber die Aussenhuelle, MUSS treffen
   difference() { place_torso() cam_frame() translate([0, 0, cam_tip_ref - 1]) cylinder(d = 1, h = 1.5); place_torso() t_solid(); }
-else if (part == "cradle_fit")       // Pfosten/Lippen muessen den um 0,6 mm aufgeweiteten Block beruehren (ohne Wiege: leer)
+else if (part == "cradle_fit")       // Schachtwaende muessen den um 0,6 mm aufgeweiteten Block beruehren (ohne Wiege: leer)
   place_torso() intersection() {
     cam_posts();
     cam_frame() xbox(0, 20.96, xiao_vmin, xiao_vmax, 0, 1.25, cam_wt, 0.6, 0.6, 0.6);
@@ -1196,7 +1207,7 @@ else if (part == "cam_section")    // Schnitt durch die Kamera-Tasche bei X = 0 
     intersection() { color("#263238") neck(); translate(cb) cube([25, 40, 52]); }
   }
 // ---- Anzeige-Teile fuer die Einbauanleitung (nur Ansicht, keine Druckteile; _l = Oberkoerper-Koordinaten, unter place_torso())
-else if (part == "guide_1_pocket")   // Schritt 1: leere Tasche in torso_front (Rahmen, Pfosten mit Lippen)
+else if (part == "guide_1_pocket")   // Schritt 1: leere Tasche in torso_front (Rahmen, Schacht)
   guide_c() color("#ff7a29") torso_front();
 else if (part == "guide_2_block")    // Schritt 2: Block (Kamera + XIAO) 15 mm hinter der Sitzlage (lokal -Z), wird von hinten in die Tasche geschoben
   guide_c() {
@@ -1204,7 +1215,7 @@ else if (part == "guide_2_block")    // Schritt 2: Block (Kamera + XIAO) 15 mm h
     color("#d03030") cam_frame() translate([0, 0, -15]) cam_dummy(cam_wt);
     color("#3fbf5f") cam_frame() translate([0, 0, -15]) xiao_stack_dummy(cam_wt);
   }
-else if (part == "guide_3_seated")   // Schritt 3: Block sitzt, Kamera in der Tasche, XIAO zwischen den Pfosten
+else if (part == "guide_3_seated")   // Schritt 3: Block sitzt, Kamera in der Tasche, XIAO im Schacht
   guide_c() {
     color("#ff7a29") torso_front();
     color("#d03030") camera_dummy_l();

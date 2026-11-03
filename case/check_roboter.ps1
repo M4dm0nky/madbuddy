@@ -347,7 +347,7 @@ Chk-Hit   'cam_selftest' "Kamera-Selbsttest: Kamerakoerper +0,6 mm trifft die Ta
 Chk-Hit   'cam_collision_ctrl' "Kontrolle Kollision: um 0,6 mm nach vorn geschobener Kamera-Pruefkoerper trifft den Taschenboden" "Kontrolle Kollision: verschobener Kamera-Pruefkoerper NICHT erkannt (Pruefung taugt nichts)"
 Chk-Empty 'lens_tip'     "Linse: Spitze liegt in der Achse hinter der Aussenhuelle (Wand 3,9 = Linse 3,6 + 0,3)" "Linse: Spitze ragt ueber die Aussenhuelle (Wand zu duenn)"
 Chk-Hit   'lens_tip_ctrl' "Kontrolle Linse: um 0,5 mm laengere Linse ragt ueber die Aussenhuelle und wird erkannt" "Kontrolle Linse: zu lange Linse NICHT erkannt (Pruefung taugt nichts)"
-Chk-Hit   'cradle_fit'   "Wiege: Pfosten/Lippen umschliessen den Block (Positiv-Kontrolle)" "Wiege: beruehrt den aufgeweiteten Block NICHT (leer oder falsche Lage)"
+Chk-Hit   'cradle_fit'   "Schacht: Waende umschliessen den Block (Positiv-Kontrolle)" "Wiege: beruehrt den aufgeweiteten Block NICHT (leer oder falsche Lage)"
 Chk-Empty 'cradle_fit'   "Gegenprobe Wiege: ohne Wiege (cam_dbg_nocradle) beruehrt die Positiv-Kontrolle nichts (Kontrolle misst wirklich die Wiege)" "Gegenprobe Wiege: auch ohne Wiege trifft die Kontrolle (Pruefung taugt nichts)" @('-D', 'cam_dbg_nocradle=true')
 Chk-Empty 'cam_inside'   "Rahmen, Wiege und Anschlag liegen innerhalb der Brusthaut (Abstand >= 0,2 mm)" "Rahmen/Wiege/Anschlag ragt aus der Brusthaut"
 Chk-Hit   'inside_ctrl_z' "Kontrolle Brusthaut: um 30 mm nach oben verschobene Wiege wird erkannt" "Kontrolle Brusthaut (Z): verschobene Wiege NICHT erkannt (Pruefung taugt nichts)"
@@ -360,9 +360,12 @@ Chk-Hit   'cone_ctrl'    "Kontrolle Sichtkegel: um 8 mm nach hinten verschobener
 Chk-Empty 'cam_channels' "Werkzeugkanaele (X +-8, Y -1...-7) und Kabelloch Ø10 sind frei von Tasche, Rahmen, Wiege und Anschlag" "Tasche/Rahmen/Wiege/Anschlag ragt in Werkzeugkanal oder Kabelloch"
 Chk-Hit   'cam_channels_ctrl' "Kontrolle Kanaele: um 8 mm zur Mitte verschobene Kanaele treffen Wiege/Anschlag" "Kontrolle Kanaele: verschobene Kanaele NICHT erkannt (Pruefung taugt nichts)"
 # Montagewege (der ganze Block wird bei abgenommener Rueckwand von hinten eingeschoben, dann torso_back schliessen); jede Reihe Zwischenstellungen + Kontrolle
-Chk-Empty 'asm_block'    "Montage: Block (Kamera + XIAO) laesst sich von hinten durch Tasche und zwischen die Pfosten schieben (Zwischenstellungen bis 30 mm; Lippen weichen um 0,7 mm je Seite aus)" "Montage: Block stoesst beim Einsetzen an"
+Chk-Empty 'asm_block'    "Montage: Block (Kamera + XIAO) laesst sich von hinten durch Tasche und Schacht schieben (Zwischenstellungen bis 30 mm, voller Block)" "Montage: Block stoesst beim Einsetzen an"
 Chk-Hit   'asm_block_ctrl' "Kontrolle Montage Block: um 0,6 mm groesserer Kamerakoerper stoesst an" "Kontrolle Montage Block: zu grosser Kamerakoerper NICHT erkannt (Pruefung taugt nichts)"
-Chk-Hit   'asm_block_lip' "Kontrolle Montage Block: voller Block trifft die Pfostenlippen (Schnapp-Ueberdeckung wird gemessen)" "Kontrolle Montage Block: Lippen werden NICHT getroffen (Pruefung taugt nichts)"
+foreach ($ts in @(@(0, 'USB-Ende (microSD)'), @(1, 'Klappstecker-Ende (Sense)'), @(2, 'U.FL-Laengsseite'), @(3, 'obere Laengsseite'))) {
+  Chk-Hit   'tray_fit' "Schacht $($ts[1]): Bauteil um Spiel + 0,05 aufgeweitet trifft die Wand (Fuehrung <= 0,35 mm)" "Schacht $($ts[1]): KEINE Wand innerhalb Spiel + 0,05 (Block hat dort zu viel Luft oder Wand fehlt)" @('-D', "tray_side=$($ts[0])")
+  Chk-Empty 'tray_fit' "Gegenprobe Schacht $($ts[1]): um Spiel - 0,05 aufgeweitet bleibt frei (Spiel ist wirklich >= 0,25)" "Gegenprobe Schacht $($ts[1]): trifft schon bei Spiel - 0,05 (zu eng)" @('-D', "tray_side=$($ts[0])", '-D', 'tray_extra=-0.05')
+}
 Chk-Empty 'asm_close'    "Montage: torso_back (Anschlag) laesst sich bei sitzendem Block aufschieben" "Montage: torso_back stoesst beim Schliessen an Block/Kamera"
 Chk-Hit   'asm_close_ctrl' "Kontrolle Montage Schliessen: um 1 mm zum Anschlag verschobener Block wird getroffen" "Kontrolle Montage Schliessen: verschobener Block NICHT erkannt (Pruefung taugt nichts)"
 }

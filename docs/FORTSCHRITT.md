@@ -2,6 +2,13 @@
 
 Neueste Einträge oben. Format und Regeln: `docs/superpowers/plans/2026-10-25-cyd-buddy.md`, Abschnitt „Fortschritts-Protokoll“.
 
+## Kamera-Halter v2 – Schacht statt Pfosten (Roboter) – ERLEDIGT bis Testdruck (Stand 2026-11-03)
+- Zeit: 2026-11-02/03 (Opus), Branch `feature/kamera-halter-v2`
+- Anlass: Testdruck 2026-11-02, Pfosten mit Rastlippen zu filigran.
+- Gemacht: `xiao_cam_block.scad` Schacht `xiao_tray()` (6 Wandstücke, 3,0 mm, Spiel 0,3, Lücken für Lötstellen, USB-C, U.FL, Werkzeugkanal), `xiao_lip = 0`; den Block hält der Anschlag im Rückteil. Neue Prüfung `tray_fit` je Seite (Bauteil um Spiel + 0,05 muss die Wand treffen, Gegenprobe Spiel − 0,05 leer) ersetzt `asm_block_lip`. `cam_test` reicht jetzt bis zur Wand am Klappstecker-Ende (X 21,02), dünne Schalenrippe dort entfernt.
+- Prüfung: `check_roboter.ps1 -Only 1,3i,3j` ALLES GRÜN (51); `-Only 1,1b,1c` und `-Only 3,3b,3f` grün; Gegenprobe `asm_block` mit Spiel −0,1 trifft; Überhang `cam_test` 0 steile Flanken, 0 Decken; Querschnitte z 0,5…15 angesehen (nichts frei hängend, obere Längswand verschmilzt mit der Schalenwand); Lötstellen 5V/GND/D6/D7 ≥ 1,0 mm frei.
+- Offen: Testdruck `case/stl/roboter_cam_test.stl` (Nutzer); danach Task 3 (Kopf Stufe 2) und Task 4 des Plans `2026-11-02-kamera-halter-v2.md`.
+
 ## Kamera-Firmware Phase B – Task 7: Release und erster Gerätetest – IN ARBEIT (Stand 2026-11-01 abends)
 - Zeit: 2026-11-01 (Opus mit Nutzer), Branch `feature/kamera-firmware` (d38a35b)
 - Volle Prüfung: `pio test -e native` 223/223, `node --test tools/gen-phrases.test.mjs tools/ota-publish.test.mjs` 12/12, `cyd2usb` SUCCESS (Flash 75,5 %), `tools\cam-build.ps1` SUCCESS (72,1 %).

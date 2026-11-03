@@ -47,10 +47,10 @@ xiao_v_mid   = 0.64;     // QUELLE: STEP -- Mitte der XIAO-Platine in v (v > 0 i
 xiao_h_cam   = 8.2;      // QUELLE: STEP -- Rueckseite des Kamerakoerpers ueber der XIAO-Unterseite
 xiao_pos     = [(xiao_flip ? -1 : 1) * (20.96 / 2 - xiao_u_lens), xiao_v_mid];   // Mitte der XIAO-Platine im lokalen System (X, Y)
 xiao_play    = 0.3;      // Spiel um den Block (= fit)
-xiao_post_t  = 2.4;      // Dicke der Wiege-Pfosten (>= 2 mm)
+xiao_post_t  = 3.0;      // Dicke der Wiege-Pfosten (2,4 war laut Nutzer zu filigran, Testdruck 2026-11-02)
 xiao_post_u0 = 7.0;      // QUELLE: Spec -- Pfosten nur im Bereich u 7,0 ... 12,5 (frei: Loetstellen 5V/GND am USB-Ende, D6/D7 am anderen Ende)
 xiao_post_u1 = 12.5;
-xiao_lip     = 1.0;      // Lippe ueber der XIAO-Unterseite (45 Grad Einfuehrschraege); Schnappmass je Seite = Lippe - Spiel
+xiao_lip     = 0;        // Rastlippe entfaellt (Testdruck 2026-11-02: zu filigran); die XIAO-Platine haelt der Anschlag im Rueckteil. > 0 = Lippe ueber der XIAO-Unterseite (45 Grad)
 xiao_lip_gap = 0.1;      // Luft zwischen XIAO-Unterseite und Lippe
 xiao_stop_gap = 0.15;    // QUELLE: Spec -- Anschlag im Rueckteil hinter der XIAO-Unterseite, Luft
 
@@ -95,28 +95,24 @@ module cam_pocket_cut(wall_t = cam_wall_t) {
 }
 
 // ================================================================= XIAO-Wiege (positiv + negativ)
-// Je ein Pfosten an beiden Laengsseiten (Y aussen, xiao_play Spiel zur XIAO-Kante), nur im Bereich u xiao_post_u0 ... xiao_post_u1.
-// Von der Wand (0,5 mm hinein) bis knapp unter die XIAO-Unterseite; dort greift eine Lippe mit 45-Grad-Einfuehrschraege (xiao_lip) ueber die
-// Unterseite. Der Block wird von hinten eingeschoben: die Pfosten federn nach aussen, die Lippen rasten ueber der XIAO-Unterseite ein
-// und halten ihn nach hinten (Schnappmass je Seite = Lippe - Spiel). Im Roboter schliesst zusaetzlich der Anschlag im Rueckteil.
+// Schacht fuer den Block (Testdruck 2026-11-02: Pfosten mit Rastlippen zu filigran). Feste Waende, xiao_post_t dick, xiao_play Spiel, von der
+// XIAO-Unterseite (h 0) bis 0,5 mm in die Frontwand; der Block wird von hinten eingeschoben, der Anschlag im Rueckteil haelt ihn.
+// Luecken: Loetstellen an den Laengsseiten (Pin 1/2 am USB-Ende u ca. 2,9/5,4, Pin 7 u ca. 18,1), USB-C (v -3,86 ... 5,14),
+// U.FL-Antennenkabel am Klappstecker-Ende (v -7 ... 0); oben (+Y) Werkzeugkanal der Kopfschraube (u ca. 8,2 ... 14,8) frei.
 xiao_vmin = -8.25; xiao_vmax = 9.53;    // QUELLE: STEP -- XIAO-Platine in v
-// Oberer Pfosten (+Y): im Bereich u 7,0 ... 12,5 schneidet ihn im Roboter der Werkzeugkanal der Kopfschraube (X 4,7 ... 11,3) ab (Pfostenteile hingen frei).
-// Darum liegt er hinter dem Kanal bei u 15,0 ... 17,2 (zwischen Pin 6 ohne Draht und Pin 7 mit D6/D7 bei u ca. 18,1). Entscheidung 2026-11-02 nach Testdruck.
-xiao_post_u0_pos = 15.0; xiao_post_u1_pos = 17.2;
-function xiao_post_x(sy) = let(u0 = sy > 0 ? xiao_post_u0_pos : xiao_post_u0, u1 = sy > 0 ? xiao_post_u1_pos : xiao_post_u1,
-                               x0 = u0 - xiao_u_lens, x1 = u1 - xiao_u_lens) [xiao_flip ? -x1 : x0, x1 - x0];   // [Anfang X, Breite]
+function xiao_tray() = let(P = xiao_play, T = xiao_post_t, lo = xiao_vmin - P, hi = xiao_vmax + P, ue = 21.25 + P, uu = -3.11 - P) [
+  [7.0, 16.5, lo - T, lo],              // Laengsseite unten (U.FL-Seite), zwischen Pin 2 und Pin 7
+  [15.0, 17.2, hi, hi + T],             // Laengsseite oben, hinter dem Werkzeugkanal
+  [ue, ue + T, lo - T, -7.0],           // Klappstecker-Ende, Luecke fuer das Antennenkabel v -7 ... 0
+  [ue, ue + T, 0.0, hi + T],
+  [uu - T, uu, lo - T, -4.4],           // USB-Ende, Luecke fuer USB-C
+  [uu - T, uu, 5.7, hi + T]];
+module xiao_tray_box(r, z0, z1) {        // ein Schachtstueck [u0,u1,v0,v1] von Z z0 bis z1 (lokal)
+  x0 = r[0] - xiao_u_lens; x1 = r[1] - xiao_u_lens;
+  translate([xiao_flip ? -x1 : x0, r[2], z0]) cube([x1 - x0, r[3] - r[2], z1 - z0]);
+}
 module xiao_cradle_add(wall_t = cam_wall_t) {
-  zb = xiao_zbot(wall_t);
-  if (!cam_dbg_nocradle) for (sy = [-1, 1]) {   // cam_dbg_nocradle nur fuer die Gegenprobe der Wiege-Pruefung
-    px0 = xiao_post_x(sy)[0]; pw = xiao_post_x(sy)[1];
-    yin = sy > 0 ? xiao_vmax + xiao_play : xiao_vmin - xiao_play;       // Innenflaeche des Pfostens
-    yp = sy > 0 ? yin : yin - xiao_post_t;
-    translate([px0, yp, zb - xiao_lip_gap]) cube([pw, xiao_post_t, 0.5 - zb + xiao_lip_gap]);
-    // Lippe: Dreieck (Y/Z) mit ebener Oberseite 0,1 unter der XIAO-Unterseite, Schraege nach hinten zur Wand, ueber die Pfostenbreite extrudiert
-    translate([px0, 0, 0]) rotate([90, 0, 90]) linear_extrude(pw)
-      polygon(sy > 0 ? [[yin + 0.01, zb - xiao_lip_gap], [yin - xiao_lip, zb - xiao_lip_gap], [yin + 0.01, zb - xiao_lip_gap - xiao_lip]]
-                     : [[yin - 0.01, zb - xiao_lip_gap], [yin + xiao_lip, zb - xiao_lip_gap], [yin - 0.01, zb - xiao_lip_gap - xiao_lip]]);
-  }
+  if (!cam_dbg_nocradle) for (r = xiao_tray()) xiao_tray_box(r, xiao_zbot(wall_t), 0.5);   // cam_dbg_nocradle nur fuer die Gegenprobe der Wiege-Pruefung
 }
 module xiao_cradle_cut(wall_t = cam_wall_t) {               // Huellraum des Blocks (ohne Kamera) + Spiel seitlich; oben bis zur Rahmen-Rueckseite
   xbox(-3.11, 21.25, xiao_vmin, xiao_vmax, 0, cam_zrear(wall_t) - xiao_zbot(wall_t) - 0.02, wall_t, xiao_play);   // 0,02 unter der Rahmen-Rueckseite (keine deckungsgleiche Flaeche)
