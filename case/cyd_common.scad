@@ -21,8 +21,8 @@ glass_h    = 50.0;  // QUELLE: Originalzeichnung
 glass_t    = 2.3;   // QUELLE: Originalzeichnung (Modul ohne Kleber/Abstand)
 disp_h     = 4.5;   // VORLÄUFIG (Datenblatt) Oberkante Display ueber Platine (Modul 2,3 + Klebeband/Abstand)
 lcd_len    = 64.75; // QUELLE: Originalzeichnung: LCD-Glasflaeche in Laengsrichtung
-aa_left    = 10.0;  // GEMESSEN: linke Platinenkante (Blick von vorn) bis Beginn bespielte Flaeche
-aa_meas    = 58.8;  // GEMESSEN: bespielte Breite (rechts bis Platinenkante gemessen 16, rechnerisch ca. 17)
+aa_left    = 13.0;  // GEMESSEN am Druck (Roboterkopf 2026-11-03): mit 10 sass das Bild 3 mm zu weit rechts im Fenster. Linke Platinenkante (Blick von vorn) bis Beginn bespielte Flaeche
+aa_meas    = 58.8;  // GEMESSEN: bespielte Breite (rechts bis Platinenkante rechnerisch ca. 14; frueher gemessen 16, passt nicht zum Druck)
 act_w      = 59.0;  // GEMESSEN: bespielte Flaeche (58,8, aufgerundet)
 act_h      = 44.3;  // VORLÄUFIG (aus Breite hochgerechnet, 320x240 Pixel) -- nachmessen
 // Die Zeichnung (AA 57,6 mittig in 64,75 Glas) passt nicht zum Geraet: AA-Lage kommt aus der Messung.

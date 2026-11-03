@@ -143,10 +143,11 @@ module chamf_solid(z0, z1, c, at_top = true) {
 }
 
 // ================================================================= Teile (Konstruktionslage)
+usb_face_extra = 2.0;  // GEMESSEN am Druck 2026-11-03: Stecker stiess zum Gesicht hin an (Buchse sitzt naeher am Gesicht als disp_h annimmt) -> Oeffnung nur dorthin 2 mm hoeher
 module usb_cuts() {
   for (u = usb_list) if (u[4])
     translate([pcb_x1 - 3, u[0] - u[2] / 2, usb_zc - usb_open_h / 2])
-      cube([hx + 3 - pcb_x1 + 1, u[2], usb_open_h]);
+      cube([hx + 3 - pcb_x1 + 1, u[2], usb_open_h + usb_face_extra]);
 }
 
 module front_cavity() {

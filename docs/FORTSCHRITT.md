@@ -21,6 +21,12 @@ Für jede Aufgabe einen neuen Branch von `main`. Geräte-Stand: Release `v202611
    - CYD: Bildrate 24–26 fps (SPI 80 MHz, Ring-Spur, Brillen-Raster), `src/app.cpp` aufteilen.
    - Aufräumen: Branches `feature/kamera-*` (einrichtung, firmware, gehaeuse, halter-v2, kleinkram, schneller) und `rename-madbuddy` (lokal + GitHub) sind gemergt und können weg (Nutzer-Ja).
 
+## Roboterkopf Passung nach Druck – ERLEDIGT bis Nachdruck (Stand 2026-11-03 spät)
+- Anlass: Roboter komplett gedruckt. Bild saß 3 mm zu weit rechts im Fenster; USB-C-Stecker ließ sich nicht stecken, er stieß zum Gesicht hin an (Buchse sitzt näher am Gesicht als im Modell).
+- Gemacht: `aa_left` 10 → 13 in `case/cyd_common.scad` (CYD wandert im Kopf 3 mm nach links, Fenster bleibt mittig). Roboter: USB-Öffnung 2 mm Richtung Gesicht höher (`usb_face_extra`, Kerbe ab der Trennfuge, kein Überhang). Stufe 2: Platine bleibt, `disp_x` −1 → 2 (Fenster folgt der echten Bildfläche), `hx_in` fest 47,4 (hätte sich sonst mit `aa_left` um 6 mm verkleinert) + Assert.
+- Prüfung: `check_roboter.ps1 -Only 1,1b,1c,3,3b` ALLES GRÜN; `check.ps1` ALLES GRÜN. Geänderte Druckteile: `roboter_head_front(_ams)`, `roboter_head_back`, 3MF; Stufe 2 `madbuddy_front`, `madbuddy_frame_test`.
+- Offen: Nachdruck Kopf vorn + hinten. Die 2 mm sind ohne Messung; genauer wird es mit der Messung Glasoberfläche → Platinenunterseite (Modell 6,1 mm, `disp_h` im Datenblatt-Stand) und Dicke der USB-C-Steckerhülle (Modell 6,5). Sitzt der CYD danach lose (Andruckfüße greifen nicht), liegt es an `disp_h`.
+
 ## Kamera-Kleinkram (0.1.6) – ERLEDIGT (Stand 2026-11-03 spät)
 - Zeit: 2026-11-03 (Opus), Branch `feature/kamera-kleinkram`.
 - Gemacht: Schnappschuss-Sammeln am CYD als reine Logik `src/logic/cam_snapbuf.h` (`snap_feed`, Tests in `test_cam_proto`). Läuft der 24-KB-Puffer über, gibt der CYD die ganzen Zeilen aus und meldet `J X cyd_puffer_voll` (vorher still verloren). Fehlerzeilen des CYD jetzt mit Prüfsumme (sonst hat `cam-snap.py` sie verworfen). XIAO schickt beim Schnappschuss alle 2 s ein Lebenszeichen. `cam-snap.py`: `write_timeout = 2`. Kamera-Version 0.1.6.
