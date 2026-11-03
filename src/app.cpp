@@ -326,7 +326,24 @@ static bool cam_active(uint32_t now) {
   return s_persist.cam_on && cam_link_conn(cam_uart_link(), now, s_persist.cam_on) == CamConn::ON;
 }
 
+// Diagnose über USB (COM6): einmal pro Sekunde Zahl der F/N/H-Zeilen und letztes Gesicht.
+static uint16_t s_cam_nf = 0, s_cam_nn = 0, s_cam_nh = 0;
+static CamMsg s_cam_last;
+static uint32_t s_cam_log_t = 0;
+
+static void cam_log_tick(uint32_t now) {
+  if (!due_since(now, s_cam_log_t, 1000)) return;
+  s_cam_log_t = now;
+  if (!s_persist.cam_on) return;
+  Serial.printf("cam: conn=%d F=%u N=%u H=%u last=%d,%d,%d\n", (int)cam_link_conn(cam_uart_link(), now, true),
+                s_cam_nf, s_cam_nn, s_cam_nh, s_cam_last.x, s_cam_last.y, s_cam_last.w);
+  s_cam_nf = s_cam_nn = s_cam_nh = 0;
+}
+
 static void on_cam_msg(const CamMsg &m, uint32_t now) {
+  if (m.kind == CAM_FACE) { s_cam_nf++; s_cam_last = m; }
+  else if (m.kind == CAM_NOFACE) s_cam_nn++;
+  else if (m.kind == CAM_HEART) s_cam_nh++;
   presence_msg(s_presence, m, now, CAM_MIRROR_X);
   if (m.kind == CAM_UPD_PCT || m.kind == CAM_UPD_OK || m.kind == CAM_UPD_ERR) ota_card_cam_msg(m, now);   // Kamera-Update (Karte)
 }
@@ -754,6 +771,7 @@ void app_loop() {
   net_loop();
   claude_api_loop();
   cam_uart_poll(now);
+  cam_log_tick(now);
   if (cam_uart_take_restart()) cam_uart_send_ctrl(s_persist.cam_on);
   apply_elapsed_once();
 
