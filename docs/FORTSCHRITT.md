@@ -32,7 +32,7 @@ Für jede Aufgabe einen neuen Branch von `main`. Geräte-Stand: Release `v202611
 - Gemacht: Schnappschuss-Sammeln am CYD als reine Logik `src/logic/cam_snapbuf.h` (`snap_feed`, Tests in `test_cam_proto`). Läuft der 24-KB-Puffer über, gibt der CYD die ganzen Zeilen aus und meldet `J X cyd_puffer_voll` (vorher still verloren). Fehlerzeilen des CYD jetzt mit Prüfsumme (sonst hat `cam-snap.py` sie verworfen). XIAO schickt beim Schnappschuss alle 2 s ein Lebenszeichen. `cam-snap.py`: `write_timeout = 2`. Kamera-Version 0.1.6.
 - Prüfung: `pio test -e native` 242/242, Gegenprobe (halbe Zeile nicht verwerfen) wird rot; `cam_snap_test` OK; Builds CYD SUCCESS, Kamera 86,2 %.
 - Release `v20261103-2108` (CYD + Kamera 0.1.6), auf `main` gemergt (047c0e4).
-- Offen: am Netzteil Kamera-Update auf 0.1.6 und einmal `python tools/cam-snap.py COM6 --out bild.jpg`.
+- Am Gerät installiert (CYD + Kamera 0.1.6, Nutzer 2026-11-03). Offen nur noch bei Gelegenheit: einmal `python tools/cam-snap.py COM6 --out bild.jpg`.
 
 ## Kamera schneller (0.1.5) – ERLEDIGT (Stand 2026-11-03 abends)
 - Zeit: 2026-11-03 (Opus plant und prüft, Sonnet/Haiku setzen um), Branch `feature/kamera-schneller`, Releases `v20261103-2019` (CYD + Kamera 0.1.4) und `v20261103-2036` (Kamera 0.1.5). Spec `docs/superpowers/specs/2026-11-03-kamera-schneller-design.md`, Plan `docs/superpowers/plans/2026-11-03-kamera-schneller.md`.
