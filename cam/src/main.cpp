@@ -21,7 +21,8 @@ static bool g_want_on = true;     // Vorgabe an; der CYD schickt nach jedem Neus
 static CamState g_state = CAM_ST_OFF;
 static bool g_ever_ok = false, g_had_err = false;
 static uint32_t g_last_heart = 0, g_last_retry = 0, g_beats = 0, g_fb_fail = 0;
-static uint32_t g_stat_t0 = 0, g_frames = 0, g_ms_sum = 0;
+static uint32_t g_stat_t0 = 0, g_frames = 0, g_ms_sum = 0, g_dets = 0, g_rot_sum = 0, g_frame_no = 0;
+static int clamp9999(uint32_t v) { return v > 9999 ? 9999 : (int)v; }
 static CamFace g_last = {0, 0, 0};
 static bool g_has = false;
 static uint32_t g_last_motion = 0, g_motions = 0;
@@ -135,16 +136,27 @@ void loop() {
       return;
     }
     g_fb_fail = 0;
-    CamFace f;
-    uint32_t ms = 0;
-    g_has = detect_face(fb, &f, &ms);
     MotionResult mo;
-    const bool moving = motion_detect(fb, &mo);   // vor dem Zurückgeben des Bildes
-    esp_camera_fb_return(fb);
-    if (g_has) g_last = f;
-    char b[32];
-    const size_t n = g_has ? cam_build_face(f.x, f.y, f.w, b, sizeof b) : cam_build_noface(b, sizeof b);
-    link_send(b, n, false);   // F/N nicht auf USB, dafür die Messzeile unten
+    const bool moving = motion_detect(fb, &mo);   // jedes Bild, vor dem Zurückgeben des Bildes
+    g_frame_no++;
+    if (g_frame_no % CAM_DETECT_EVERY == 0) {   // Gesichtserkennung nur jedes n-te Bild
+      CamFace f;
+      uint32_t ms = 0;
+      const uint32_t t0 = millis();
+      int rw, rh;
+      const uint8_t *px = camera_rotated(fb, &rw, &rh);   // aufrechtes Bild (Einbaulage)
+      g_rot_sum += millis() - t0;
+      g_has = detect_face(px, rw, rh, &f, &ms);
+      esp_camera_fb_return(fb);
+      if (g_has) g_last = f;
+      char b[32];
+      const size_t n = g_has ? cam_build_face(f.x, f.y, f.w, b, sizeof b) : cam_build_noface(b, sizeof b);
+      link_send(b, n, false);   // F/N nicht auf USB, dafür die Messzeile unten
+      g_dets++;
+      g_ms_sum += ms;
+    } else {
+      esp_camera_fb_return(fb);
+    }
     if (moving && (g_motions == 0 || now - g_last_motion >= MOT_SEND_MS)) {   // höchstens alle 250 ms ein M
       char mb[32];
       const size_t mn = cam_build_motion(mo.x, mo.y, mo.n, mb, sizeof mb);
@@ -153,15 +165,20 @@ void loop() {
       g_motions++;
     }
     g_frames++;
-    g_ms_sum += ms;
   } else {
     delay(20);
   }
   if (now - g_stat_t0 >= 1000) {
-    Serial.printf("# fps=%u ms=%u face=%d %d,%d,%d\n", (unsigned)g_frames, (unsigned)(g_frames ? g_ms_sum / g_frames : 0),
-                  g_has, g_last.x, g_last.y, g_last.w);
+    const uint32_t rot = g_dets ? g_rot_sum / g_dets : 0, det = g_dets ? g_ms_sum / g_dets : 0;
+    Serial.printf("# fps=%u dps=%u rot=%u ms=%u face=%d %d,%d,%d\n", (unsigned)g_frames, (unsigned)g_dets, (unsigned)rot,
+                  (unsigned)det, g_has, g_last.x, g_last.y, g_last.w);
+    char sb[40];
+    const size_t sn = cam_build_stats(clamp9999(g_frames), clamp9999(g_dets), clamp9999(rot), clamp9999(det), sb, sizeof sb);
+    link_send(sb, sn, false);
     g_stat_t0 = now;
     g_frames = 0;
+    g_dets = 0;
     g_ms_sum = 0;
+    g_rot_sum = 0;
   }
 }
