@@ -2,24 +2,24 @@
 
 Neueste Einträge oben. Format und Regeln: `docs/superpowers/plans/2026-10-25-cyd-buddy.md`, Abschnitt „Fortschritts-Protokoll“.
 
-## Nächste Aufgaben (Stand 2026-11-03 nachts, alles auf `main` e7ed638)
-Für jede Aufgabe einen neuen Branch von `main`. Geräte-Stand: Release `v20261103-2108` (CYD + Kamera 0.1.6). Kamera-Updates nur am Netzteil ≥ 2 A. Releases (`node tools/ota-publish.mjs --release`, vorher Branch pushen) und das Löschen von Branches braucht das ausdrückliche Ja des Nutzers.
+## Nächste Aufgaben (Stand 2026-11-03 spät, alles auf `main`)
+Für jede Aufgabe einen neuen Branch von `main`. Geräte-Stand: Release `v20261103-2108` (CYD + Kamera 0.1.6) ist installiert. Kamera-Updates nur am Netzteil ≥ 2 A. Releases (`node tools/ota-publish.mjs --release`, vorher Branch pushen) und das Löschen von Branches braucht das ausdrückliche Ja des Nutzers.
 
-1. **Kamera-Halter v2 fertig machen** – wartet auf den Nutzer (Testdruck `case/stl/roboter_cam_test.stl`).
-   - Danach Task 3 (Kopf Stufe 2: `case/madbuddy_case.scad`, `case/check.ps1`) und Task 4 (Ausgaben, Anleitung, Schlussprüfung) aus `docs/superpowers/plans/2026-11-02-kamera-halter-v2.md`. Task 1–2 sind erledigt.
-   - Vorher Rückmeldung zum Druck holen (Sitz des Blocks im Schacht, Spiel 0,3 mm, Lötstellen frei). Prüfen nur gezielt mit `check.ps1`/`check_roboter.ps1 -Only …`, der Volllauf (~35 min) einmal am Ende.
-2. **Stimmung „betrübt“ klären** – zuerst mit dem Nutzer, was genau stört.
+1. **Roboterkopf-Nachdruck abnehmen** – Kopf vorn + hinten druckt gerade (Stand 2026-11-03 abends).
+   - Fragen an den Nutzer: Bild mittig im Fenster? USB-C steckbar? Sitzt der CYD fest (Andruckfüße greifen)?
+   - Klemmt USB weiter oder wackelt der CYD: messen lassen Glasoberfläche → Platinenunterseite (Modell 6,1 = `disp_h` 4,5 + 1,6) und Dicke der USB-C-Steckerhülle (Modell 6,5), dann `disp_h` in `case/cyd_common.scad` an der Ursache korrigieren statt `usb_face_extra` weiter zu erhöhen.
+   - Details: Abschnitt „Roboterkopf Passung nach Druck“ unten.
+2. **Kamera-Halter v2 abschließen** – Roboter ist komplett gedruckt; Sitz des Blocks im Schacht beim Nutzer erfragen (Spiel 0,3 mm, Lötstellen frei).
+   - Danach Task 3 (Kopf Stufe 2: `case/madbuddy_case.scad`, `case/check.ps1`) und Task 4 (Ausgaben, Anleitung, Schlussprüfung) aus `docs/superpowers/plans/2026-11-02-kamera-halter-v2.md`. Prüfen gezielt mit `-Only`, Volllauf `check_roboter.ps1` (~35 min) einmal am Ende.
+3. **Stimmung „betrübt“ klären** – zuerst mit dem Nutzer, was genau stört.
    - Bekannt: `Emotion::SAD` kommt, sobald `affection < 20` (`src/logic/mood.h:160`); die Zuneigung sinkt ohne Streicheln/Füttern.
-   - Vermutung: Beim Arbeiten am Schreibtisch (Kamera sieht den Nutzer) wirkt er oft betrübt. Idee: Anwesenheit per Kamera hält die Zuneigung langsam oben oder bremst den Abfall. Erst brainstorming, dann TDD in `test/test_mood`.
-3. **Kamera-Kleinkram aus dem Review** – ERLEDIGT, Release `v20261103-2108`.
-   - Snap-Puffer am CYD (24 KB, `src/hw/cam_uart.cpp:~331`) läuft bei großen JPEG still über → `J X cyd_puffer_voll` melden; mit HQVGA ist das Bild jetzt kleiner, Dringlichkeit gering.
-   - `send_heart()` zwischen den Snap-Stücken (`cam/src/main.cpp` `send_snapshot`), `write_timeout` in `tools/cam-snap.py`.
+   - Idee: Anwesenheit per Kamera hält die Zuneigung langsam oben oder bremst den Abfall. Erst brainstorming, dann TDD in `test/test_mood`.
 4. **Blick am Gerät abnehmen** – mit dem Nutzer, kein Code.
-   - Folgt der Blick flüssig? Geradeaus beim normalen Sitzen (`CAM_GAZE_Y0 300`)? Schielen erst bei ~20 cm (`CAM_NEAR_W 350`)? Gemessen 0.1.5: Breite normal ~176–215, Höhe ~245–290. Werte live über `cam:`-Zeile (COM6, 115200, DTR/RTS aus).
+   - Folgt der Blick flüssig? Geradeaus beim normalen Sitzen (`CAM_GAZE_Y0 300`)? Schielen erst bei ~20 cm (`CAM_NEAR_W 350`)? Werte live über `cam:`-Zeile (COM6, 115200, DTR/RTS aus). Bei Gelegenheit ein `python tools/cam-snap.py COM6 --out bild.jpg` (prüft den neuen Snap-Puffer).
 5. **Später, nur bei Bedarf**
    - Kamera noch schneller: Erkennung braucht 135 ms je Bild (Pico 224). Nächste Hebel: kleineres Modell-Eingangsbild, eigenes Kopfmodell mit ESP-Detection (~2–3 Arbeitstage, RTX 5080).
    - CYD: Bildrate 24–26 fps (SPI 80 MHz, Ring-Spur, Brillen-Raster), `src/app.cpp` aufteilen.
-   - Aufräumen: Branches `feature/kamera-*` (einrichtung, firmware, gehaeuse, halter-v2, kleinkram, schneller) und `rename-madbuddy` (lokal + GitHub) sind gemergt und können weg (Nutzer-Ja).
+   - Aufräumen: Branches `feature/kamera-*` (einrichtung, firmware, gehaeuse, halter-v2, kleinkram, schneller), `rename-madbuddy`, `fix/kopf-passung` (lokal + GitHub) sind gemergt und können weg (Nutzer-Ja; Löschen durch Claude wurde von der Rechteprüfung abgelehnt).
 
 ## Roboterkopf Passung nach Druck – ERLEDIGT bis Nachdruck (Stand 2026-11-03 spät)
 - Anlass: Roboter komplett gedruckt. Bild saß 3 mm zu weit rechts im Fenster; USB-C-Stecker ließ sich nicht stecken, er stieß zum Gesicht hin an (Buchse sitzt näher am Gesicht als im Modell).
