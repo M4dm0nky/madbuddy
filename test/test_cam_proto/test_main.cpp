@@ -59,6 +59,19 @@ void test_checksum_rules() {
   for (size_t i = n - 3; i < n - 1; i++) if (b[i] >= 'A' && b[i] <= 'F') b[i] = (char)(b[i] - 'A' + 'a');
   TEST_ASSERT_TRUE(cam_parse(b, n - 1, &m));      // Kleinbuchstaben gelten auch
 }
+void test_motion_roundtrip_and_strict() {
+  char b[64];
+  CamMsg m;
+  size_t n = cam_build_motion(512, 430, 37, b, sizeof b);
+  TEST_ASSERT_EQUAL_STRING("M 512 430 37", (snprintf(g_buf, sizeof g_buf, "%.*s", (int)(n - 4), b), g_buf));
+  TEST_ASSERT_TRUE(cam_parse(b, n - 1, &m));
+  TEST_ASSERT_EQUAL(CAM_MOTION, m.kind);
+  TEST_ASSERT_EQUAL(512, m.x); TEST_ASSERT_EQUAL(430, m.y); TEST_ASSERT_EQUAL(37, m.n);
+  TEST_ASSERT_TRUE(parse_str(seal("M 0 1000 9999"), &m));
+  TEST_ASSERT_EQUAL(9999, m.n);
+  const char *bad[] = {"M 1 2", "M 1 2 3 4", "M 1001 0 5", "M 0 1001 5", "M 0 0 10000", "M -1 0 5", "M 1a 2 3", "M  1 2 3", "M"};
+  for (const char *s : bad) TEST_ASSERT_FALSE_MESSAGE(parse_str(seal(s), &m), s);
+}
 void test_rejects_garbage() {
   CamMsg m;
   const char *raw[] = {"", "*", "N", "N*4", "N*4EE", "N*G1"};
@@ -308,5 +321,6 @@ int main(int, char **) {
   RUN_TEST(test_box_center);
   RUN_TEST(test_box_clamped_and_degenerate);
   RUN_TEST(test_health_decision);
+  RUN_TEST(test_motion_roundtrip_and_strict);
   return UNITY_END();
 }

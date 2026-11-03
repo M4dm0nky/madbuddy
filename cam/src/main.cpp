@@ -5,6 +5,7 @@
 #include "cam_config.h"
 #include "camera.h"
 #include "detect.h"
+#include "motion.h"
 #include "link.h"
 #include "updater.h"
 #include "logic/cam_proto.h"
@@ -23,6 +24,7 @@ static uint32_t g_last_heart = 0, g_last_retry = 0, g_beats = 0, g_fb_fail = 0;
 static uint32_t g_stat_t0 = 0, g_frames = 0, g_ms_sum = 0;
 static CamFace g_last = {0, 0, 0};
 static bool g_has = false;
+static uint32_t g_last_motion = 0, g_motions = 0;
 
 static void wipe_msg(CamMsg &m) {
   volatile char *p = m.pass;
@@ -81,6 +83,7 @@ static void set_err() {
 }
 
 static void apply_camera() {
+  motion_reset();   // nach Kamera aus/an kein Vergleich mit einem alten Bild
   if (!g_want_on) {
     camera_stop();
     g_state = CAM_ST_OFF;
@@ -135,11 +138,20 @@ void loop() {
     CamFace f;
     uint32_t ms = 0;
     g_has = detect_face(fb, &f, &ms);
+    MotionResult mo;
+    const bool moving = motion_detect(fb, &mo);   // vor dem Zurückgeben des Bildes
     esp_camera_fb_return(fb);
     if (g_has) g_last = f;
     char b[32];
     const size_t n = g_has ? cam_build_face(f.x, f.y, f.w, b, sizeof b) : cam_build_noface(b, sizeof b);
     link_send(b, n, false);   // F/N nicht auf USB, dafür die Messzeile unten
+    if (moving && (g_motions == 0 || now - g_last_motion >= MOT_SEND_MS)) {   // höchstens alle 250 ms ein M
+      char mb[32];
+      const size_t mn = cam_build_motion(mo.x, mo.y, mo.n, mb, sizeof mb);
+      link_send(mb, mn, false);
+      g_last_motion = now;
+      g_motions++;
+    }
     g_frames++;
     g_ms_sum += ms;
   } else {

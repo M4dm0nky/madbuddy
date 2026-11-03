@@ -326,9 +326,9 @@ static bool cam_active(uint32_t now) {
   return s_persist.cam_on && cam_link_conn(cam_uart_link(), now, s_persist.cam_on) == CamConn::ON;
 }
 
-// Diagnose über USB (COM6): einmal pro Sekunde Zahl der F/N/H-Zeilen und letztes Gesicht.
-static uint16_t s_cam_nf = 0, s_cam_nn = 0, s_cam_nh = 0;
-static CamMsg s_cam_last;
+// Diagnose über USB (COM6): einmal pro Sekunde Zahl der F/N/H/M-Zeilen, letztes Gesicht und letzte Bewegung (x,y,n).
+static uint16_t s_cam_nf = 0, s_cam_nn = 0, s_cam_nh = 0, s_cam_nm = 0;
+static CamMsg s_cam_last, s_cam_motion;
 static uint32_t s_cam_log_t = 0;
 
 static void cam_log_tick(uint32_t now) {
@@ -337,9 +337,9 @@ static void cam_log_tick(uint32_t now) {
   if (cam_uart_snap_active(now)) return;   // während des Schnappschusses keine Textzeilen zwischen den J-Zeilen
   const CamLink &l = cam_uart_link();
   Serial.printf("cam: user=%d conn=%d xiao=%s %s F=%u N=%u H=%u last=%d,%d,%d\n", s_persist.cam_on ? 1 : 0,
-                (int)cam_link_conn(l, now, true), l.version, cam_state_name(l.state), s_cam_nf, s_cam_nn, s_cam_nh,
-                s_cam_last.x, s_cam_last.y, s_cam_last.w);
-  s_cam_nf = s_cam_nn = s_cam_nh = 0;
+                (int)cam_link_conn(l, now, true), l.version, cam_state_name(l.state), s_cam_nf, s_cam_nn, s_cam_nh, s_cam_nm,
+                s_cam_last.x, s_cam_last.y, s_cam_last.w, s_cam_motion.x, s_cam_motion.y, s_cam_motion.n);
+  s_cam_nf = s_cam_nn = s_cam_nh = s_cam_nm = 0;
 }
 
 // Diagnose der U-Zeile: Länge und Zeichenart der Felder (ohne Inhalt) und ob der CYD sie selbst parsen kann.
@@ -403,6 +403,7 @@ static void on_cam_msg(const CamMsg &m, uint32_t now) {
   if (m.kind == CAM_FACE) { s_cam_nf++; s_cam_last = m; }
   else if (m.kind == CAM_NOFACE) s_cam_nn++;
   else if (m.kind == CAM_HEART) s_cam_nh++;
+  else if (m.kind == CAM_MOTION) { s_cam_nm++; s_cam_motion = m; }
   presence_msg(s_presence, m, now, CAM_MIRROR_X, CAM_GAZE_Y0);
   if (m.kind == CAM_UPD_PCT || m.kind == CAM_UPD_OK || m.kind == CAM_UPD_ERR) {
     Serial.printf("cam: U kind=%d pct=%u %s\n", (int)m.kind, (unsigned)m.pct, m.text);

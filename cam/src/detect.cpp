@@ -2,13 +2,18 @@
 #include <esp_camera.h>
 #include "human_face_detect.hpp"
 #include "detect.h"
+#include "cam_config.h"
 #include "camera.h"
 #include "logic/cam_xiao.h"
 
 static HumanFaceDetect *g_det = nullptr;
 
 bool detect_init() {
-  g_det = new HumanFaceDetect();
+  #if CAM_FACE_MODEL == 1
+  g_det = new HumanFaceDetect(HumanFaceDetect::ESPDET_PICO_224_224_FACE);
+#else
+  g_det = new HumanFaceDetect(HumanFaceDetect::MSRMNP_S8_V1);
+#endif
   return g_det != nullptr;
 }
 
