@@ -33,3 +33,5 @@ void icon_helper(LovyanGFX &d, int cx, int cy, int s, uint32_t col);     // Helf
 void icon_stop(LovyanGFX &d, int cx, int cy, int s, uint32_t col);       // Quadrat (Timer stoppen)
 void icon_eye(LovyanGFX &d, int cx, int cy, int s, uint32_t col);        // Auge (Kamera), ca. 2s x 1,2s
 void icon_arrow(LovyanGFX &d, int cx, int cy, int s, uint32_t col, bool right);   // Dreieck nach rechts/links (Seite wechseln)
+// Bedürfnis-Symbol (Need als int: 0 krank, 1 Hunger, 2 müde, 3 traurig, 4 gelangweilt), s = Kantenlänge.
+void icon_need(LovyanGFX &d, int need, int cx, int cy, int s);

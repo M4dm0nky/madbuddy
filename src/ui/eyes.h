@@ -12,8 +12,10 @@ constexpr int EYES_H = 200;
 bool eyes_begin(LGFX &lcd);   // false = kein Speicher -> direkt zeichnen
 void eyes_free();             // für OTA
 bool eyes_ready();
-// bubble: Text der Sprechblase (UTF-8) oder nullptr.
-void eyes_draw(LGFX &lcd, const FaceShape &face, Rgb color, uint32_t overlays, uint32_t now_ms, const char *bubble = nullptr);
+// bubble: Text der Sprechblase (UTF-8) oder nullptr; bubble_icon: Bedürfnis-Symbol in der Blase (-1 keins);
+// need_mask: Bits der niedrigen Bedürfnisse, stehende Symbole oben links (nur ohne Blase).
+void eyes_draw(LGFX &lcd, const FaceShape &face, Rgb color, uint32_t overlays, uint32_t now_ms, const char *bubble = nullptr,
+               int bubble_icon = -1, uint8_t need_mask = 0);
 // High-Five-Hand (Overlay OV_HAND): Ecke (rechts/links) und Startzeit für das kurze Aufploppen.
 void eyes_set_hand(bool right, uint32_t since_ms);
 // Speise, die gerade zum Mund fliegt (0..3 wie logic/food.h, -1 = keine), y = Mitte.

@@ -2,6 +2,7 @@
 #include <Arduino.h>
 #include "config.h"
 #include "logic/mood.h"
+#include "logic/need_hint.h"
 #include "logic/gesture.h"
 #include "logic/eye_model.h"
 #include "logic/weather_mood.h"
@@ -96,6 +97,11 @@ static SpeechState s_speech;
 static RitualState s_rituals{};
 static char s_bubble[64] = "";
 static Deadline s_bubble_dl;
+static int s_bubble_icon = -1;       // Bedürfnis-Symbol in der Blase (-1 keins)
+static NeedHintState s_need;           // Bedürfnis-Hinweise (Symbole + Blasen)
+static uint8_t s_need_mask = 0;
+static bool s_testbild = false;        // USB-Befehl testbild: Randtest-Bild steht, Normalbild ruht
+static Deadline s_testbild_dl;
 static char s_pending[64] = "";        // zweite Blase (Morgen: Tageswetter)
 static uint32_t s_pending_at = 0;
 static bool s_touch_began = false;     // in diesem Bild hat eine Berührung begonnen
@@ -195,8 +201,9 @@ static void apply_elapsed_once() {
   s_persist.epoch = now_epoch;
 }
 
-static void show_bubble(const char *txt, uint32_t now) {
+static void show_bubble(const char *txt, uint32_t now, int icon = -1) {
   strlcpy(s_bubble, txt, sizeof s_bubble);
+  s_bubble_icon = icon;
   s_bubble_dl.arm(now, kBubbleMs);
   speech_shown(s_speech, now);
 }
@@ -379,6 +386,38 @@ static void usb_utest(bool slow) {
   for (size_t i = 0; i < n; i++) { cam_uart_write_sealed(line + i, 1); delayMicroseconds(400); }
 }
 
+// Testbild für den 3-mm-Rand (USB "testbild"): weiß, roter 1-px-Rahmen auf Pixel 0/319/0/239, Striche alle 10 px, Ecken bunt.
+static void testbild_start(uint32_t now) {
+  if (s_screen != Screen::EYES) return;
+  const uint32_t red = s_lcd.color888(255, 0, 0), blk = s_lcd.color888(0, 0, 0);
+  s_lcd.startWrite();
+  s_lcd.fillScreen(s_lcd.color888(255, 255, 255));
+  s_lcd.drawRect(0, 0, 320, 240, red);
+  for (int x = 0; x < 320; x += 10) {
+    const int len = x % 50 == 0 ? 12 : 5;
+    s_lcd.drawFastVLine(x, 1, len, blk);
+    s_lcd.drawFastVLine(x, 239 - len, len, blk);
+  }
+  s_lcd.drawFastVLine(319, 1, 12, blk);   // Strich auf der letzten Spalte (319 ist kein Vielfaches von 10)
+  s_lcd.drawFastVLine(319, 227, 12, blk);
+  for (int y = 0; y < 240; y += 10) {
+    const int len = y % 50 == 0 ? 12 : 5;
+    s_lcd.drawFastHLine(1, y, len, blk);
+    s_lcd.drawFastHLine(319 - len, y, len, blk);
+  }
+  s_lcd.drawFastHLine(1, 239, 12, blk);
+  s_lcd.drawFastHLine(307, 239, 12, blk);
+  s_lcd.fillRect(0, 0, 6, 6, s_lcd.color888(0, 200, 0));         // oben links grün
+  s_lcd.fillRect(314, 0, 6, 6, s_lcd.color888(0, 0, 255));       // oben rechts blau
+  s_lcd.fillRect(0, 234, 6, 6, s_lcd.color888(255, 0, 255));     // unten links magenta
+  s_lcd.fillRect(314, 234, 6, 6, s_lcd.color888(255, 140, 0));   // unten rechts orange
+  s_lcd.endWrite();
+  set_backlight(kBacklight[s_persist.brightness]);
+  s_testbild = true;
+  s_testbild_dl.arm(now, 60000);
+  Serial.println("testbild: an (Tipp oder 60 s beendet)");
+}
+
 // USB-Befehle vom PC, zeilenweise und nichtblockierend: "snap" = Kamerabild über USB holen (tools/cam-snap.py),
 // "uinfo"/"utest"/"utestslow" = Diagnose des Kamera-Updates.
 static void usb_cmd_poll(uint32_t now) {
@@ -392,6 +431,7 @@ static void usb_cmd_poll(uint32_t now) {
       buf[n] = '\0';
       if (!over && strcmp(buf, "snap") == 0) cam_uart_snap(now);
       else if (!over && strcmp(buf, "uinfo") == 0) usb_uinfo();
+      else if (!over && strcmp(buf, "testbild") == 0) testbild_start(now);
       else if (!over && strcmp(buf, "utest") == 0) usb_utest(false);
       else if (!over && strcmp(buf, "utestslow") == 0) usb_utest(true);
       n = 0;
@@ -483,6 +523,8 @@ static void weather_say(uint32_t now) {
 static void speech_frame(uint32_t now, bool sleeping) {
   const bool woke = (s_prev_sleeping && !sleeping) || s_touch_began;
   s_prev_sleeping = sleeping;
+  const NeedHintOut nh = need_hint_update(s_need, s_mood, now);   // Maske läuft auch im Schlaf mit (Blase erst wach)
+  s_need_mask = sleeping ? 0 : nh.mask;
   if (sleeping) { s_bubble_dl.clear(); s_pending_at = 0; return; }
   struct tm t;
   const uint32_t day = today(&t);
@@ -517,6 +559,10 @@ static void speech_frame(uint32_t now, bool sleeping) {
   if (mood_sneeze_due(s_mood, now)) {   // krank: Hatschi
     s_sneeze.arm(now, kSneezeMs);
     say(Say::KRANK, now);
+  }
+  if (nh.due != Need::COUNT && !s_bubble_dl.active(now)) {   // Hinweis wartet, bis keine andere Blase steht
+    show_bubble(need_text(nh.due), now, (int)nh.due);
+    need_hint_shown(s_need, nh.due, now);
   }
 }
 
@@ -580,7 +626,8 @@ static void eyes_frame(uint32_t now, uint32_t dt) {
       say(food_feed(s_mood, f, (Food)s_persist.favorite_food, now), now);
     }
   }
-  eyes_draw(s_lcd, draw, s_color, ov, now, s_bubble_dl.active(now) ? s_bubble : nullptr);
+  eyes_draw(s_lcd, draw, s_color, ov, now, s_bubble_dl.active(now) ? s_bubble : nullptr,
+            s_bubble_icon, s_need_mask);
   status_draw(s_lcd, status_info(now));
 
   if (s_led_flash.active(now)) led_set(Rgb{255, 255, 255}, kLedPct);   // High-Five
@@ -620,6 +667,14 @@ static void screen_frame(uint32_t now, uint32_t dt, Gesture g, int16_t tx, int16
   const bool tap = g == Gesture::TAP || (s_screen != Screen::EYES && g == Gesture::POKE);   // außerhalb der Augen zählt auch ein Stups (fünfter Tipp) als Tipp
   switch (s_screen) {
     case Screen::EYES:
+      if (s_testbild) {   // Testbild steht: Normalbild ruht bis Berührung oder Ablauf, danach volles Neuzeichnen
+        if (s_touch_began || g != Gesture::NONE || !s_testbild_dl.active(now)) {
+          s_testbild = false;
+          s_lcd.fillScreen(TFT_BLACK);
+          status_invalidate();
+        }
+        return;
+      }
       if (g == Gesture::LONG_PRESS && s_emotion != Emotion::SLEEPING) {
         s_screen = Screen::MENU;
         set_backlight(kBacklight[s_persist.brightness]);

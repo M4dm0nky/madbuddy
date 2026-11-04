@@ -412,15 +412,28 @@ static void render(LovyanGFX &d, const FaceShape &f, Rgb color, uint32_t ov, uin
   }
 }
 
-void eyes_draw(LGFX &lcd, const FaceShape &face, Rgb color, uint32_t overlays, uint32_t now_ms, const char *bubble) {
+// Stehende Bedürfnis-Symbole oben links: Reihe ab (6, 6), 22 px je Symbol, Abstand 4, in Dringlichkeitsreihenfolge.
+static void need_icons(LovyanGFX &d, uint8_t mask) {
+  int x = 6;
+  for (int i = 0; i < 5; i++) {
+    if (!(mask & (1u << i))) continue;
+    icon_need(d, i, x + 11, 6 + 11, 22);
+    x += 26;
+  }
+}
+
+void eyes_draw(LGFX &lcd, const FaceShape &face, Rgb color, uint32_t overlays, uint32_t now_ms, const char *bubble,
+               int bubble_icon, uint8_t need_mask) {
   if (s_ready) {
-    render(s_spr, face, color, overlays, now_ms);
-    if (bubble) bubble_draw(s_spr, bubble);
+    render(s_spr, face, color, overlays, now_ms);   // volles Neuzeichnen je Bild: weggefallene Symbole verschwinden von selbst
+    if (bubble) bubble_draw(s_spr, bubble, bubble_icon);
+    else if (need_mask) need_icons(s_spr, need_mask);
     s_spr.pushSprite(&lcd, 0, 0);
   } else {
     lcd.startWrite();
     render(lcd, face, color, overlays, now_ms);
-    if (bubble) bubble_draw(lcd, bubble);
+    if (bubble) bubble_draw(lcd, bubble, bubble_icon);
+    else if (need_mask) need_icons(lcd, need_mask);
     lcd.endWrite();
   }
 }

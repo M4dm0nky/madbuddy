@@ -282,3 +282,14 @@ void icon_arrow(LovyanGFX &d, int cx, int cy, int s, uint32_t col, bool right) {
   if (right) d.fillTriangle(cx + w, cy, cx - w, cy - h, cx - w, cy + h, col);
   else d.fillTriangle(cx - w, cy, cx + w, cy - h, cx + w, cy + h, col);
 }
+
+void icon_need(LovyanGFX &d, int need, int cx, int cy, int s) {
+  switch (need) {
+    case 0: icon_thermometer(d, cx, cy, s); break;
+    case 1: icon_apple(d, cx, cy, s); break;
+    case 2: icon_pillow(d, cx, cy, s, lgfx::color888(200, 190, 230)); break;
+    case 3: icon_heart(d, cx, cy, s, lgfx::color888(255, 80, 170)); break;
+    case 4: icon_ball(d, cx, cy, s, lgfx::color888(80, 200, 255)); break;
+    default: break;
+  }
+}
