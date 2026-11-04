@@ -24,7 +24,7 @@ wall       = 2.4;    // Wandstaerke (>= 2 mm)
 front_t    = 2.0;    // Dicke der Frontplatte (Gesicht)
 back_t     = 2.6;    // Dicke der Rueckwand (Platz fuer Schraubenkopf-Senkung)
 leg_h      = 33.6;   // Auftraggeber (Fix-Runde): Hoehe der Oberschenkel 32 (Konzept) + 1,6, damit ueber den Zellen 2 mm Luft bleiben; der ganze Oberbau (Oberkoerper, Hals, Kopf, Arme, Haende) wandert um 1,6 mit
-t_rise     = 17;     // GERECHNET 2026-11-04: kleinster Wert mit 3/3i/3k gruen (Lautsprecher Z 8...28, untere Dome bei [+-24, 18]): 3k spk_cam schon ab 12 leer, aber 3i cam_present erst ab 17 (bei 10/12/14/15/16: 148/80/32/24/24 Facetten, 17 und 18: 0). Grund: die Oberkante der Gitter-Nut (Z 31,15) schneidet die Unterkante des gekippten Kamerarahmens an der Brustflaeche. Oberkoerper-Erhoehung fuer den Lautsprecher (Spec 2026-11-04); hebt alles oberhalb der unteren Dome an, Unterkante/Sitz/Arme bleiben
+t_rise     = 17;     // GERECHNET 2026-11-04: kleinster Wert mit 3/3i/3k gruen (Lautsprecher Z 8...28, untere Dome bei [+-24, 18]): 3k spk_cam schon ab 12 leer, aber 3i cam_present erst ab 17 (bei 10/12/14/15/16: 148/80/32/24/24 Facetten, 17 und 18: 0). Grund: die Oberkante der Gitter-Stufe (Z 31,15) schneidet die Unterkante des gekippten Kamerarahmens an der Brustflaeche. Oberkoerper-Erhoehung fuer den Lautsprecher (Spec 2026-11-04); hebt alles oberhalb der unteren Dome an, Unterkante/Sitz/Arme bleiben
 t_h        = 48 + t_rise;   // QUELLE: Konzept (t_h) 48 + Erhoehung
 lift       = leg_h - 32;   // abgeleitet: Verschiebung des Oberbaus gegenueber dem Konzept (nur fuer die Massenliste)
 ch         = 4.0;    // 45-Grad-Fase rundum am Gesicht und an der Rueckseite (statt Kugelrundung, ohne Stuetzen druckbar)
@@ -356,7 +356,7 @@ t_ch       = 3.5;    // VORLÄUFIG (Entwurf): 45-Grad-Fase an Brust und Ruecksei
 torso_origin = [0, t_y - t_d / 2, leg_h - 4];   // QUELLE: Konzept: [0, t_y - t_d/2, leg_h - 4] = Mitte der Unterkante des Oberkoerpers in Weltlage (Task 4 baut darauf auf)
 t_plate_z  = 4;      // VORLÄUFIG (Entwurf): Bodenplatte 4 mm ueber der Unterkante, darunter die Steckkante (Rand), in die der Sitz (Task 4) greift
 t_cable_d  = 10;     // QUELLE: Aufgabe: Kabeldurchfuehrung unten >= 10
-t_dome_pts = [[-24, 18], [24, 18], [-16, 41 + t_rise], [16, 41 + t_rise]];   // M3-Dome (Teilung vorn/hinten), Lage X/Z. Untere Dome (Entscheidung Auftraggeber 2026-11-04, Lautsprecher tiefer): von [+-16, 8] nach [+-24, 18] verlegt, damit der Lautsprecher (Tasche, Anschlag, Nut bis X +-18,5) tief im Bauch Platz hat. X 24 = ueber den vorderen Sitzpfosten (X 20,5...27,5, Oberkante Z 13,5): Dom-Unterkante Z 14,3 liegt 0,8 ueber den Pfosten; Abstand zum Lautsprecher-Nutrand X 20,3 - 18,5 = 1,8 mm. Z 18: Senkung hinten (Ø6,2) beginnt bei Z 14,9 > 13,5 (schneidet den Sitzpfosten nicht an); Dom-Oberkante Z 21,7 liegt unter der Schulterbosse (Z sh_z_l - 5,1 = 16,2 + t_rise)
+t_dome_pts = [[-24, 18], [24, 18], [-16, 41 + t_rise], [16, 41 + t_rise]];   // M3-Dome (Teilung vorn/hinten), Lage X/Z. Untere Dome (Entscheidung Auftraggeber 2026-11-04, Lautsprecher tiefer): von [+-16, 8] nach [+-24, 18] verlegt, damit der Lautsprecher (Tasche, Anschlag, Stufe bis X +-18,5) tief im Bauch Platz hat. X 24 = ueber den vorderen Sitzpfosten (X 20,5...27,5, Oberkante Z 13,5): Dom-Unterkante Z 14,3 liegt 0,8 ueber den Pfosten; Abstand zum Lautsprecher-Nutrand X 20,3 - 18,5 = 1,8 mm. Z 18: Senkung hinten (Ø6,2) beginnt bei Z 14,9 > 13,5 (schneidet den Sitzpfosten nicht an); Dom-Oberkante Z 21,7 liegt unter der Schulterbosse (Z sh_z_l - 5,1 = 16,2 + t_rise)
 t_dome_d   = 7.4;    // VORLÄUFIG (Entwurf): Dom aussen; Wand um die Durchgangsbohrung (Ø3,4) 2,0
 t_dome_pilot = 9;    // VORLÄUFIG (Entwurf): Kernloch im vorderen Dom (>= 7,5)
 t_seat_pts = [for (sx = [-1, 1], sy = [-1, 1]) [sx * 24, sy * 12]];   // VORLÄUFIG (Entwurf): 4 M3-Kernloecher unten fuer den Sitz (X/Y), Schrauben von unten
@@ -373,13 +373,13 @@ cam_cone_l = 26;     // QUELLE: Entscheidung Auftraggeber 2026-10-28 (Spec: Robo
 // Dort definiert (hier NICHT wiederholen): cam_*, xiao_* ... Die Common-Datei liest von der Roboter-Datei nur die oben gesetzten, optionalen Werte (z. B. cam_chamfer_ang); sie muessen VOR dem include stehen.
 include <xiao_cam_block.scad>
 cam_wt     = 3.9;    // QUELLE: Spec (Linse 3,6 + 0,3 Rueckstand): "Wandstaerke" fuer das lokale System = Abstand Innenebene (Z 0) bis Aussenebene (Z cam_wt) entlang der Linsenachse. Die Brustwand steht senkrecht, die Achse ist 15 Grad geneigt: die Aussenflaeche liegt bei Z = cam_wt + 0,268 * (Hoehe ueber der Achse). Mit 3,9 liegt die Kamera-Vorderseite (cam_zbf) auf Z 0 und die Linsenspitze in der Achse 0,3 mm hinter der Aussenflaeche; der Rest zwischen Z 0 und der Aussenflaeche wird von cam_fill() massiv gefuellt (Taschenboden)
-// --- Lautsprecher (Spec 2026-11-04 Teil A1): Typ 2030, quer, Membran nach vorn, von vorn eingesetzt, Gitter rastet in eine Nut
+// --- Lautsprecher (Spec 2026-11-04 Teil A1): Typ 2030, quer, Membran nach vorn, von vorn eingesetzt, Gitter rastet in eine Stufe
 spk_w      = 30.0;   // VORLÄUFIG (Typ 2030, nicht vermessen): Breite (X)
 spk_h      = 20.0;   // VORLÄUFIG (Typ 2030, nicht vermessen): Hoehe (Z)
 spk_t      = 5.0;    // VORLÄUFIG (Typ 2030, nicht vermessen): Dicke inkl. Membranrand (Y)
 spk_r      = 2.0;    // VORLÄUFIG: Eckradius
-spk_rim    = 4.0;    // Gitterrand um die Tasche (Steg + Nut liegen darin). Brief 3,0: auf 4,0 erhoeht, weil Nut 2 mm breit + 0,75 Wand zur Tasche + 0,8 Rand aussen mehr als 3 mm brauchen
-spk_zc     = t_ch + 0.5 + spk_rim + spk_h / 2;   // GERECHNET 2026-11-04 (Lautsprecher so tief wie moeglich): Gitterunterkante (zc - h/2 - rim) = t_ch + 0,5 = Z 4,0. Die ebene Brustflaeche beginnt bei Z t_ch (3,5; darunter die 45-Grad-Fase), das Gitter liegt also voll auf der Flaeche, 0,5 mm Reserve (= Oberkante Bodenplatte t_plate_z 4). Ergebnis zc 18, Lautsprecher Z 8...28. Anschlag-Kasten unten Z 6,2 (> Bodenplatten-Oberseite 4), Sitzpfosten (X >= 20,5) liegen neben Gitter/Nut (X <= 19)
+spk_rim    = 4.0;    // Gitterrand um die Tasche (Steg + Stufe liegen darin). Brief 3,0: auf 4,0 erhoeht, weil Stufe (spk_step_w, ca. 3,05 mm) + Rand aussen mehr als 3 mm brauchen
+spk_zc     = t_ch + 0.5 + spk_rim + spk_h / 2;   // GERECHNET 2026-11-04 (Lautsprecher so tief wie moeglich): Gitterunterkante (zc - h/2 - rim) = t_ch + 0,5 = Z 4,0. Die ebene Brustflaeche beginnt bei Z t_ch (3,5; darunter die 45-Grad-Fase), das Gitter liegt also voll auf der Flaeche, 0,5 mm Reserve (= Oberkante Bodenplatte t_plate_z 4). Ergebnis zc 18, Lautsprecher Z 8...28. Anschlag-Kasten unten Z 6,2 (> Bodenplatten-Oberseite 4), Sitzpfosten (X >= 20,5) liegen neben Gitter/Stufe (X <= 19)
 spk_grille_t = 1.2;  // wie Kopfblende (bezel_t)
 spk_ring_in = 1.2;   // Gittersteg (Ring): Innenkante, Abstand vom Lautsprecherrand. ENTSCHEIDUNG Controller (Review Fix-Runde 1): Keine Ringnut mehr, denn die Wand zwischen Tasche und Nut waere nur 1,2 - fit - fit_peg = 0,75 mm (Vorgabe Waende >= 2 mm). Stattdessen eine STUFE (Senkung, nut_t tief) von der Taschenkante bis zur Aussenkante des Rings; die Aussenkontur (und damit Gitter-Aussenmass und Oberkante der Stufe) bleibt wie vorher, t_rise aendert sich nicht. Der Steg bleibt ein Ring und sitzt mit fit_peg an der Aussenwand der Stufe (Passung aussen)
 spk_ring_w = 2.0;    // Gittersteg: Breite (wie Kopf); Stufenbreite = spk_ring_in + spk_ring_w + fit_peg - fit (3,05 mm)
@@ -388,7 +388,7 @@ spk_open_min = 0.40; // Gitter: offene Flaeche ueber der Membran >= 40 %
 spk_slot_w = 1.6;    // Gitter: Schlitzbreite
 spk_slot_bar = 1.2;  // Gitter: Steg zwischen den Schlitzen
 spk_slot_m = 1.0;    // Gitter: Abstand der Schlitze vom Lautsprecherrand
-spk_off    = false;  // nur Pruefhilfe (Ueberhang-Vergleich): true = Tasche, Anschlag und Nut entfallen
+spk_off    = false;  // nur Pruefhilfe (Ueberhang-Vergleich): true = Tasche, Anschlag und Stufe entfallen
 module spk_dummy(grow = 0) translate([0, -t_d / 2, spk_zc]) rotate([-90, 0, 0])
   linear_extrude(spk_t + grow) offset(r = grow) rrect(spk_w / 2, spk_h / 2, spk_r);
 spk_n      = floor((spk_h - 2 * spk_slot_m + spk_slot_bar) / (spk_slot_w + spk_slot_bar));   // Anzahl Schlitze
@@ -408,7 +408,7 @@ module spk_grille_local() {
   difference() {
     union() {
       linear_extrude(spk_grille_t) rrect(spk_w / 2 + spk_rim, spk_h / 2 + spk_rim, spk_r + spk_rim);
-      translate([0, 0, -nut_t + 0.1]) linear_extrude(nut_t - 0.1 + 0.01) spk_ring2d();   // Steg, 0,1 kuerzer als die Nut tief ist
+      translate([0, 0, -nut_t + 0.1]) linear_extrude(nut_t - 0.1 + 0.01) spk_ring2d();   // Steg, 0,1 kuerzer als die Stufe tief ist
     }
     for (i = [0 : spk_n - 1]) translate([-spk_slot_l / 2, -total / 2 + i * (spk_slot_w + spk_slot_bar), -nut_t - 0.01]) cube([spk_slot_l, spk_slot_w, nut_t + spk_grille_t + 0.02]);
   }
@@ -601,7 +601,7 @@ module spk_cut() if (!spk_off) {
   }
   // Kabelschlitz 3 x 2 mm im Anschlag an der Schmalseite (+X), nach innen
   translate([spk_w / 2 - spk_stop_w - 0.01, -t_d / 2 + spk_t + fit - 0.01, spk_zc - 1.5]) cube([2.0, spk_stop_w + 0.02, 3]);
-  // Stufe (Senkung nut_t tief) um die Tasche bis zur Aussenkontur des Gitterstegs (+ fit_peg); der Steg sitzt an ihrer Aussenwand. Keine duenne Lippe zwischen Tasche und Nut.
+  // Stufe (Senkung nut_t tief) um die Tasche bis zur Aussenkontur des Gitterstegs (+ fit_peg); der Steg sitzt an ihrer Aussenwand. Keine duenne Lippe zwischen Tasche und Stufe.
   spk_place() translate([0, 0, -nut_t]) linear_extrude(nut_t + 0.01) offset(delta = fit_peg) spk_outer2d();
 }
 module neck_pilots_t()  { for (sx = [-1, 1]) translate([sx * neck_lo_bx, neck_lo_by, neck_rec_floor - neck_pilot_t]) cylinder(d = pilot_d, h = neck_pilot_t + 0.01); }
@@ -1101,6 +1101,7 @@ module colored_body() {
     color("#ff7a29") { torso_front(); torso_back(); }
     color("#263238") neck();
     color("#c0c0c0") torso_decos();
+    color("#161616") spk_grille();   // Gitter wie die Kopfblende: Farbe Blende, Lage in torso_front-Koordinaten
     if (show_dummies) { color("#8a4fc9", 0.8) xiao_dummy_l(); color("#d03030") camera_dummy_l(); }
   }
   for (s = [1, -1]) { color("#ff7a29") arm(s); color("#263238") hand(s); }
@@ -1121,6 +1122,7 @@ module exploded_upper() {
   place_torso() {
     translate([0, -30, 0]) color("#ff7a29") torso_front();
     translate([0, 30, 0]) color("#ff7a29") torso_back();
+    translate([0, -30, 0]) color("#161616") spk_grille();   // wie torso_front (-30 in Y)
     translate([0, 0, 22]) color("#263238") neck();
   }
   for (s = [1, -1]) translate([s * 25, 0, 0]) { color("#ff7a29") arm(s); color("#263238") hand(s); }

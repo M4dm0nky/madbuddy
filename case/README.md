@@ -61,6 +61,8 @@ Sitzender Roboter mit Akku: Kopf mit dem CYD, Oberkörper mit der Kamera in der 
 
 Stand: druckbar, die Maße des Akkumoduls sind **vorläufig** (Datenblatt, noch nicht nachgemessen).
 
+Stand 2026-11-04: Der Oberkörper ist 17 mm höher (Höhe 48 → 65 mm, Parameter `t_rise = 17`). Kamera, Halsblock, Hals und Kopf sitzen dadurch 17 mm höher. Unterkante, Sitz, Arme, Hände und Füße sind unverändert (per STL-Vergleich nachgewiesen). Der Lautsprecher im Bauch ist unten beschrieben.
+
 ### Teile
 
 STL liegen in `stl/roboter_<teil>.stl`, schon in Druckausrichtung (ohne Stützen). Die Farben sind der Vorschlag aus dem Entwurf.
@@ -74,6 +76,7 @@ STL liegen in `stl/roboter_<teil>.stl`, schon in Druckausrichtung (ohne Stützen
 | `deco` | silber | 1 Platte | 10 flache Zierschrauben-Einlagen (4 Kopf, 4 Brust, 2 Ohr) |
 | `torso_front` | orange | 1 | Brust auf dem Bett |
 | `torso_back` | orange | 1 | Rückseite auf dem Bett |
+| `spk_grille` | schwarz | 1 | Lautsprechergitter (`roboter_spk_grille.stl`); Sichtseite nach unten aufs Bett, flach, ohne Stützen |
 | `neck` | schwarz | 1 | stehend auf dem unteren Flansch |
 | `arm` | orange | 2 | links = gespiegelte Datei `roboter_arm_l.stl` |
 | `hand` | schwarz | 2 | flache Unterseite auf dem Bett |
@@ -82,13 +85,21 @@ STL liegen in `stl/roboter_<teil>.stl`, schon in Druckausrichtung (ohne Stützen
 | `foot` | schwarz | 2 | Rückseite (Zapfenloch) auf dem Bett |
 
 3MF zum Öffnen in Bambu Studio:
-- `3mf/roboter_teile.3mf`: alle 18 Druckkörper nebeneinander, jeder bekommt im Slicer seine Farbe.
-- `3mf/roboter_ams.3mf`: Gruppe „kopf“ (Kopfschale, Blende, 4 Zierschrauben als drei Bauteile eines Objekts, in Einbaulage) plus die übrigen Teile einzeln. Im Slicer weist man den drei Bauteilen je eine Farbe zu.
+- `3mf/roboter_teile.3mf`: alle 19 Druckkörper nebeneinander, jeder bekommt im Slicer seine Farbe.
+- `3mf/roboter_ams.3mf`: Gruppe „kopf“ (Kopfschale, Blende, 4 Zierschrauben als drei Bauteile eines Objekts, in Einbaulage) plus die übrigen Teile einzeln. Im Slicer weist man den drei Bauteilen je eine Farbe zu. Neu: Gruppe „brust“ = `torso_front` + Gitter (`roboter_spk_grille_inlay`).
+- `roboter_cam_test.stl` (Testdruck-Ausschnitt) ändert sich ebenfalls.
 - Neu erzeugen: `check_roboter.ps1` (Schritt 1c) oder `tools/make_3mf.ps1`; Werkzeug `tools/stl2_3mf.py` (`--group NAME`, `--end`, `--arrange`).
+
+### Lautsprecher (Typ 2030)
+
+Zukaufteil, nicht gedruckt: 30 × 20 × 5 mm, 8 Ω, 1–2 W, Stecker JST/PicoBlade 1,25 mm, 2-polig. **Die Maße sind VORLÄUFIG (nicht vermessen).** Empfohlen: Adafruit „Mini Oval Speaker 8 Ohm 1 W“ (30 × 20 × 5). Ersatz: Waveshare 2030 Cavity Speaker Typ B, 2-polig; er ist 6,8 mm dick, dann muss die Tasche angepasst werden.
+
+Lage: vorn im Bauch unter der Kamera, Z 8 bis 28 mm über der Unterkante des Oberkörpers, quer (30 mm breit), Membran nach vorn.
 
 ### Druck (PETG)
 
 - 0,2 mm Schichthöhe, 3 Wände, ohne Stützen, Überhänge höchstens 45°.
+- Neu zu drucken (Lautsprecher-Stufe): `torso_front`, `torso_back` und `spk_grille`. Hals, Kopf, Sitz, Arme, Hände und Füße **nicht** neu drucken.
 - `torso_front`: Stützen nur am Linsenloch (Fase 45° bei geneigter Achse, bis ca. 60° Überhang), z. B. mit Support-Painting/Support-Blocker in Bambu Studio. Überall sonst ohne Stützen.
 - Steckzapfen sind als Presspassung gedacht (`fit_peg = 0,15 mm`). Zuerst ein Zapfen-Probestück oder den Fuß drucken und die Passung prüfen; bei Bedarf `fit_peg` ändern.
 - Kernlöcher für M3 sind Ø 2,6 mm (selbstschneidend in PETG, mindestens 7,5 mm tief).
@@ -107,7 +118,7 @@ Insgesamt 20 Stück. Jede Zahl ist aus `madbuddy_roboter.scad` belegt; der Beleg
 | 4 | M3×10 Flachkopf | Oberkörper von unten auf `seat` | `t_seat_pts`, `seat_screw_l = 10`; Einschraubtiefe geprüft mit dem Prüfteil `screw_seat` (`check_roboter.ps1`, Abschnitt 3h) |
 | 4 | M3×10 Flachkopf | `bottom` an `seat` | `dome_pts_s`; Länge: `bot_t` 2,4 − `cbore_t` 1,8 + `boss_h` 2,0 + `pilot_s_len` 7,6 = 10,2; Kommentarblock „MONTAGEFOLGE“, Schritt 5 |
 
-Summe: 4 × M3×8, 12 × M3×10, 4 × M3×28. Das passt zur Massenliste „20 × M3“ (Eintrag „Schrauben (20 x M3)“ in der Massenliste). Die Zierschrauben sind gedruckte Einlagen, keine echten Schrauben.
+Summe: 4 × M3×8, 12 × M3×10, 4 × M3×28. Das passt zur Massenliste „20 × M3“ (Eintrag „Schrauben (20 x M3)“ in der Massenliste). Die Zierschrauben sind gedruckte Einlagen, keine echten Schrauben. Die unteren Gehäuseschrauben (Dome vorn/hinten) sind seit dem Lautsprecher-Umbau verlegt: von X ±16, Z 8 nach X ±24, Z 18.
 
 ### Montagereihenfolge
 
@@ -117,7 +128,8 @@ Summe: 4 × M3×8, 12 × M3×10, 4 × M3×28. Das passt zur Massenliste „20 ×
    1. Kameramodul von hinten in die Tasche schieben (Linse durch das Loch), FPC durch den Schlitz nach +X führen.
    2. `cam_clip` (Riegel) von der +X-Seite in die Nuten schieben (Übermaß 0,1 mm, Presssitz).
    3. XIAO-Stapel von hinten zwischen die Pfosten schieben, die Lippen der Pfosten rasten über die Rückseite ein (FPC in den Stecker).
-   4. `torso_back` aufschieben und mit 4 × M3×28 schließen: Klemmsteg und Stützwand in `torso_back` legen sich hinter den Stapel. Der Weg ist per Zwischenstellungen geprüft (`asm_cam`, `asm_clip`, `asm_stack`, `asm_close`).
+   4. Lautsprecher von vorn in die Tasche legen (liegt hinten auf einem 1,5-mm-Anschlag), Kabel durch den Schlitz an der rechten Schmalseite (+X) nach innen führen. Gitter aufdrücken: Der Steg rastet in eine 0,8 mm tiefe Stufe um die Tasche. Kabel durch den Hals zum Anschluss SPEAK am CYD führen. Die Kabellänge muss mindestens 15 cm betragen (das Adafruit-Kabel mit ~11 cm verlängern).
+   5. `torso_back` aufschieben und mit 4 × M3×28 schließen: Klemmsteg und Stützwand in `torso_back` legen sich hinter den Stapel. Der Weg ist per Zwischenstellungen geprüft (`asm_cam`, `asm_clip`, `asm_stack`, `asm_close`).
 4. Arme in den Oberkörper stecken, Hände auf die Arme stecken, Ohren in den Kopf stecken, Blende in die Nut drücken, Zierschrauben einsetzen.
 5. Oberkörper mit Hals und Kopf auf `seat` stecken und von unten mit 4 × M3×10 verschrauben (Schraubendreher durch den offenen Boden).
 6. Akku einlegen, 5 V und GND verdrahten (Schalter, Kabel nach oben), `bottom` mit 4 × M3×10 schließen. Füße vorn auf die Beine stecken.
@@ -130,9 +142,12 @@ Jede Schraube ist im Modell mit einem Schraubendreher-Prüfkörper Ø 6 × 60 au
 
 `& case\check_roboter.ps1` (aus PowerShell im Repo-Ordner): STL aller Teile ohne Warnung, Standsicherheit, Kollisionen, Montage-Erreichbarkeit mit Selbsttests, 3MF (lesbar, größer als 10 kB, richtige Anzahl Objekte und Bauteile), PNG-Renders. Exitcode ungleich 0 bei jedem Fehler.
 
+Abschnitt 3k prüft den Lautsprecher: Passung, Abstand ≥ 1 mm zu Kamera und XIAO, Gitter außerhalb des Kamera-Sichtkegels, offene Gitterfläche 44,8 % (mindestens 40 %). Jede Prüfung hat eine Positivkontrolle. Volllauf-Ergebnis: Volllauf 2026-11-04: ALLES GRUEN
+
 ### Offene Punkte
 
 - Maße des Akkumoduls DFR0969 (Platine, Lage der Buchse, des Schalters, der LED) sind **VORLÄUFIG** nach Datenblatt. Vor dem ersten Druck von `seat` und `bottom` das echte Modul nachmessen.
 - Presspassung der Zapfen (`fit_peg`) und die Länge der Schrauben sind noch nicht am gedruckten Teil getestet.
+- Lautsprecher-Maße (Typ 2030) sind **VORLÄUFIG**: vor dem Druck von Tasche und Gitter nachmessen und eintragen.
 - Die Lage von Schalter und LED im Boden hängt am Modul (siehe oben).
 - Kamera-Halter im Oberkörper: eigener Plan `docs/superpowers/plans/2026-10-27-kamera-halter.md`.
