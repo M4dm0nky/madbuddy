@@ -2,6 +2,17 @@
 
 Neueste Einträge oben. Format und Regeln: `docs/superpowers/plans/2026-10-25-cyd-buddy.md`, Abschnitt „Fortschritts-Protokoll“.
 
+## Bedürfnis-Hinweis + Testbild – GEBAUT, wartet auf Release (Stand 2026-11-04)
+- Branch `feature/beduerfnis-hinweis` (c50d424), Plan `docs/superpowers/plans/2026-11-04-beduerfnis-hinweis.md`. Der Abschnitt „Nächste Aufgaben“ (Stand 2026-11-04) steht auf `feature/sound`, dort sind es die Aufgaben 3 und 4.
+- Nutzer 2026-11-04: Erst eine Blase mit Symbol, danach bleibt ein Symbol stehen, und zwar für jedes niedrige Bedürfnis (krank, Hunger, müde, Zuneigung, Spaß), ohne Ton. Logik in `src/logic/need_hint.h`: Schwellen wie in `mood_base_emotion`, Hysterese 5, Erinnerung alle 15 min. Die Symbole stehen oben links ab (6,6) und sind ausgeblendet, solange eine Blase zu sehen ist oder der Buddy schläft.
+- 3-mm-Rand rechts: Der Streifen ist schwarz, der Kopf ist nachgedruckt, USB-C passt, der CYD sitzt fest (Foto IMG_0993). Ein schwarzer Streifen vor schwarzem Gesicht sagt nichts über die Ursache. Deshalb gibt es den USB-Befehl `testbild`: weißer Grund, roter 1-px-Rahmen auf den Pixeln 0/319/0/239, Striche alle 10 px, bunte Ecken. Ein Tipp oder 60 s beenden ihn.
+- Prüfung: `pio test -e native` 250/250. Die Gegenprobe (Schwelle Hunger 20 statt 25) war rot. Build `cyd2usb` SUCCESS, Flash 75,9 %.
+- Offen:
+  1. Release: Die Rechteprüfung hat `ota-publish --release` abgelehnt. Der Nutzer muss es freigeben.
+  2. Am Gerät ansehen, ob die Symbole mit den Overlays (Hand, Fragezeichen) kollidieren.
+  3. `testbild` über COM6 senden. Der Nutzer meldet, ob der rote Rand links und rechts zu sehen ist. Die Auswertung steht im Plan, Teil 2.
+  4. Danach Merge nach `main`.
+
 ## Nächste Aufgaben (Stand 2026-11-03 spät, alles auf `main`)
 Für jede Aufgabe einen neuen Branch von `main`. Geräte-Stand: Release `v20261103-2108` (CYD + Kamera 0.1.6) ist installiert. Kamera-Updates nur am Netzteil ≥ 2 A. Releases (`node tools/ota-publish.mjs --release`, vorher Branch pushen) und das Löschen von Branches braucht das ausdrückliche Ja des Nutzers.
 
