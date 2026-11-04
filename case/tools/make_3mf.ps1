@@ -4,7 +4,7 @@
 param(
   [Parameter(Mandatory)][string]$StlDir,
   [Parameter(Mandatory)][string]$OutDir,
-  [int]$ExpectGroupComponents = 3
+  [int]$ExpectGroupComponents = 5
 )
 $ErrorActionPreference = 'Stop'
 $py  = 'C:\Users\madma\AppData\Local\Python\pythoncore-3.14-64\python.exe'
@@ -42,15 +42,15 @@ function Build([string]$out, [string[]]$specs, [int]$expItems, [int]$expComp) {
   else { Ok "$name : $len Byte, $items Bauobjekte, $comp Bauteile in Gruppen" }
 }
 
-foreach ($f in @('head_front', 'bezel', 'head_back', 'ear', 'deco', 'torso_front', 'torso_back', 'neck', 'arm', 'arm_l', 'hand', 'seat', 'bottom', 'foot', 'cam_test', 'head_front_ams', 'bezel_inlay', 'screws_inlay')) {
+foreach ($f in @('head_front', 'bezel', 'head_back', 'ear', 'deco', 'torso_front', 'torso_back', 'neck', 'arm', 'arm_l', 'hand', 'seat', 'bottom', 'foot', 'cam_test', 'head_front_ams', 'bezel_inlay', 'screws_inlay', 'spk_grille', 'spk_grille_inlay')) {
   if (-not (Test-Path (S $f))) { Bad "3MF: Eingabe fehlt: $(S $f)" }
 }
 if ($fails -gt 0) { exit 1 }
 
-# 1) Alle Einzelteile nebeneinander (head_front, bezel, head_back ... je getrennt; Ohr/Arm/Hand/Fuss 2x, Kamera-Testteil 1x, Arm gespiegelt): 18 Objekte, keine Gruppen
-Build (Join-Path $OutDir 'roboter_teile.3mf') (@("head_front=$(S 'head_front')", "bezel=$(S 'bezel')") + $single) 18 0
-# 2) AMS: Gruppe Kopf (Kopfschale + Blende + 4 Zierschrauben als Bauteile) und die uebrigen 16 Teile einzeln
-$ams = @('--group', 'kopf', "head_front=$(S 'head_front_ams')", "bezel=$(S 'bezel_inlay')", "screws=$(S 'screws_inlay')", '--end') + $single
+# 1) Alle Einzelteile nebeneinander (inkl. Lautsprecher-Gitter): 19 Objekte, keine Gruppen
+Build (Join-Path $OutDir 'roboter_teile.3mf') (@("head_front=$(S 'head_front')", "bezel=$(S 'bezel')", "spk_grille=$(S 'spk_grille')") + $single) 19 0
+# 2) AMS: Gruppe Kopf (Kopfschale + Blende + 4 Zierschrauben), Gruppe Brust (torso_front + Lautsprecher-Gitter als eigenes Bauteil/Farbe) und die uebrigen 15 Teile einzeln
+$ams = @('--group', 'kopf', "head_front=$(S 'head_front_ams')", "bezel=$(S 'bezel_inlay')", "screws=$(S 'screws_inlay')", '--end', '--group', 'brust', "torso_front=$(S 'torso_front')", "spk_grille=$(S 'spk_grille_inlay')", '--end') + ($single | Where-Object { $_ -notlike 'torso_front=*' })
 Build (Join-Path $OutDir 'roboter_ams.3mf') $ams 17 $ExpectGroupComponents
 
 if ($fails -gt 0) { exit 1 }

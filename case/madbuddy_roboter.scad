@@ -24,7 +24,7 @@ wall       = 2.4;    // Wandstaerke (>= 2 mm)
 front_t    = 2.0;    // Dicke der Frontplatte (Gesicht)
 back_t     = 2.6;    // Dicke der Rueckwand (Platz fuer Schraubenkopf-Senkung)
 leg_h      = 33.6;   // Auftraggeber (Fix-Runde): Hoehe der Oberschenkel 32 (Konzept) + 1,6, damit ueber den Zellen 2 mm Luft bleiben; der ganze Oberbau (Oberkoerper, Hals, Kopf, Arme, Haende) wandert um 1,6 mit
-t_rise     = 0;      // Oberkoerper-Erhoehung fuer den Lautsprecher (Spec 2026-11-04); hebt alles oberhalb der unteren Dome an, Unterkante/Sitz/Arme bleiben
+t_rise     = 17;     // GERECHNET 2026-11-04: kleinster Wert mit 3/3i/3k gruen (Lautsprecher Z 8...28, untere Dome bei [+-24, 18]): 3k spk_cam schon ab 12 leer, aber 3i cam_present erst ab 17 (bei 10/12/14/15/16: 148/80/32/24/24 Facetten, 17 und 18: 0). Grund: die Oberkante der Gitter-Nut (Z 31,15) schneidet die Unterkante des gekippten Kamerarahmens an der Brustflaeche. Oberkoerper-Erhoehung fuer den Lautsprecher (Spec 2026-11-04); hebt alles oberhalb der unteren Dome an, Unterkante/Sitz/Arme bleiben
 t_h        = 48 + t_rise;   // QUELLE: Konzept (t_h) 48 + Erhoehung
 lift       = leg_h - 32;   // abgeleitet: Verschiebung des Oberbaus gegenueber dem Konzept (nur fuer die Massenliste)
 ch         = 4.0;    // 45-Grad-Fase rundum am Gesicht und an der Rueckseite (statt Kugelrundung, ohne Stuetzen druckbar)
@@ -356,7 +356,7 @@ t_ch       = 3.5;    // VORLÄUFIG (Entwurf): 45-Grad-Fase an Brust und Ruecksei
 torso_origin = [0, t_y - t_d / 2, leg_h - 4];   // QUELLE: Konzept: [0, t_y - t_d/2, leg_h - 4] = Mitte der Unterkante des Oberkoerpers in Weltlage (Task 4 baut darauf auf)
 t_plate_z  = 4;      // VORLÄUFIG (Entwurf): Bodenplatte 4 mm ueber der Unterkante, darunter die Steckkante (Rand), in die der Sitz (Task 4) greift
 t_cable_d  = 10;     // QUELLE: Aufgabe: Kabeldurchfuehrung unten >= 10
-t_dome_pts = [[-16, 8], [16, 8], [-16, 41 + t_rise], [16, 41 + t_rise]];   // VORLÄUFIG (Entwurf): M3-Dome (Teilung vorn/hinten), Lage X/Z; untere Dome von Z 10 auf 8 gesenkt, damit die XIAO-Wiege (Z ab 12,3) frei bleibt
+t_dome_pts = [[-24, 18], [24, 18], [-16, 41 + t_rise], [16, 41 + t_rise]];   // M3-Dome (Teilung vorn/hinten), Lage X/Z. Untere Dome (Entscheidung Auftraggeber 2026-11-04, Lautsprecher tiefer): von [+-16, 8] nach [+-24, 18] verlegt, damit der Lautsprecher (Tasche, Anschlag, Nut bis X +-18,5) tief im Bauch Platz hat. X 24 = ueber den vorderen Sitzpfosten (X 20,5...27,5, Oberkante Z 13,5): Dom-Unterkante Z 14,3 liegt 0,8 ueber den Pfosten; Abstand zum Lautsprecher-Nutrand X 20,3 - 18,5 = 1,8 mm. Z 18: Senkung hinten (Ø6,2) beginnt bei Z 14,9 > 13,5 (schneidet den Sitzpfosten nicht an); Dom-Oberkante Z 21,7 liegt unter der Schulterbosse (Z sh_z_l - 5,1 = 16,2 + t_rise)
 t_dome_d   = 7.4;    // VORLÄUFIG (Entwurf): Dom aussen; Wand um die Durchgangsbohrung (Ø3,4) 2,0
 t_dome_pilot = 9;    // VORLÄUFIG (Entwurf): Kernloch im vorderen Dom (>= 7,5)
 t_seat_pts = [for (sx = [-1, 1], sy = [-1, 1]) [sx * 24, sy * 12]];   // VORLÄUFIG (Entwurf): 4 M3-Kernloecher unten fuer den Sitz (X/Y), Schrauben von unten
@@ -373,6 +373,44 @@ cam_cone_l = 26;     // QUELLE: Entscheidung Auftraggeber 2026-10-28 (Spec: Robo
 // Dort definiert (hier NICHT wiederholen): cam_*, xiao_* ... Die Common-Datei liest von der Roboter-Datei nur die oben gesetzten, optionalen Werte (z. B. cam_chamfer_ang); sie muessen VOR dem include stehen.
 include <xiao_cam_block.scad>
 cam_wt     = 3.9;    // QUELLE: Spec (Linse 3,6 + 0,3 Rueckstand): "Wandstaerke" fuer das lokale System = Abstand Innenebene (Z 0) bis Aussenebene (Z cam_wt) entlang der Linsenachse. Die Brustwand steht senkrecht, die Achse ist 15 Grad geneigt: die Aussenflaeche liegt bei Z = cam_wt + 0,268 * (Hoehe ueber der Achse). Mit 3,9 liegt die Kamera-Vorderseite (cam_zbf) auf Z 0 und die Linsenspitze in der Achse 0,3 mm hinter der Aussenflaeche; der Rest zwischen Z 0 und der Aussenflaeche wird von cam_fill() massiv gefuellt (Taschenboden)
+// --- Lautsprecher (Spec 2026-11-04 Teil A1): Typ 2030, quer, Membran nach vorn, von vorn eingesetzt, Gitter rastet in eine Nut
+spk_w      = 30.0;   // VORLÄUFIG (Typ 2030, nicht vermessen): Breite (X)
+spk_h      = 20.0;   // VORLÄUFIG (Typ 2030, nicht vermessen): Hoehe (Z)
+spk_t      = 5.0;    // VORLÄUFIG (Typ 2030, nicht vermessen): Dicke inkl. Membranrand (Y)
+spk_r      = 2.0;    // VORLÄUFIG: Eckradius
+spk_rim    = 4.0;    // Gitterrand um die Tasche (Steg + Nut liegen darin). Brief 3,0: auf 4,0 erhoeht, weil Nut 2 mm breit + 0,75 Wand zur Tasche + 0,8 Rand aussen mehr als 3 mm brauchen
+spk_zc     = t_ch + 0.5 + spk_rim + spk_h / 2;   // GERECHNET 2026-11-04 (Lautsprecher so tief wie moeglich): Gitterunterkante (zc - h/2 - rim) = t_ch + 0,5 = Z 4,0. Die ebene Brustflaeche beginnt bei Z t_ch (3,5; darunter die 45-Grad-Fase), das Gitter liegt also voll auf der Flaeche, 0,5 mm Reserve (= Oberkante Bodenplatte t_plate_z 4). Ergebnis zc 18, Lautsprecher Z 8...28. Anschlag-Kasten unten Z 6,2 (> Bodenplatten-Oberseite 4), Sitzpfosten (X >= 20,5) liegen neben Gitter/Nut (X <= 19)
+spk_grille_t = 1.2;  // wie Kopfblende (bezel_t)
+// (spk_rim steht oberhalb von spk_zc)    Gitterrand um die Tasche (Steg + Nut liegen darin). Brief 3,0: auf 4,0 erhoeht, weil Nut 2 mm breit + 0,75 Wand zur Tasche + 0,8 Rand aussen mehr als 3 mm brauchen
+spk_ring_in = 1.2;   // Nut/Steg: Innenkante, Abstand vom Lautsprecherrand (Wand zur Tasche = 1,2 - fit - fit_peg = 0,75)
+spk_ring_w = 2.0;    // Nut/Steg: Breite (wie Kopf)
+spk_stop_w = 1.5;    // Anschlag-Rahmen hinter der Tasche: Breite
+spk_open_min = 0.40; // Gitter: offene Flaeche ueber der Membran >= 40 %
+spk_slot_w = 1.6;    // Gitter: Schlitzbreite
+spk_slot_bar = 1.2;  // Gitter: Steg zwischen den Schlitzen
+spk_slot_m = 1.0;    // Gitter: Abstand der Schlitze vom Lautsprecherrand
+spk_off    = false;  // nur Pruefhilfe (Ueberhang-Vergleich): true = Tasche, Anschlag und Nut entfallen
+module spk_dummy(grow = 0) translate([0, -t_d / 2, spk_zc]) rotate([-90, 0, 0])
+  linear_extrude(spk_t + grow) offset(r = grow) rrect(spk_w / 2, spk_h / 2, spk_r);
+spk_n      = floor((spk_h - 2 * spk_slot_m + spk_slot_bar) / (spk_slot_w + spk_slot_bar));   // Anzahl Schlitze
+spk_slot_l = spk_w - 2 * spk_slot_m;
+function spk_open_frac() = spk_n * spk_slot_w * spk_slot_l / (spk_w * spk_h);   // Schlitzflaeche (liegt ganz in der Membranflaeche) / Lautsprecherflaeche
+module spk_ring2d() difference() {
+  rrect(spk_w / 2 + spk_ring_in + spk_ring_w, spk_h / 2 + spk_ring_in + spk_ring_w, spk_r + spk_ring_in + spk_ring_w);
+  rrect(spk_w / 2 + spk_ring_in, spk_h / 2 + spk_ring_in, spk_r + spk_ring_in);
+}
+module spk_place() translate([0, -t_d / 2, spk_zc]) rotate([90, 0, 0]) children();   // lokal: z = nach aussen (-Y), y = Z, wie die Kopfblende auf dem Gesicht
+module spk_grille() spk_place() spk_grille_local();
+module spk_grille_local() {
+  total = spk_n * spk_slot_w + (spk_n - 1) * spk_slot_bar;
+  difference() {
+    union() {
+      linear_extrude(spk_grille_t) rrect(spk_w / 2 + spk_rim, spk_h / 2 + spk_rim, spk_r + spk_rim);
+      translate([0, 0, -nut_t + 0.1]) linear_extrude(nut_t - 0.1 + 0.01) spk_ring2d();   // Steg, 0,1 kuerzer als die Nut tief ist
+    }
+    for (i = [0 : spk_n - 1]) translate([-spk_slot_l / 2, -total / 2 + i * (spk_slot_w + spk_slot_bar), -nut_t - 0.01]) cube([spk_slot_l, spk_slot_w, nut_t + spk_grille_t + 0.02]);
+  }
+}
 cam_tip_ref = cam_lens_h;   // Pruefmass fuer lens_tip: Linsenspitze der Konstruktion (Kamera-Vorderseite auf Z 0, Linse 3,6 hoch); unabhaengig von cam_wt, damit eine zu duenne Wand auffaellt
 // --- Hals
 neck_lo_d  = 36;     // VORLÄUFIG (Entwurf): Ø unterer Flansch (Scheibe), dazu zwei Laschen fuer die Schrauben
@@ -548,6 +586,21 @@ module t_adds() {
   for (p = t_seat_pts) translate([p[0] - 3.5, p[1] < 0 ? -t_d / 2 + 0.5 : p[1] - 3.5, t_plate_z])
     cube([7, p[1] < 0 ? t_d / 2 - 0.5 + p[1] + 3.5 : t_d / 2 - 0.5 - p[1] + 3.5, t_seat_blk_z - t_plate_z]);
   cam_mount();
+  spk_mount();
+}
+// Lautsprecher: Rahmen (Anschlag-Kasten) um und hinter der Tasche, nur torso_front (liegt ganz bei Y < 0)
+module spk_mount() if (!spk_off) translate([0, -t_d / 2, spk_zc]) rotate([-90, 0, 0])
+  linear_extrude(spk_t + fit + spk_stop_w) offset(delta = fit + spk_stop_w) rrect(spk_w / 2, spk_h / 2, spk_r);
+module spk_cut() if (!spk_off) {
+  // Tasche von vorn (zieht Wand und Fase weg), dahinter Anschlag: Oeffnung um spk_stop_w kleiner, damit der Lautsprecher aufliegt
+  translate([0, -t_d / 2 - 0.01, spk_zc]) rotate([-90, 0, 0]) {
+    linear_extrude(spk_t + fit + 0.01) offset(delta = fit) rrect(spk_w / 2, spk_h / 2, spk_r);
+    translate([0, 0, spk_t + fit - 0.01]) linear_extrude(spk_stop_w + 0.02) offset(delta = -spk_stop_w) rrect(spk_w / 2, spk_h / 2, spk_r);
+  }
+  // Kabelschlitz 3 x 2 mm im Anschlag an der Schmalseite (+X), nach innen
+  translate([spk_w / 2 - spk_stop_w - 0.01, -t_d / 2 + spk_t + fit - 0.01, spk_zc - 1.5]) cube([2.0, spk_stop_w + 0.02, 3]);
+  // Nut fuer den Gittersteg
+  spk_place() translate([0, 0, -nut_t]) linear_extrude(nut_t + 0.01) offset(delta = fit_peg) spk_ring2d();
 }
 module neck_pilots_t()  { for (sx = [-1, 1]) translate([sx * neck_lo_bx, neck_lo_by, neck_rec_floor - neck_pilot_t]) cylinder(d = pilot_d, h = neck_pilot_t + 0.01); }
 // unterer Halsflansch: Scheibe + 2 Laschen fuer die Schrauben (beide vor der Teilungsebene)
@@ -579,6 +632,7 @@ module torso_front(pilots = true) {
     }
     t_ext(-lip_h, 0.01) difference() { t_cav2d(a_lip); t_cav2d(wall); }     // Falz: Innenhaelfte der Wand
     cam_cut();
+    spk_cut();
     t_cuts_common(pilots);
     if (pilots) dome_pilots_t();
     for (p = t_deco_pts) translate([p[0], -t_d / 2 - 0.01, p[1]]) rotate([-90, 0, 0]) cylinder(d = deco_d + fit_peg, h = deco_in + 0.01);
@@ -658,7 +712,7 @@ module arm_print() translate([-(arm_S[2] - arm_S[1]) * cos(45), 0, arm_x + arm_f
 
 module body_shells() { place_torso() { torso_front(); torso_back(); neck(); torso_decos(); } for (s = [1, -1]) { arm(s); hand(s); } }
 module shells()   { place_head() head_shells(); body_shells(); seat_shells(); }
-module dummies()  { place_head() head_dummies(); xiao_dummy_r(); camera_dummy_r(); lens_cone_r(); seat_dummies(); }
+module dummies()  { place_head() head_dummies(); xiao_dummy_r(); camera_dummy_r(); lens_cone_r(); place_torso() spk_dummy(); seat_dummies(); }
 
 // ---- Pruefkoerper fuer die Montage (Schraubendreher Ø6, 60 lang) und Kollisionspaare
 module hits() { for (i = [1 : $children - 1]) intersection() { children(0); children(i); } }   // child 0 gegen jedes weitere Kind einzeln
@@ -1092,6 +1146,15 @@ else if (part == "deco") {                                                     /
   for (i = [0 : 1]) translate([i * 12, 12, 0]) ear_deco();
   for (i = [0 : 3]) translate([i * 8, -12, 0]) head_deco();   // Task 3: 4 weitere Einlagen fuer die Brust
 }
+else if (part == "spk_grille") translate([0, 0, spk_grille_t]) rotate([180, 0, 0]) spk_grille_local();   // Gitter: Sichtseite nach unten auf dem Bett, Steg nach oben
+else if (part == "spk_grille_inlay") translate([0, 0, t_d / 2]) rotate([90, 0, 0]) spk_grille();            // 3MF/AMS: Gitter am Einbauort (gleiche Lage wie torso_front)
+else if (part == "spk_fit") hits() { spk_dummy(); torso_front(); }                       // muss LEER sein
+else if (part == "spk_fit_selftest") hits() { spk_dummy(0.6); torso_front(); }           // muss TREFFEN
+else if (part == "spk_cam") hits() { spk_dummy(1.0); union() { xiao_dummy_l(); camera_dummy_l(); cam_free_volumes(); } }  // muss LEER sein (1 mm Abstand)
+else if (part == "spk_cam_selftest") hits() { translate([0, 0, 15]) spk_dummy(1.0); union() { xiao_dummy_l(); camera_dummy_l(); } }  // muss TREFFEN
+else if (part == "spk_open") { echo(SPK_OPEN = spk_open_frac()); }
+else if (part == "spk_cone") hits() { place_torso() spk_grille(); lens_cone_r(); }                                       // Gitter im Sichtkegel der Kamera? muss LEER sein
+else if (part == "spk_cone_ctrl") hits() { place_torso() spk_grille(); place_torso() translate([0, 0, -12]) lens_cone_l(); }   // Kontrolle: Kegel 12 mm tiefer, muss TREFFEN
 else if (part == "torso_front") translate([0, 0, t_d / 2]) rotate([90, 0, 0]) torso_front();     // Brust (y = -22) auf dem Bett
 else if (part == "torso_back")  translate([0, 0, t_d / 2]) rotate([-90, 0, 0]) torso_back();     // Rueckseite (y = +22) auf dem Bett
 else if (part == "cam_test")   // Testausschnitt (ca. 15 min Druck): Brustwand X -18 ... Aussenkante der Schachtwand am Klappstecker-Ende (X 21,02) / Y +-14 mm um die Linse mit Tasche, Rahmen, Schacht und Wurzeln; Aussenseite unten wie torso_front

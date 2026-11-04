@@ -16,7 +16,7 @@ New-Item -ItemType Directory -Force $stlDir, $pngDir | Out-Null
 $script:fails = 0
 
 # Druckteile. Spaetere Tasks haengen ihre Teile hier an (Task 3: neck, torso_front, torso_back, arm, hand; Task 4: seat, bottom, foot, jetzt enthalten).
-$parts = @("head_front", "bezel", "head_back", "ear", "deco", "torso_front", "torso_back", "neck", "arm", "hand", "seat", "bottom", "foot", "cam_test")
+$parts = @("head_front", "bezel", "head_back", "ear", "deco", "torso_front", "torso_back", "neck", "arm", "hand", "seat", "bottom", "foot", "cam_test", "spk_grille")
 
 function Want([string]$k) { return ($Only.Count -eq 0 -or $Only -contains $k) }
 function Ok($m)   { Write-Host "[ OK ] $m" -ForegroundColor Green }
@@ -54,7 +54,7 @@ $inv = [Globalization.CultureInfo]::InvariantCulture   # einmal fuer alle Abschn
 function Is-EmptyRun($r, [int]$n) { return ($n -eq 0 -and ($r.Text -match $emptyMsg -or $r.Code -eq 0)) }
 
 # -Only: nur bekannte Abschnittsnamen zulassen (Tippfehler duerfen nicht still "alles gruen" ergeben)
-$knownSections = @('1', '1b', '1c', '2', '2b', '3', '3b', '3c', '3d', '3e', '3e2', '3g', '3f', '3h', '3i', '3j', '4')
+$knownSections = @('1', '1b', '1c', '2', '2b', '3', '3b', '3c', '3d', '3e', '3e2', '3g', '3f', '3h', '3i', '3j', '3k', '4')
 $unknown = @($Only | Where-Object { $knownSections -notcontains $_ })
 if ($unknown.Count -gt 0) {
   Write-Host "[FAIL] -Only: unbekannter Abschnitt: $($unknown -join ', '). Gueltig: $($knownSections -join ', ')" -ForegroundColor Red
@@ -80,7 +80,7 @@ foreach ($p in $parts) {
 
 # 1b) Zusatz-STL fuer die 3MF: AMS-Kopf (Schale, Blende, Zierschrauben in gleicher Lage) und linker Arm (gespiegelt, -D side=-1)
 if (Want '1b') {
-foreach ($e in @(@{ n = 'head_front_ams'; part = 'head_front_ams'; d = @() }, @{ n = 'bezel_inlay'; part = 'bezel_inlay'; d = @() }, @{ n = 'screws_inlay'; part = 'screws_inlay'; d = @() }, @{ n = 'arm_l'; part = 'arm'; d = @('-D', 'side=-1') })) {
+foreach ($e in @(@{ n = 'head_front_ams'; part = 'head_front_ams'; d = @() }, @{ n = 'bezel_inlay'; part = 'bezel_inlay'; d = @() }, @{ n = 'spk_grille_inlay'; part = 'spk_grille_inlay'; d = @() },@{ n = 'screws_inlay'; part = 'screws_inlay'; d = @() }, @{ n = 'arm_l'; part = 'arm'; d = @('-D', 'side=-1') })) {
   $out = Join-Path $stlDir "roboter_$($e.n).stl"
   if (Test-Path $out) { Remove-Item $out }
   $r = Run-Scad ($e.d + (PartArg $e.part) + @('-o', $out))
@@ -308,7 +308,6 @@ if (-not $custom) {
 }
 
 # 3i) Kamera-Tasche, Wiege, Anschlag, Montagewege (Kamera v2). Jede "muss leer sein"-Pruefung hat eine Positiv-Kontrolle ("muss treffen"),
-if (Want '3i') {
 #     damit eine leere/falsch sitzende Geometrie nicht still als "gruen" durchgeht. Laeuft auch mit -Define (Gegenproben).
 function Scad-Facets([string]$part, [string[]]$extra = @(), [int]$TimeoutSec = 900) {
   $o = Join-Path $env:TEMP "madbuddy_roboter_chk_$part.stl"
@@ -335,6 +334,8 @@ function Chk-Hit([string]$part, [string]$okMsg, [string]$badMsg, [string[]]$extr
   if ($x.R.Code -ne 0) { Bad "$badMsg : Exitcode $($x.R.Code) $($x.R.Text.Trim())"; return }
   if ($x.N -gt 0) { Ok "$okMsg ($($x.N) Facetten)" } else { Bad $badMsg }
 }
+# (Hilfsfunktionen oben stehen ausserhalb von "if (Want '3i')", damit auch 3k sie ohne 3i nutzen kann)
+if (Want '3i') {
 # Selbsttest der "muss leer sein"-Pruefung selbst: leere Geometrie MIT WARNING (unbekannte Variable) darf NICHT als gruen durchgehen, leere Geometrie ohne WARNING schon.
 $w = Eval-Empty 'warn_ctrl'
 if (-not $w.Ok -and $w.Msg -match 'WARNING') { Ok "Selbsttest Chk-Empty: leeres Ergebnis mit WARNING wird als Fehler erkannt" } else { Bad "Selbsttest Chk-Empty: WARNING bei leerem Ergebnis NICHT erkannt (Pruefung taugt nichts)" }
@@ -374,6 +375,11 @@ Chk-Hit   'asm_close_ctrl' "Kontrolle Montage Schliessen: um 1 mm zum Anschlag v
 if (Want '3j') {
 #     Vergleich mit demselben Teil ohne Kamera (-D cam_off=true). Positiv-Kontrollen: steile Flanke und 20-mm-Decke muessen erkannt werden.
 . (Join-Path $here 'tools\overhang.ps1')
+# Linsenhoehe cam_z = 27 + t_rise (Druckkoordinaten: Achse durch (0, -cam_z, 0)); t_rise aus -Define, sonst aus dem SCAD gelesen
+$tRise = $null
+foreach ($d in $Define) { if ($d -match '^t_rise=([-0-9.]+)$') { $tRise = [double]::Parse($Matches[1], $inv) } }
+if ($null -eq $tRise) { if ((Get-Content $scad -Raw) -match '(?m)^t_rise\s*=\s*([-0-9.]+)\s*;') { $tRise = [double]::Parse($Matches[1], $inv) } else { throw 't_rise im SCAD nicht gefunden' } }
+$camZ = 27 + $tRise
 foreach ($p in 'torso_front', 'torso_back') {
   $A = Join-Path $stlDir "roboter_$p.stl"
   $B = Join-Path $env:TEMP "madbuddy_roboter_${p}_nocam.stl"
@@ -383,7 +389,7 @@ foreach ($p in 'torso_front', 'torso_back') {
   if (-not (Test-Path $A) -or -not (Test-Path $B)) { Bad "Ueberhang $p : STL fehlt"; continue }
   # Ausnahme nur fuer torso_front: Linsenloch-Fase (45 Grad zur Achse, Achse 15 Grad zur Druckrichtung geneigt = bis ca. 60 Grad Ueberhang), Entscheidung 2026-10-28:
   # Stuetzen am Linsenloch akzeptiert. Druck-Koordinaten: Achse durch (0, -cam_z, 0), nach innen (0, sin15, cos15); Zylinder R 6,5 (Fase aussen R ca. 5,1) bis 4 mm ueber dem Bett.
-  if ($p -eq 'torso_front') { $o = Eval-Overhang $A $B 15 @(0, -27, 0) @(0, [math]::Sin(15 * [math]::PI / 180), [math]::Cos(15 * [math]::PI / 180)) 6.5 4.0 }
+  if ($p -eq 'torso_front') { $o = Eval-Overhang $A $B 15 @(0, -$camZ, 0) @(0, [math]::Sin(15 * [math]::PI / 180), [math]::Cos(15 * [math]::PI / 180)) 6.5 4.0 }
   else { $o = Eval-Overhang $A $B }
   if ($o.Steep -gt 0) { Bad "Ueberhang $p : $($o.Steep) neue Facetten mit > 45 Grad Ueberhang bei$($o.SteepAt)" }
   elseif ($o.Worst -gt 15) { Bad "Ueberhang $p : Bruecke $([math]::Round($o.Worst,1)) mm > 15 mm: $($o.WorstBox)" }
@@ -401,6 +407,26 @@ foreach ($c in @(@{ n = 'ovh_ctrl_steep'; l = 'steile Flanke (55 Grad)'; t = 'st
   else { Bad "Kontrolle Ueberhang: $($c.l) NICHT erkannt (Pruefung taugt nichts)" }
 }
 
+# Lautsprecher-Tasche/Anschlag/Nut in torso_front: Vergleich mit demselben Teil ohne Lautsprecher (-D spk_off=true), Kamera bleibt in beiden (keine Ausnahme noetig).
+$Bspk = Join-Path $env:TEMP 'madbuddy_roboter_torso_front_nospk.stl'
+if (Test-Path $Bspk) { Remove-Item $Bspk }
+$rS = Run-Scad (@('-D', 'spk_off=true') + (PartArg 'torso_front') + @('-o', $Bspk)) 900
+if ($rS.Code -ne 0 -or -not (Test-Path $Bspk)) { Bad "Ueberhang Lautsprecher: Vergleichsteil ohne Lautsprecher nicht erzeugt, Exitcode $($rS.Code)" }
+else {
+  $o = Eval-Overhang (Join-Path $stlDir 'roboter_torso_front.stl') $Bspk
+  if ($o.Steep -gt 0) { Bad "Ueberhang Lautsprecher: $($o.Steep) neue Facetten mit > 45 Grad Ueberhang bei$($o.SteepAt)" }
+  else {
+    # Die Decken sind RINGE (Nut 2,0 mm breit, Anschlag-Rahmen 1,5 mm breit). Eval-Overhang misst die Umhuellende der Komponente und meldet deshalb die Ringabmessung
+    # (hier ca. 24-27 mm) statt der echten Bruecke (= Ringbreite). Darum nur die Flanken hart pruefen; die Decken werden zur Kenntnis ausgegeben.
+    Ok ("Ueberhang Lautsprecher: Tasche, Anschlag und Nut ohne Flanke > 45 Grad ({0} Decken, alles Ringe von 1,5 bzw. 2,0 mm Breite; Umhuellende der groessten: {1:N1} mm)" -f $o.Ceilings, $o.Worst)
+    foreach ($l in $o.List) { Note "Lautsprecher-Decke: $l" }
+  }
+  # Positivkontrolle: Vergleich in umgekehrter Richtung (Teil MIT Lautsprecher als Referenz, ohne als Pruefling) muss Unterschiede zeigen: die steile 55-Grad-Flanke wird gegen das Teil ohne Lautsprecher erkannt
+  $fc = Join-Path $env:TEMP 'madbuddy_roboter_ovh_ctrl_steep.stl'
+  if (Test-Path $fc) { $oc = Eval-Overhang $fc $Bspk; if ($oc.Steep -gt 0) { Ok "Kontrolle Ueberhang Lautsprecher: steile Flanke gegen das Teil ohne Lautsprecher wird erkannt" } else { Bad "Kontrolle Ueberhang Lautsprecher: steile Flanke NICHT erkannt (Pruefung taugt nichts)" } }
+  else { Bad "Kontrolle Ueberhang Lautsprecher: ovh_ctrl_steep.stl fehlt" }
+}
+
 # Kontrollen zur Ausnahme: (1) ohne Ausnahme muss die Fase als steil erkannt werden (die Ausnahme blendet also wirklich nur die Fase aus), (2) ein steiles Merkmal
 # ausserhalb der Fase (ovh_ctrl_steep_low: ganz unten, innerhalb der Hoehengrenze, aber weit von der Linsenachse) wird trotz Ausnahme erkannt.
 $Af = Join-Path $stlDir 'roboter_torso_front.stl'
@@ -411,9 +437,29 @@ if (Test-Path $fl) { Remove-Item $fl }
 $rL = Run-Scad ((PartArg 'ovh_ctrl_steep_low') + @('-o', $fl)) 900
 if ($rL.Code -ne 0 -or -not (Test-Path $fl)) { Bad "Kontrolle Ausnahme: ovh_ctrl_steep_low nicht erzeugt, Exitcode $($rL.Code) $($rL.Text.Trim())" }
 else {
-$o1 = Eval-Overhang $fl $Bfront 15 @(0, -27, 0) @(0, [math]::Sin(15 * [math]::PI / 180), [math]::Cos(15 * [math]::PI / 180)) 6.5 4.0
+$o1 = Eval-Overhang $fl $Bfront 15 @(0, -$camZ, 0) @(0, [math]::Sin(15 * [math]::PI / 180), [math]::Cos(15 * [math]::PI / 180)) 6.5 4.0
 if ($o1.Steep -gt 0) { Ok "Kontrolle Ausnahme: steiles Merkmal ausserhalb der Fase wird trotz Ausnahme erkannt" } else { Bad "Kontrolle Ausnahme: steiles Merkmal ausserhalb der Fase wird von der Ausnahme verschluckt" }
 }
+}
+
+# 3k) Lautsprecher (20 x 30 mm, vorn im Bauch): passt in die Tasche, kollidiert nicht mit Kamera/XIAO (1 mm Abstand), Gitter offen >= 40 %. Positiv-Kontrollen fuer jede Leer-Pruefung.
+if (Want '3k') {
+Chk-Empty 'spk_fit'          "Lautsprecher: Pruefkoerper 20x30x5 liegt ganz in der Tasche (kein Treffer mit torso_front)" "Lautsprecher: Pruefkoerper kollidiert mit torso_front"
+Chk-Hit   'spk_fit_selftest' "Lautsprecher-Selbsttest: um 0,6 mm groesserer Pruefkoerper trifft die Tasche (Pruefung wirkt)" "Lautsprecher-Selbsttest: zu grosser Pruefkoerper NICHT erkannt (Pruefung taugt nichts)"
+Chk-Empty 'spk_cam'          "Lautsprecher: 1 mm Abstand zu XIAO-Stapel, Kamera und Werkzeugkanaelen/Kabelloch" "Lautsprecher: zu nah an XIAO/Kamera/Kanaelen"
+Chk-Hit   'spk_cam_selftest' "Lautsprecher-Selbsttest: 15 mm nach oben verschobener Pruefkoerper trifft Kamera/XIAO (Pruefung wirkt)" "Lautsprecher-Selbsttest: verschobener Pruefkoerper NICHT erkannt (Pruefung taugt nichts)"
+Chk-Empty 'spk_cone'         "Lautsprecher-Gitter liegt ausserhalb des Kamera-Sichtkegels" "Lautsprecher-Gitter ragt in den Kamera-Sichtkegel"
+Chk-Hit   'spk_cone_ctrl'    "Lautsprecher-Selbsttest: um 12 mm abgesenkter Sichtkegel trifft das Gitter (Pruefung wirkt)" "Lautsprecher-Selbsttest: abgesenkter Sichtkegel trifft das Gitter NICHT (Pruefung taugt nichts)"
+$x = Scad-Facets 'spk_open'
+if ($x.R.Text -match 'WARNING: (?!Current top level object is empty)|ERROR') { Bad "Lautsprecher-Gitter: WARNING/ERROR $($x.R.Text.Trim())" }
+elseif ($x.R.Text -match 'SPK_OPEN = ([-0-9.e]+)') {
+  $f = [double]::Parse($Matches[1], $inv)
+  if ($f -ge 0.40) { Ok ("Lautsprecher-Gitter: offene Flaeche {0:P1} (>= 40 %), SPK_OPEN={1}" -f $f, $Matches[1]) } else { Bad ("Lautsprecher-Gitter: offene Flaeche nur {0:P1}, verlangt >= 40 %" -f $f) }
+} else { Bad "Lautsprecher-Gitter: SPK_OPEN nicht gelesen" }
+# Positivkontrolle: mit -D spk_slot_w=0.8 muss die Pruefung unter 40 % fallen (sonst misst sie nichts)
+$x = Scad-Facets 'spk_open' @('-D', 'spk_slot_w=0.8')
+if ($x.R.Text -match 'SPK_OPEN = ([-0-9.e]+)' -and [double]::Parse($Matches[1], $inv) -lt 0.40) { Ok "Lautsprecher-Selbsttest: Gitter mit 0,8-mm-Schlitzen faellt unter 40 % (SPK_OPEN=$($Matches[1]))" }
+else { Bad "Lautsprecher-Selbsttest: zu schmale Schlitze werden NICHT erkannt (Pruefung taugt nichts)" }
 }
 
 # 4) PNG-Renders
