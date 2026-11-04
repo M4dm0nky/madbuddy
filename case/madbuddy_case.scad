@@ -23,7 +23,7 @@ $fn        = 64;
 
 // ---------------------------------------------------------------- Werte, die cyd_common.scad aus dem Gehaeuse erwartet bzw. die gehaeusespezifisch sind
 glass_gap  = 0.2;   // Luft zwischen Display-Oberkante und Frontplatte
-disp_x     = 2.0;   // war -1; +3 gleicht aa_left 10 -> 13 aus (Platine bleibt, Fenster folgt der echten Bildflaeche). Versatz des Displaymoduls (Platine+Glas+Fenster) im Gehaeuse in X, negativ = nach links
+disp_x     = -0.6;  // = aa_left - 11: Platine bleibt, wo sie mit aa_left 10 / disp_x -1 war (Platine bleibt, Fenster folgt der echten Bildflaeche). Versatz des Displaymoduls (Platine+Glas+Fenster) im Gehaeuse in X, negativ = nach links
 rear_extra  = 10.0; // Zusatztiefe hinten: verlegt die hintere Kippkante nach hinten (Standsicherheit bei 15 Grad), Platz fuer Akku/Kabel
 
 // CYD-Masse, Fenster und Pruefkoerper. Muss NACH front_t, glass_gap, fit, disp_x stehen: OpenSCAD wertet Zuweisungen der Reihe nach aus.
