@@ -80,7 +80,7 @@ foreach ($p in $parts) {
 
 # 1b) Zusatz-STL fuer die 3MF: AMS-Kopf (Schale, Blende, Zierschrauben in gleicher Lage) und linker Arm (gespiegelt, -D side=-1)
 if (Want '1b') {
-foreach ($e in @(@{ n = 'head_front_ams'; part = 'head_front_ams'; d = @() }, @{ n = 'bezel_inlay'; part = 'bezel_inlay'; d = @() }, @{ n = 'spk_grille_inlay'; part = 'spk_grille_inlay'; d = @() },@{ n = 'screws_inlay'; part = 'screws_inlay'; d = @() }, @{ n = 'arm_l'; part = 'arm'; d = @('-D', 'side=-1') })) {
+foreach ($e in @(@{ n = 'head_front_ams'; part = 'head_front_ams'; d = @() }, @{ n = 'bezel_inlay'; part = 'bezel_inlay'; d = @() }, @{ n = 'spk_grille_inlay'; part = 'spk_grille_inlay'; d = @() }, @{ n = 'screws_inlay'; part = 'screws_inlay'; d = @() }, @{ n = 'arm_l'; part = 'arm'; d = @('-D', 'side=-1') })) {
   $out = Join-Path $stlDir "roboter_$($e.n).stl"
   if (Test-Path $out) { Remove-Item $out }
   $r = Run-Scad ($e.d + (PartArg $e.part) + @('-o', $out))
@@ -307,8 +307,6 @@ if (-not $custom) {
 }
 }
 
-# 3i) Kamera-Tasche, Wiege, Anschlag, Montagewege (Kamera v2). Jede "muss leer sein"-Pruefung hat eine Positiv-Kontrolle ("muss treffen"),
-#     damit eine leere/falsch sitzende Geometrie nicht still als "gruen" durchgeht. Laeuft auch mit -Define (Gegenproben).
 function Scad-Facets([string]$part, [string[]]$extra = @(), [int]$TimeoutSec = 900) {
   $o = Join-Path $env:TEMP "madbuddy_roboter_chk_$part.stl"
   if (Test-Path $o) { Remove-Item $o }
@@ -334,7 +332,9 @@ function Chk-Hit([string]$part, [string]$okMsg, [string]$badMsg, [string[]]$extr
   if ($x.R.Code -ne 0) { Bad "$badMsg : Exitcode $($x.R.Code) $($x.R.Text.Trim())"; return }
   if ($x.N -gt 0) { Ok "$okMsg ($($x.N) Facetten)" } else { Bad $badMsg }
 }
-# (Hilfsfunktionen oben stehen ausserhalb von "if (Want '3i')", damit auch 3k sie ohne 3i nutzen kann)
+# (Hilfsfunktionen stehen ausserhalb von "if (Want '3i')", damit auch 3k und 3j sie ohne 3i nutzen koennen)
+# 3i) Kamera-Tasche, Wiege, Anschlag, Montagewege (Kamera v2). Jede "muss leer sein"-Pruefung hat eine Positiv-Kontrolle ("muss treffen"),
+#     damit eine leere/falsch sitzende Geometrie nicht still als "gruen" durchgeht. Laeuft auch mit -Define (Gegenproben).
 if (Want '3i') {
 # Selbsttest der "muss leer sein"-Pruefung selbst: leere Geometrie MIT WARNING (unbekannte Variable) darf NICHT als gruen durchgehen, leere Geometrie ohne WARNING schon.
 $w = Eval-Empty 'warn_ctrl'
@@ -375,11 +375,10 @@ Chk-Hit   'asm_close_ctrl' "Kontrolle Montage Schliessen: um 1 mm zum Anschlag v
 if (Want '3j') {
 #     Vergleich mit demselben Teil ohne Kamera (-D cam_off=true). Positiv-Kontrollen: steile Flanke und 20-mm-Decke muessen erkannt werden.
 . (Join-Path $here 'tools\overhang.ps1')
-# Linsenhoehe cam_z = 27 + t_rise (Druckkoordinaten: Achse durch (0, -cam_z, 0)); t_rise aus -Define, sonst aus dem SCAD gelesen
-$tRise = $null
-foreach ($d in $Define) { if ($d -match '^t_rise=([-0-9.]+)$') { $tRise = [double]::Parse($Matches[1], $inv) } }
-if ($null -eq $tRise) { if ((Get-Content $scad -Raw) -match '(?m)^t_rise\s*=\s*([-0-9.]+)\s*;') { $tRise = [double]::Parse($Matches[1], $inv) } else { throw 't_rise im SCAD nicht gefunden' } }
-$camZ = 27 + $tRise
+# Linsenhoehe cam_z und erwartete Ring-Umhuellende des Lautsprechers kommen aus dem SCAD (echo des Teils spk_env, beruecksichtigt -Define); nichts davon ist hier dupliziert
+$ev = Scad-Facets 'spk_env'
+if ($ev.R.Text -match 'CAM_Z = ([-0-9.e]+), SPK_ENV_W = ([-0-9.e]+), SPK_ENV_H = ([-0-9.e]+)') { $camZ = [double]::Parse($Matches[1], $inv); $envW = [double]::Parse($Matches[2], $inv); $envH = [double]::Parse($Matches[3], $inv) }
+else { throw "spk_env: CAM_Z/SPK_ENV_* nicht gelesen: $($ev.R.Text.Trim())" }
 foreach ($p in 'torso_front', 'torso_back') {
   $A = Join-Path $stlDir "roboter_$p.stl"
   $B = Join-Path $env:TEMP "madbuddy_roboter_${p}_nocam.stl"
@@ -416,10 +415,32 @@ else {
   $o = Eval-Overhang (Join-Path $stlDir 'roboter_torso_front.stl') $Bspk
   if ($o.Steep -gt 0) { Bad "Ueberhang Lautsprecher: $($o.Steep) neue Facetten mit > 45 Grad Ueberhang bei$($o.SteepAt)" }
   else {
-    # Die Decken sind RINGE (Nut 2,0 mm breit, Anschlag-Rahmen 1,5 mm breit). Eval-Overhang misst die Umhuellende der Komponente und meldet deshalb die Ringabmessung
-    # (hier ca. 24-27 mm) statt der echten Bruecke (= Ringbreite). Darum nur die Flanken hart pruefen; die Decken werden zur Kenntnis ausgegeben.
-    Ok ("Ueberhang Lautsprecher: Tasche, Anschlag und Nut ohne Flanke > 45 Grad ({0} Decken, alles Ringe von 1,5 bzw. 2,0 mm Breite; Umhuellende der groessten: {1:N1} mm)" -f $o.Ceilings, $o.Worst)
+    # Die Decken sind RINGE (Stufe 3,05 mm breit, Anschlag-Rahmen 1,5 mm breit, per assert im SCAD <= 15). Eval-Overhang meldet jedoch die Umhuellende der Komponente, nicht die Ringbreite.
+    # Hart geprueft wird deshalb: keine Decke darf groesser sein als die aus den SCAD-Parametern erwartete Ring-Umhuellende (Stufen-Aussenkontur, SPK_ENV_W x SPK_ENV_H) + 0,5 mm.
+    # Eine neu hinzukommende Vollflaeche (z. B. grosse Brueckendecke) waere groesser und wuerde so erkannt.
+    function Chk-CeilEnv($list, [double]$eW, [double]$eH, [double]$tol) {
+      $bad = @(); $maxL = 0.0; $maxS = 0.0
+      $lim = [math]::Max($eW, $eH) + $tol; $limS = [math]::Min($eW, $eH) + $tol
+      foreach ($cl in $list) {
+        if ($cl -match 'X\[([-0-9.,]+)\.\.([-0-9.,]+)\] Y\[([-0-9.,]+)\.\.([-0-9.,]+)\]') {
+          $dx = [double]::Parse($Matches[2].Replace(',', '.'), $inv) - [double]::Parse($Matches[1].Replace(',', '.'), $inv)
+          $dy = [double]::Parse($Matches[4].Replace(',', '.'), $inv) - [double]::Parse($Matches[3].Replace(',', '.'), $inv)
+          $big = [math]::Max($dx, $dy); $sml = [math]::Min($dx, $dy)
+          if ($big -gt $maxL) { $maxL = $big }; if ($sml -gt $maxS) { $maxS = $sml }
+          if ($big -gt $lim -or $sml -gt $limS) { $bad += $cl }
+        } else { $bad += "nicht lesbar: $cl" }
+      }
+      return @{ Bad = $bad; MaxL = $maxL; MaxS = $maxS; Lim = $lim; LimS = $limS }
+    }
+    $ce = Chk-CeilEnv $o.List $envW $envH 0.5
+    if ($ce.Bad.Count -gt 0) { Bad ("Ueberhang Lautsprecher: Decke groesser als die erwartete Ring-Umhuellende ({0:N1} x {1:N1} mm + 0,5): {2}" -f $envW, $envH, ($ce.Bad -join '; ')) }
+    elseif ($o.Ceilings -lt 1) { Bad "Ueberhang Lautsprecher: keine Decken gefunden (Pruefung misst nichts)" }
+    else { Ok ("Ueberhang Lautsprecher: Tasche, Anschlag und Stufe ohne Flanke > 45 Grad; {0} Decken, groesste Umhuellung {1:N1} x {2:N1} mm <= erwartete Ring-Umhuellung {3:N1} x {4:N1} mm (+0,5)" -f $o.Ceilings, $ce.MaxL, $ce.MaxS, $ce.Lim, $ce.LimS) }
     foreach ($l in $o.List) { Note "Lautsprecher-Decke: $l" }
+    # Positivkontrolle der Decken-Pruefung: gegen eine absichtlich um 5 mm zu kleine erwartete Umhuellung MUSS sie Fehler melden
+    $ceC = Chk-CeilEnv $o.List ($envW - 5) ($envH - 5) 0.5
+    if ($ceC.Bad.Count -gt 0) { Ok ("Kontrolle Decken-Pruefung Lautsprecher: zu kleine erwartete Umhuellung ({0:N1} x {1:N1} mm) wird erkannt ({2} Decke(n) darueber)" -f ($envW - 5), ($envH - 5), $ceC.Bad.Count) }
+    else { Bad "Kontrolle Decken-Pruefung Lautsprecher: zu kleine erwartete Umhuellung wird NICHT erkannt (Pruefung taugt nichts)" }
   }
   # Positivkontrolle: Vergleich in umgekehrter Richtung (Teil MIT Lautsprecher als Referenz, ohne als Pruefling) muss Unterschiede zeigen: die steile 55-Grad-Flanke wird gegen das Teil ohne Lautsprecher erkannt
   $fc = Join-Path $env:TEMP 'madbuddy_roboter_ovh_ctrl_steep.stl'

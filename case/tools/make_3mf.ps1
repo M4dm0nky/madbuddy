@@ -1,5 +1,5 @@
 # Erzeugt die beiden Roboter-3MF aus den STL-Dateien und prueft sie. Exitcode 0 = ok, 1 = Fehler.
-# Aufruf (PowerShell):  .\case\tools\make_3mf.ps1 -StlDir case\stl -OutDir case\3mf [-ExpectGroupComponents 3]
+# Aufruf (PowerShell):  .\case\tools\make_3mf.ps1 -StlDir case\stl -OutDir case\3mf [-ExpectGroupComponents 5]
 # Wird von check_roboter.ps1 aufgerufen. -ExpectGroupComponents ist nur fuer die Gegenprobe da (falscher Wert muss FAIL liefern).
 param(
   [Parameter(Mandatory)][string]$StlDir,

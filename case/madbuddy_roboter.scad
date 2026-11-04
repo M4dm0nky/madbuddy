@@ -381,9 +381,8 @@ spk_r      = 2.0;    // VORLÄUFIG: Eckradius
 spk_rim    = 4.0;    // Gitterrand um die Tasche (Steg + Nut liegen darin). Brief 3,0: auf 4,0 erhoeht, weil Nut 2 mm breit + 0,75 Wand zur Tasche + 0,8 Rand aussen mehr als 3 mm brauchen
 spk_zc     = t_ch + 0.5 + spk_rim + spk_h / 2;   // GERECHNET 2026-11-04 (Lautsprecher so tief wie moeglich): Gitterunterkante (zc - h/2 - rim) = t_ch + 0,5 = Z 4,0. Die ebene Brustflaeche beginnt bei Z t_ch (3,5; darunter die 45-Grad-Fase), das Gitter liegt also voll auf der Flaeche, 0,5 mm Reserve (= Oberkante Bodenplatte t_plate_z 4). Ergebnis zc 18, Lautsprecher Z 8...28. Anschlag-Kasten unten Z 6,2 (> Bodenplatten-Oberseite 4), Sitzpfosten (X >= 20,5) liegen neben Gitter/Nut (X <= 19)
 spk_grille_t = 1.2;  // wie Kopfblende (bezel_t)
-// (spk_rim steht oberhalb von spk_zc)    Gitterrand um die Tasche (Steg + Nut liegen darin). Brief 3,0: auf 4,0 erhoeht, weil Nut 2 mm breit + 0,75 Wand zur Tasche + 0,8 Rand aussen mehr als 3 mm brauchen
-spk_ring_in = 1.2;   // Nut/Steg: Innenkante, Abstand vom Lautsprecherrand (Wand zur Tasche = 1,2 - fit - fit_peg = 0,75)
-spk_ring_w = 2.0;    // Nut/Steg: Breite (wie Kopf)
+spk_ring_in = 1.2;   // Gittersteg (Ring): Innenkante, Abstand vom Lautsprecherrand. ENTSCHEIDUNG Controller (Review Fix-Runde 1): Keine Ringnut mehr, denn die Wand zwischen Tasche und Nut waere nur 1,2 - fit - fit_peg = 0,75 mm (Vorgabe Waende >= 2 mm). Stattdessen eine STUFE (Senkung, nut_t tief) von der Taschenkante bis zur Aussenkante des Rings; die Aussenkontur (und damit Gitter-Aussenmass und Oberkante der Stufe) bleibt wie vorher, t_rise aendert sich nicht. Der Steg bleibt ein Ring und sitzt mit fit_peg an der Aussenwand der Stufe (Passung aussen)
+spk_ring_w = 2.0;    // Gittersteg: Breite (wie Kopf); Stufenbreite = spk_ring_in + spk_ring_w + fit_peg - fit (3,05 mm)
 spk_stop_w = 1.5;    // Anschlag-Rahmen hinter der Tasche: Breite
 spk_open_min = 0.40; // Gitter: offene Flaeche ueber der Membran >= 40 %
 spk_slot_w = 1.6;    // Gitter: Schlitzbreite
@@ -395,8 +394,11 @@ module spk_dummy(grow = 0) translate([0, -t_d / 2, spk_zc]) rotate([-90, 0, 0])
 spk_n      = floor((spk_h - 2 * spk_slot_m + spk_slot_bar) / (spk_slot_w + spk_slot_bar));   // Anzahl Schlitze
 spk_slot_l = spk_w - 2 * spk_slot_m;
 function spk_open_frac() = spk_n * spk_slot_w * spk_slot_l / (spk_w * spk_h);   // Schlitzflaeche (liegt ganz in der Membranflaeche) / Lautsprecherflaeche
+module spk_outer2d() rrect(spk_w / 2 + spk_ring_in + spk_ring_w, spk_h / 2 + spk_ring_in + spk_ring_w, spk_r + spk_ring_in + spk_ring_w);   // Aussenkontur von Steg und Stufe
+spk_step_w = spk_ring_in + spk_ring_w + fit_peg - fit;   // Breite der Stufe (Taschenkante bis Stufenwand)
+assert(spk_stop_w <= 15 && spk_step_w <= 15, "Lautsprecher: Anschlag-Rahmen oder Stufe breiter als 15 mm (Bruecken-Limit)");
 module spk_ring2d() difference() {
-  rrect(spk_w / 2 + spk_ring_in + spk_ring_w, spk_h / 2 + spk_ring_in + spk_ring_w, spk_r + spk_ring_in + spk_ring_w);
+  spk_outer2d();
   rrect(spk_w / 2 + spk_ring_in, spk_h / 2 + spk_ring_in, spk_r + spk_ring_in);
 }
 module spk_place() translate([0, -t_d / 2, spk_zc]) rotate([90, 0, 0]) children();   // lokal: z = nach aussen (-Y), y = Z, wie die Kopfblende auf dem Gesicht
@@ -599,8 +601,8 @@ module spk_cut() if (!spk_off) {
   }
   // Kabelschlitz 3 x 2 mm im Anschlag an der Schmalseite (+X), nach innen
   translate([spk_w / 2 - spk_stop_w - 0.01, -t_d / 2 + spk_t + fit - 0.01, spk_zc - 1.5]) cube([2.0, spk_stop_w + 0.02, 3]);
-  // Nut fuer den Gittersteg
-  spk_place() translate([0, 0, -nut_t]) linear_extrude(nut_t + 0.01) offset(delta = fit_peg) spk_ring2d();
+  // Stufe (Senkung nut_t tief) um die Tasche bis zur Aussenkontur des Gitterstegs (+ fit_peg); der Steg sitzt an ihrer Aussenwand. Keine duenne Lippe zwischen Tasche und Nut.
+  spk_place() translate([0, 0, -nut_t]) linear_extrude(nut_t + 0.01) offset(delta = fit_peg) spk_outer2d();
 }
 module neck_pilots_t()  { for (sx = [-1, 1]) translate([sx * neck_lo_bx, neck_lo_by, neck_rec_floor - neck_pilot_t]) cylinder(d = pilot_d, h = neck_pilot_t + 0.01); }
 // unterer Halsflansch: Scheibe + 2 Laschen fuer die Schrauben (beide vor der Teilungsebene)
@@ -1153,6 +1155,7 @@ else if (part == "spk_fit_selftest") hits() { spk_dummy(0.6); torso_front(); }  
 else if (part == "spk_cam") hits() { spk_dummy(1.0); union() { xiao_dummy_l(); camera_dummy_l(); cam_free_volumes(); } }  // muss LEER sein (1 mm Abstand)
 else if (part == "spk_cam_selftest") hits() { translate([0, 0, 15]) spk_dummy(1.0); union() { xiao_dummy_l(); camera_dummy_l(); } }  // muss TREFFEN
 else if (part == "spk_open") { echo(SPK_OPEN = spk_open_frac()); }
+else if (part == "spk_env") { echo(CAM_Z = cam_z, SPK_ENV_W = spk_w + 2 * (spk_ring_in + spk_ring_w + fit_peg), SPK_ENV_H = spk_h + 2 * (spk_ring_in + spk_ring_w + fit_peg)); }   // Werte fuer die Pruefung 3j (cam_z, erwartete Ring-Umhuellende)
 else if (part == "spk_cone") hits() { place_torso() spk_grille(); lens_cone_r(); }                                       // Gitter im Sichtkegel der Kamera? muss LEER sein
 else if (part == "spk_cone_ctrl") hits() { place_torso() spk_grille(); place_torso() translate([0, 0, -12]) lens_cone_l(); }   // Kontrolle: Kegel 12 mm tiefer, muss TREFFEN
 else if (part == "torso_front") translate([0, 0, t_d / 2]) rotate([90, 0, 0]) torso_front();     // Brust (y = -22) auf dem Bett
