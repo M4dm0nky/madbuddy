@@ -302,7 +302,7 @@ void icon_need(LovyanGFX &d, int need, int cx, int cy, int s) {
     case 1: icon_apple(d, cx, cy, s); break;
     case 2: icon_zz(d, cx, cy, s, lgfx::color888(170, 180, 255)); break;
     case 3: icon_heart(d, cx, cy, s, lgfx::color888(255, 80, 170)); break;
-    case 4: icon_ball(d, cx, cy, s, lgfx::color888(80, 200, 255)); break;
+    case 4: icon_play(d, cx, cy, s, lgfx::color888(90, 230, 120)); break;   // Spielen wie im Menü (Ball sah aus wie ein Bonbon)
     default: break;
   }
 }
