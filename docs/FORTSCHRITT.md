@@ -2,22 +2,17 @@
 
 Neueste Einträge oben. Format und Regeln: `docs/superpowers/plans/2026-10-25-cyd-buddy.md`, Abschnitt „Fortschritts-Protokoll“.
 
-## Nächste Aufgaben (Stand 2026-11-03 spät, alles auf `main`)
-Für jede Aufgabe einen neuen Branch von `main`. Geräte-Stand: Release `v20261103-2108` (CYD + Kamera 0.1.6) ist installiert. Kamera-Updates nur am Netzteil ≥ 2 A. Releases (`node tools/ota-publish.mjs --release`, vorher Branch pushen) und das Löschen von Branches braucht das ausdrückliche Ja des Nutzers.
+## Nächste Aufgaben (Stand 2026-11-04, Branch `feature/sound`, Gehäuse Teil A1 fertig)
+Für jede Aufgabe einen neuen Branch von `main`, außer Ton/Geräusche (weiter auf `feature/sound`). Geräte-Stand: Release `v20261103-2108` (CYD + Kamera 0.1.6) ist installiert. Kamera-Updates nur am Netzteil ≥ 2 A. Releases (`node tools/ota-publish.mjs --release`, vorher Branch pushen) und das Löschen von Branches braucht das ausdrückliche Ja des Nutzers.
 
-1. **Roboterkopf-Nachdruck abnehmen** – Kopf vorn + hinten druckt gerade (Stand 2026-11-03 abends).
-   - Fragen an den Nutzer: Bild mittig im Fenster? USB-C steckbar? Sitzt der CYD fest (Andruckfüße greifen)?
-   - Klemmt USB weiter oder wackelt der CYD: messen lassen Glasoberfläche → Platinenunterseite (Modell 6,1 = `disp_h` 4,5 + 1,6) und Dicke der USB-C-Steckerhülle (Modell 6,5), dann `disp_h` in `case/cyd_common.scad` an der Ursache korrigieren statt `usb_face_extra` weiter zu erhöhen.
-   - Details: Abschnitt „Roboterkopf Passung nach Druck“ unten.
-2. **Kamera-Halter v2 abschließen** – Roboter ist komplett gedruckt; Sitz des Blocks im Schacht beim Nutzer erfragen (Spiel 0,3 mm, Lötstellen frei).
-   - Danach Task 3 (Kopf Stufe 2: `case/madbuddy_case.scad`, `case/check.ps1`) und Task 4 (Ausgaben, Anleitung, Schlussprüfung) aus `docs/superpowers/plans/2026-11-02-kamera-halter-v2.md`. Prüfen gezielt mit `-Only`, Volllauf `check_roboter.ps1` (~35 min) einmal am Ende.
-3. **Roboter-Lautsprecher im Bauch** – Lautsprecher (Typ 2030) kaufen und vermessen, dann Maße eintragen. Druck `torso_front`, `torso_back`, `spk_grille`. Danach Teil A2 (Firmware Ton).
-4. **Stimmung „betrübt“ klären** – zuerst mit dem Nutzer, was genau stört.
+1. **Teil A2 – Ton am CYD** (Nutzer-Ja 2026-11-04) – Spec `docs/superpowers/specs/2026-11-04-lautsprecher-geraeusche-design.md`, Teil A2. Noch kein Plan: zuerst `superpowers:writing-plans`. Alles per TDD bauen; nur der Hörtest wartet auf den Lautsprecher (bestellt).
+2. **Teil B – Geräusche über das XIAO-Mikrofon** (Nutzer-Ja 2026-11-04) – nach A2, gleiche Spec.
+3. **Roboterkopf: 3 mm Rand rechts** – Nutzer 2026-11-04: Rechts im Fenster sind ca. 3 mm nicht bespielte Displayfläche zu sehen. Mit `superpowers:systematic-debugging`: erst klären, ob das Bild kleiner gezeichnet wird als 320 px (Software) oder das Fenster/der CYD seitlich versetzt sitzt (Gehäuse); dazu Nutzer fragen, ob der Streifen hell (Hintergrundlicht) oder schwarz ist, ggf. Foto. USB-C/fester Sitz noch nicht beantwortet.
+4. **Stimmung „betrübt“: Hinweis auf den Grund** – Nutzer 2026-11-04: Man weiß nicht, was er hat; es braucht einen Hinweis (z. B. Symbol/Blase für das Bedürfnis: Streicheln, Füttern …). Neue Funktion → `superpowers:brainstorming`.
    - Bekannt: `Emotion::SAD` kommt, sobald `affection < 20` (`src/logic/mood.h:160`); die Zuneigung sinkt ohne Streicheln/Füttern.
-   - Idee: Anwesenheit per Kamera hält die Zuneigung langsam oben oder bremst den Abfall. Erst brainstorming, dann TDD in `test/test_mood`.
-5. **Blick am Gerät abnehmen** – mit dem Nutzer, kein Code.
-   - Folgt der Blick flüssig? Geradeaus beim normalen Sitzen (`CAM_GAZE_Y0 300`)? Schielen erst bei ~20 cm (`CAM_NEAR_W 350`)? Werte live über `cam:`-Zeile (COM6, 115200, DTR/RTS aus). Bei Gelegenheit ein `python tools/cam-snap.py COM6 --out bild.jpg` (prüft den neuen Snap-Puffer).
-6. **Später, nur bei Bedarf**
+5. **Lautsprecher einbauen, wenn er da ist** – Maße nachmessen (Breite, Höhe, Dicke inkl. Rand), bei Abweichung von 30 × 20 × 5 `spk_*` anpassen, dann Druck `torso_front`, `torso_back`, `spk_grille`. Kamera-Halter v2: Sitz des Blocks im Schacht erst mit diesem neuen Bauch prüfbar (Nutzer hat ihn noch nicht gedruckt); danach Task 3/4 aus `docs/superpowers/plans/2026-11-02-kamera-halter-v2.md`.
+6. **Blick am Gerät** – Nutzer 2026-11-04: „sieht erstmal okay aus“. Erledigt bis auf Feinabstimmung bei Bedarf.
+7. **Später, nur bei Bedarf**
    - Kamera noch schneller: Erkennung braucht 135 ms je Bild (Pico 224). Nächste Hebel: kleineres Modell-Eingangsbild, eigenes Kopfmodell mit ESP-Detection (~2–3 Arbeitstage, RTX 5080).
    - CYD: Bildrate 24–26 fps (SPI 80 MHz, Ring-Spur, Brillen-Raster), `src/app.cpp` aufteilen.
    - Aufräumen: Branches `feature/kamera-*` (einrichtung, firmware, gehaeuse, halter-v2, kleinkram, schneller), `rename-madbuddy`, `fix/kopf-passung` (lokal + GitHub) sind gemergt und können weg (Nutzer-Ja; Löschen durch Claude wurde von der Rechteprüfung abgelehnt).
