@@ -283,11 +283,24 @@ void icon_arrow(LovyanGFX &d, int cx, int cy, int s, uint32_t col, bool right) {
   else d.fillTriangle(cx - w, cy, cx + w, cy - h, cx + w, cy + h, col);
 }
 
+// Ein Z: obere Linie, Diagonale, untere Linie (links oben = x, y, Kantenlänge z, Strichdicke t).
+static void zz_letter(LovyanGFX &d, float x, float y, float z, float t, uint32_t col) {
+  d.drawWideLine(x, y, x + z, y, t, col);
+  d.drawWideLine(x + z, y, x, y + z, t, col);
+  d.drawWideLine(x, y + z, x + z, y + z, t, col);
+}
+// Müde: großes Z unten links, kleines z oben rechts.
+static void icon_zz(LovyanGFX &d, int cx, int cy, int s, uint32_t col) {
+  const float big = s * 0.5f, small = s * 0.32f, t = s / 11.0f + 0.5f;
+  zz_letter(d, cx - s * 0.45f, cy - s * 0.05f, big, t, col);
+  zz_letter(d, cx + s * 0.1f, cy - s * 0.42f, small, t, col);
+}
+
 void icon_need(LovyanGFX &d, int need, int cx, int cy, int s) {
   switch (need) {
     case 0: icon_thermometer(d, cx, cy, s); break;
     case 1: icon_apple(d, cx, cy, s); break;
-    case 2: icon_pillow(d, cx, cy, s, lgfx::color888(200, 190, 230)); break;
+    case 2: icon_zz(d, cx, cy, s, lgfx::color888(170, 180, 255)); break;
     case 3: icon_heart(d, cx, cy, s, lgfx::color888(255, 80, 170)); break;
     case 4: icon_ball(d, cx, cy, s, lgfx::color888(80, 200, 255)); break;
     default: break;
