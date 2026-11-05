@@ -2,6 +2,22 @@
 
 Neueste Einträge oben. Format und Regeln: `docs/superpowers/plans/2026-10-25-cyd-buddy.md`, Abschnitt „Fortschritts-Protokoll“.
 
+## Gesamt-Review Pakete A–E + Pflege ohne Zwang – GEBAUT, wartet auf Release (Stand 2026-11-05)
+- Branch `fix/review-paket-a` (von `main`), Review-Plan: Befunde und Pakete siehe Commit-Nachrichten.
+- **A** Kamera-Watchdog 30 s mit Reset (vorher 5 s, nur Meldung), Kamera-Download höchstens 5 min, Kamera-URL nur aus `M4dm0nky/madbuddy/releases/download/`, kein `setInsecure` mehr, Wartezeiten über `Wait` (`deadline.h`), Claude-Empfänger in eigenem Task (Gesicht friert nicht mehr ein), Einrichtungs-WLAN mit 8-stelligem Passwort auf dem Display, Schlüssel nicht mehr im seriellen Log. Kamera **0.1.7**.
+- **Pflege ohne Zwang** (Nutzerwunsch): kein Hunger, keine Krankheit/Niesen, nie betrübt oder gelangweilt durch Nichtstun (Untergrenze 50). Füttern, Streicheln, Spielen geben nur kurze Freude. Müdigkeit/Schlaf unverändert. `feature/beduerfnis-hinweis` wird NICHT gemergt (Testbild liegt nur dort).
+- **B** CI `.github/workflows/test.yml` (Host-Tests, Node-Tests, CYD-Build).
+- **C** `app.cpp` (872 → 180 Zeilen) in `app_diag/speech/mood/eyes/screens.cpp` + `app_internal.h`, `secure_zero`, `CAM_BAUD` in `cam_proto.h`.
+- **D** Unveränderte Bilder werden nicht neu gesendet (`logic/frame_skip.h`, spätestens 1 s voll). SPI-Takt `CYD_SPI_WRITE_MHZ` (Standard 40), Test-Env `cyd2usb_spi80`, fps-Log mit `-DCYD_LOG_FPS=1`.
+- **E** `verkabelung.md` „Schutz und Strom“ (Elko, Schalter ≥ 1 A, Polyfuse 1,5 A, Antennentest). Lüftung Kopf hinten + Boden, Option `use_inserts` (Gewindeeinsätze), `case/tools/check_lib.ps1`, Prüfung 3k. **Neu drucken: `roboter_head_back.stl`, `roboter_bottom.stl`.**
+- Prüfung: `pio test -e native` 251/251, Builds CYD 75,9 %, Kamera SUCCESS; `check_roboter.ps1 -Only 3k,3,3b,3c,1c,3h` und `check.ps1` grün. Volllauf `check_roboter.ps1` steht vor dem Merge noch aus.
+- Offen:
+  1. Release (Nutzer-Ja), Kamera-Update nur am Netzteil ≥ 2 A.
+  2. Am Gerät: Gesicht flüssig, Claude-Hook kommt an, Portal-Passwort lesbar, Pflege neutral.
+  3. 80 MHz testen (Env `cyd2usb_spi80`, fps-Log), erst danach Standard ändern.
+  4. Altstand: `roboter_torso_back.stl` passt nicht zum SCAD (nicht von diesem Branch).
+  5. Volllauf Gehäuseprüfung, dann Merge nach `main`.
+
 ## Nächste Aufgaben (Stand 2026-11-03 spät, alles auf `main`)
 Für jede Aufgabe einen neuen Branch von `main`. Geräte-Stand: Release `v20261103-2108` (CYD + Kamera 0.1.6) ist installiert. Kamera-Updates nur am Netzteil ≥ 2 A. Releases (`node tools/ota-publish.mjs --release`, vorher Branch pushen) und das Löschen von Branches braucht das ausdrückliche Ja des Nutzers.
 

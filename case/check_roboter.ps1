@@ -19,42 +19,15 @@ $script:fails = 0
 $parts = @("head_front", "bezel", "head_back", "ear", "deco", "torso_front", "torso_back", "neck", "arm", "hand", "seat", "bottom", "foot", "cam_test")
 
 function Want([string]$k) { return ($Only.Count -eq 0 -or $Only -contains $k) }
-function Ok($m)   { Write-Host "[ OK ] $m" -ForegroundColor Green }
-function Bad($m)  { Write-Host "[FAIL] $m" -ForegroundColor Red; $script:fails++ }
-function Note($m) { Write-Host "[ -- ] $m" -ForegroundColor Yellow }
+. (Join-Path $here 'tools/check_lib.ps1')   # Ok, Bad, Note, Run-Scad, PartArg, FacetCount
 
-# OpenSCAD aufrufen (mit Zeitlimit), liefert @{Code; Text}
-function Run-Scad([string[]]$ScadArgs, [int]$TimeoutSec = 600) {
-  $argList = @()
-  foreach ($d in $Define) { $argList += '-D'; $argList += $d }
-  $argList += $ScadArgs
-  $argList += $scad
-  $errFile = [IO.Path]::GetTempFileName(); $outFile = [IO.Path]::GetTempFileName()
-  $p = Start-Process -FilePath $oscad -ArgumentList $argList -NoNewWindow -PassThru `
-        -RedirectStandardError $errFile -RedirectStandardOutput $outFile
-  $null = $p.Handle   # Handle halten, sonst ist ExitCode leer
-  if (-not $p.WaitForExit($TimeoutSec * 1000)) {
-    try { & taskkill.exe /PID $p.Id /T /F 2>$null | Out-Null } catch {}
-    try { Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue } catch {}
-    return @{ Code = -999; Text = "TIMEOUT nach $TimeoutSec s" }
-  }
-  $p.WaitForExit()
-  $txt = (Get-Content $errFile -Raw) + (Get-Content $outFile -Raw)
-  Remove-Item $errFile, $outFile -ErrorAction SilentlyContinue
-  return @{ Code = $p.ExitCode; Text = $txt }
-}
-function PartArg([string]$name) { return @('-D', ('part=\"{0}\"' -f $name)) }
-function FacetCount([string]$file) {
-  if (-not (Test-Path $file)) { return 0 }
-  return ([regex]::Matches((Get-Content $file -Raw), 'facet normal')).Count
-}
 $emptyMsg = 'Current top level object is empty'
 $inv = [Globalization.CultureInfo]::InvariantCulture   # einmal fuer alle Abschnitte (Zahlen immer mit Punkt lesen)
 # Is-EmptyRun: ein Lauf zaehlt nur dann als "leer", wenn er wirklich ausgewertet wurde (Exitcode 0 oder Leer-Meldung). Timeout (-999) oder Absturz ohne Text ist nie "leer".
 function Is-EmptyRun($r, [int]$n) { return ($n -eq 0 -and ($r.Text -match $emptyMsg -or $r.Code -eq 0)) }
 
 # -Only: nur bekannte Abschnittsnamen zulassen (Tippfehler duerfen nicht still "alles gruen" ergeben)
-$knownSections = @('1', '1b', '1c', '2', '2b', '3', '3b', '3c', '3d', '3e', '3e2', '3g', '3f', '3h', '3i', '3j', '4')
+$knownSections = @('1', '1b', '1c', '2', '2b', '3', '3b', '3c', '3d', '3e', '3e2', '3g', '3f', '3h', '3i', '3j', '3k', '4')
 $unknown = @($Only | Where-Object { $knownSections -notcontains $_ })
 if ($unknown.Count -gt 0) {
   Write-Host "[FAIL] -Only: unbekannter Abschnitt: $($unknown -join ', '). Gueltig: $($knownSections -join ', ')" -ForegroundColor Red
@@ -413,6 +386,37 @@ if ($rL.Code -ne 0 -or -not (Test-Path $fl)) { Bad "Kontrolle Ausnahme: ovh_ctrl
 else {
 $o1 = Eval-Overhang $fl $Bfront 15 @(0, -27, 0) @(0, [math]::Sin(15 * [math]::PI / 180), [math]::Cos(15 * [math]::PI / 180)) 6.5 4.0
 if ($o1.Steep -gt 0) { Ok "Kontrolle Ausnahme: steiles Merkmal ausserhalb der Fase wird trotz Ausnahme erkannt" } else { Bad "Kontrolle Ausnahme: steiles Merkmal ausserhalb der Fase wird von der Ausnahme verschluckt" }
+}
+}
+
+# 3k) Lueftungsschlitze (Kopf-Rueckwand, Boden): treffen keine Oeffnung/Schraube/Fuss/Dom (Schnitt leer), schneiden wirklich Material, beide Teile bleiben exportierbar.
+#     Positiv-Kontrollen: dieselben Schlitze ins BOOT-Fenster bzw. auf die LED-Bohrung geschoben MUESSEN treffen (nur ohne -Define).
+if (Want '3k') {
+function Vent-Facets([string]$part) {
+  $f = Join-Path $env:TEMP "madbuddy_roboter_$part.stl"
+  if (Test-Path $f) { Remove-Item $f }
+  $r = Run-Scad ((PartArg $part) + @('-o', $f)) 900
+  return @{ R = $r; N = (FacetCount $f) }
+}
+foreach ($e in @(@{ p = 'vent_head_keepout'; l = 'Kopf-Schlitze' }, @{ p = 'vent_bot_keepout'; l = 'Boden-Schlitze' })) {
+  $v = Vent-Facets $e.p
+  $rest = ($v.R.Text -split "`n" | Where-Object { $_ -notmatch [regex]::Escape($emptyMsg) }) -join "`n"
+  if ($rest -match 'WARNING|ERROR|TIMEOUT') { Bad "Lueftung $($e.l): WARNING/ERROR: $($rest.Trim())" }
+  elseif (Is-EmptyRun $v.R $v.N) { Ok "Lueftung $($e.l): treffen keine Oeffnung, Schraube, Fuss oder Dom" }
+  else { Bad "Lueftung $($e.l): schneiden Oeffnung/Schraube/Fuss/Dom ($($v.N) Facetten)" }
+}
+foreach ($e in @(@{ p = 'vent_head_cut'; l = 'Kopf-Rueckwand' }, @{ p = 'vent_bot_cut'; l = 'Boden' })) {
+  $v = Vent-Facets $e.p
+  if ($v.R.Code -ne 0 -or $v.R.Text -match 'WARNING|ERROR') { Bad "Lueftung $($e.l): Schnittvolumen nicht berechenbar: $($v.R.Text.Trim())" }
+  elseif ($v.N -gt 0) { Ok "Lueftung $($e.l): Schlitze schneiden Material ($($v.N) Facetten Schnittvolumen)" }
+  else { Bad "Lueftung $($e.l): Schlitze schneiden nichts (Teil unveraendert)" }
+}
+if (-not $custom) {
+  foreach ($e in @(@{ p = 'vent_head_ctrl'; l = 'BOOT-Fenster' }, @{ p = 'vent_bot_ctrl'; l = 'LED-Bohrung' })) {
+    $v = Vent-Facets $e.p
+    if ($v.N -gt 0) { Ok "Kontrolle Lueftung: Schlitze im $($e.l) werden erkannt" }
+    else { Bad "Kontrolle Lueftung: Schlitze im $($e.l) NICHT erkannt (Pruefung taugt nichts)" }
+  }
 }
 }
 

@@ -44,7 +44,12 @@ head_r      = 14;    // QUELLE: Konzept (h_r): Eckradius in der Frontansicht
 rear_air    = 17;    // Zusatztiefe hinten (Kabelweg, Halssockel): Rueckwand braucht Bohrung 24,3 + 2 x 2 mm Rand = 28,3 mm Tiefe
 dome_d      = 6.4;   // Schraubdom aussen (wie Stufe 2)
 dome_x      = 36.0;  // Domposition X (links/rechts), wie Stufe 2
-pilot_d     = 2.6;   // Kernloch fuer M3 in PETG
+// Option Gewindeeinsaetze: use_inserts = true macht ALLE M3-Kernloecher zu Einsatz-Loechern (Ø4,0). Standard false = Schraube direkt in PETG (Ø2,6).
+use_inserts   = false;
+insert_d      = 4.0;   // VORLÄUFIG (Datenblatt-Spanne Ø4,0-4,2): Loch fuer M3-Gewindeeinsatz zum Einschmelzen (Ø ca. 4,6 aussen, 5,7 lang), am Probestueck pruefen
+insert_l      = 5.7;   // VORLÄUFIG: Einsatzlaenge; alle Kernloecher sind >= 7,5 tief, bleiben also >= 1,8 mm tiefer als der Einsatz (Platz fuer verdraengtes Material)
+pilot_wall_min = use_inserts ? 1.2 : 2;   // Mindestwand um das Kernloch (mit Einsaetzen bleibt an den Domen nur 1,2-1,7 mm, VORLÄUFIG: Dome bei Bedarf vergroessern)
+pilot_d     = use_inserts ? insert_d : 2.6;   // Kernloch fuer M3 in PETG (bzw. Einsatzloch)
 pilot_len   = 7.5;
 screw_d     = 3.4;   // Durchgang M3 in der Rueckwand
 cbore_d     = 6.2;   // Senkung Schraubenkopf
@@ -222,7 +227,7 @@ module back_cavity() {
   }
 }
 
-module head_back(pilots = true) {
+module head_back(pilots = true, vents = true) {
   difference() {
     union() {
       difference() {
@@ -252,6 +257,7 @@ module head_back(pilots = true) {
       translate([p[0], p[1], z_back - 0.01]) cylinder(d = cbore_d, h = cbore_t + 0.01);
     }
     usb_cuts();
+    if (vents) head_vents();
     // BOOT/RESET
     translate([btn_x - btn_open_w / 2, -pcb_h / 2 + btn_y_from_bottom - btn_open_h / 2, z_back - 1])
       cube([btn_open_w, btn_open_h, back_t + 2]);
@@ -424,11 +430,11 @@ assert(neck_bore >= 12, "Hals Innen-Ø < 12");
 assert(neck_rec_floor - neck_pilot_t - neck_blk_z >= 1.5, "Halsblock: Restboden unter Kernloch < 1,5");
 assert(neck_pilot_t >= 7.5, "Halsblock-Kernloch < 7,5");
 assert(t_seat_blk_z - t_plate_z - t_seat_pilot >= 1.5, "Sitzpfosten: Kernloch zu lang");
-assert((7 - pilot_d) / 2 >= 2, "Sitzpfosten: Wand um das Kernloch unter 2 mm");
+assert((7 - pilot_d) / 2 >= pilot_wall_min, "Sitzpfosten: Wand um das Kernloch unter 2 mm");
 assert(t_d / 2 - wall >= t_dome_pilot + 1.5, "Dom: Kernloch zu lang");
 assert(t_dome_pilot >= 7.5, "Dom-Kernloch < 7,5");
 assert((t_dome_d - screw_d) / 2 >= 2, "Dom: Wand um die Durchgangsbohrung unter 2 mm");
-assert((t_dome_d - pilot_d) / 2 >= 2, "Dom: Wand um das Kernloch unter 2 mm");
+assert((t_dome_d - pilot_d) / 2 >= pilot_wall_min, "Dom: Wand um das Kernloch unter 2 mm");
 assert(sh_y_l - hole_ear / 2 * sqrt(2) - 1.0 >= 2, "Schulterbohrung: Wand zur Trennebene unter 2 mm");
 assert(neck_d / 2 - neck_bore / 2 >= 2, "Halsrohr: Wand unter 2 mm");
 assert(arm_x - ball_in > t_w / 2, "Schulterkugel ragt in den Oberkoerper");
@@ -582,7 +588,21 @@ module torso_front(pilots = true) {
     for (p = t_deco_pts) translate([p[0], -t_d / 2 - 0.01, p[1]]) rotate([-90, 0, 0]) cylinder(d = deco_d + fit_peg, h = deco_in + 0.01);
   }
 }
-module vent_slots() for (x = [-8, -4, 0, 4, 8]) translate([x - 0.8, t_d / 2 - wall - 1, 17]) cube([1.6, wall + 2, 14]);   // Lueftungsschlitze (schneiden auch die Stuetzwand der Wiege an)
+// ---- Lueftungsschlitze: EIN Modul fuer alle Reihen. vent_row() liefert n Schlitze (Breite w in X, Laenge len in Y, Tiefe depth in Z), um den Ursprung zentriert in X/Y, ab z = 0.
+// Alle Schlitze sind senkrecht zur Wand (keine Ueberhaenge, keine Bruecken); w <= 1,6 und pitch >= 4 lassen die Stege stehen.
+vent_n     = 5;     // Anzahl Schlitze (Brust-Rueckwand)
+vent_pitch = 4;     // Abstand der Schlitzmitten
+vent_len   = 14;    // Schlitzlaenge
+vent_w     = 1.6;   // Schlitzbreite
+module vent_row(n = vent_n, pitch = vent_pitch, len = vent_len, w = vent_w, depth = 10) for (i = [0 : n - 1]) translate([(i - (n - 1) / 2) * pitch - w / 2, -len / 2, 0]) cube([w, len, depth]);
+// Brust-Rueckwand (Y-Richtung, Mitte Z 24): schneiden auch die Stuetzwand der Wiege an
+module vent_slots() translate([0, t_d / 2 - wall - 1, 24]) rotate([-90, 0, 0]) vent_row(depth = wall + 2);
+// Kopf-Rueckwand (Konstruktionslage, Durchgang in Z): hinter dem CYD, Mitte (0, 6); frei von BOOT-Loch (X 16..36, Y -18..-10), Schraubdomen (Y +-28,6), Fuessen (X +-38) und USB-Oeffnung (X > 43)
+head_vent_n = 9;  head_vent_len = 24;  head_vent_y = 6;
+module head_vents() translate([0, head_vent_y, z_back - 1]) vent_row(head_vent_n, vent_pitch, head_vent_len, vent_w, back_t + 2);
+// Boden unter dem Akkumodul DFR0969 (Durchgang in Z): Mitte X 16 / Y Modulmitte, frei von USB-C, HOLD-Schalter, LED, Schalterschlitz (alle X < -12) und Bodendomen (X +-55)
+bot_vent_n = 7;  bot_vent_len = 16;  bot_vent_x = 16;
+module bottom_vents() translate([bot_vent_x, bat_yc, -1]) vent_row(bot_vent_n, vent_pitch + 2, bot_vent_len, vent_w, bot_t + 2);
 module torso_back(pilots = true) {
   difference() {
     union() {
@@ -788,7 +808,7 @@ assert(batt_clear >= 1, "Fach: seitliche Zugabe unter 1 mm");
 assert(torso_origin[2] + t_plate_z + t_seat_pilot - (zc + s_cbore_t + seat_screw_l) >= 0.4 && zc + s_cbore_t + seat_screw_l - (torso_origin[2] + t_plate_z) >= 6, "Sitzschraube: greift weniger als 6 mm in den Oberkoerper oder ragt ueber das Kernloch");
 assert(ear_r - fit / 2 - cbore_d / 2 >= 2, "Boden: Rand um die Senkung der Eckschrauben unter 2 mm");
 assert(ear_r - (dome_s_d + fit) / 2 >= 2, "Sitz-Eck-Ohr: Wand ausserhalb der Bodenauflagen-Tasche unter 2 mm");
-assert((dome_s_d - pilot_d) / 2 >= 2, "Sitz-Dom: Wand um das Kernloch unter 2 mm");
+assert((dome_s_d - pilot_d) / 2 >= pilot_wall_min, "Sitz-Dom: Wand um das Kernloch unter 2 mm");
 assert((dome_s_d - screw_d) / 2 >= 2, "Sitz-Dom/Bodenauflage: Wand um die Bohrung unter 2 mm");
 assert(bot_t - cbore_t + boss_h >= 2, "Boden: Rest unter der Senkung unter 2 mm");
 assert(bot_t >= 2.4, "Boden duenner als 2,4");
@@ -886,7 +906,14 @@ module seat(pilots = true) {
     if (pilots) dome_pilots_s();
   }
 }
-module bottom() {
+// USB-C und HOLD/NORMAL (Lage unbelegt: op_unsure rundum, an der Kante op_sure), LED Ø5,6, Schalterschlitz (op_sure rundum)
+module bottom_openings() {
+    translate([-bat_l / 2 - op_sure, bat_yc + bat_usbc_y - bat_usbc_w / 2 - op_unsure, -1]) cube([op_sure + bat_usbc_d + op_unsure, bat_usbc_w + 2 * op_unsure, bot_t + 2]);
+    translate([bat_led[0], bat_yc + bat_led[1], -1]) cylinder(d = led_hole_d, h = bot_t + 2);
+    translate([bat_dip[0] - bat_dip_w / 2 - op_unsure, bat_yc + bat_dip[1] - bat_dip_d / 2 - op_unsure, -1]) cube([bat_dip_w + 2 * op_unsure, bat_dip_d + 2 * op_unsure, bot_t + 2]);
+    translate([sw_x - sw_slot_l / 2, sw_y - sw_slot_w / 2, -1]) cube([sw_slot_l, sw_slot_w, bot_t + 2]);
+}
+module bottom(vents = true) {
   difference() {
     union() {
       linear_extrude(bot_t) plate_zone(-fit / 2);
@@ -898,11 +925,8 @@ module bottom() {
       translate([p[0], p[1], -1]) cylinder(d = screw_d, h = bot_t + boss_h + 2);
       translate([p[0], p[1], -0.01]) cylinder(d = cbore_d, h = cbore_t + 0.01);
     }
-    // USB-C und HOLD/NORMAL (Lage unbelegt: op_unsure rundum, an der Kante op_sure), LED Ø5,6, Schalterschlitz (op_sure rundum)
-    translate([-bat_l / 2 - op_sure, bat_yc + bat_usbc_y - bat_usbc_w / 2 - op_unsure, -1]) cube([op_sure + bat_usbc_d + op_unsure, bat_usbc_w + 2 * op_unsure, bot_t + 2]);
-    translate([bat_led[0], bat_yc + bat_led[1], -1]) cylinder(d = led_hole_d, h = bot_t + 2);
-    translate([bat_dip[0] - bat_dip_w / 2 - op_unsure, bat_yc + bat_dip[1] - bat_dip_d / 2 - op_unsure, -1]) cube([bat_dip_w + 2 * op_unsure, bat_dip_d + 2 * op_unsure, bot_t + 2]);
-    translate([sw_x - sw_slot_l / 2, sw_y - sw_slot_w / 2, -1]) cube([sw_slot_l, sw_slot_w, bot_t + 2]);
+    bottom_openings();
+    if (vents) bottom_vents();
   }
 }
 module foot_sec() translate([0, foot_h / 2]) rrect(foot_w / 2, foot_h / 2, foot_r);
@@ -1105,6 +1129,12 @@ else if (part == "arm") { if (side > 0) arm_print(); else mirror([0, 1, 0]) arm_
 else if (part == "hand")        translate([0, 0, hand_cut]) hand_l();                              // abgeflachte Unterseite auf dem Bett
 else if (part == "seat")        translate([0, 0, s_top]) rotate([180, 0, 0]) seat();               // auf dem Kopf: Oberseite (z = 32) auf dem Bett, Fach nach oben offen, keine Stuetzen
 else if (part == "bottom")      bottom();                                                           // Unterseite (Standflaeche) auf dem Bett
+else if (part == "vent_head_keepout") intersection() { head_vents(); head_keepout(); }                // Kopf-Schlitze gegen Oeffnungen/Fuesse/Dome/Ohr-Stege: MUSS leer sein
+else if (part == "vent_head_ctrl")    intersection() { translate([btn_x, -pcb_h / 2 + btn_y_from_bottom - head_vent_y, 0]) head_vents(); head_keepout(); }   // Kontrolle: Schlitze ins BOOT-Fenster geschoben, MUSS treffen
+else if (part == "vent_head_cut")     difference() { head_back(true, false); head_back(); }            // entfernte Schlitz-Volumen: MUSS Material sein (nicht leer)
+else if (part == "vent_bot_keepout")  intersection() { bottom_vents(); bottom_keepout(); }           // Boden-Schlitze gegen USB-C/DIP/LED/Schalterschlitz/Dome/Rippen: MUSS leer sein
+else if (part == "vent_bot_ctrl")     intersection() { translate([bat_led[0] - bot_vent_x, bat_led[1], 0]) bottom_vents(); bottom_keepout(); }   // Kontrolle: Schlitze auf die LED-Bohrung geschoben, MUSS treffen
+else if (part == "vent_bot_cut")      difference() { bottom(false); bottom(); }                       // MUSS Material sein
 else if (part == "foot")        translate([0, 0, -leg_len]) rotate([-90, 0, 0]) translate([-leg_x, 0, 0]) foot_w(1);   // Rueckseite (Zapfenloch) auf dem Bett
 else if (part == "screw_seat")  intersection() { seat_screws(); place_torso() { torso_front(); torso_back(); } }   // Sitzschrauben M3x10 gegen den Oberkoerper (mit Kernloechern): Z-Ausdehnung = Einschraubtiefe
 else if (part == "pilot_seat_dome")intersection() { seat(false); dome_pilots_s(); }
@@ -1245,3 +1275,18 @@ else if (part == "pilot_test")
   // Nachweis Kernloecher: Bohrvolumen gegen head_back OHNE Kernloecher, muss Material treffen (Y-Ausdehnung >= neck_pilot_len)
   intersection() { head_back(false); neck_pilots(); }
 else if (part == "info") info();
+
+// ---- Lueftungs-Pruefung (check_roboter.ps1, Abschnitt 3k): Schlitze duerfen keine Oeffnung/Schraube/Fuss/Dom treffen, sie muessen aber Material schneiden
+module head_keepout() {   // alles, was in der Kopf-Rueckwand neben den Schlitzen stehen bleiben muss (Konstruktionslage)
+  for (p = dome_pts) { translate([p[0], p[1], z_back - 1]) cylinder(d = cbore_d, h = back_t + 2); }
+  for (p = hole_pts) translate([p[0], p[1], z_floor - 0.01]) cylinder(d = 6.4, h = z_pcb_bot - 0.1 - z_floor + 0.01);
+  translate([btn_x - btn_open_w / 2, -pcb_h / 2 + btn_y_from_bottom - btn_open_h / 2, z_back - 1]) cube([btn_open_w, btn_open_h, back_t + 2]);
+  usb_cuts();
+  for (m = [0, 1]) mirror([m, 0, 0]) ear_boss_solid();
+  translate([-pad_w / 2, -hy - pad_h, z_back]) cube([pad_w, pad_h + wall - 0.5, z_split - z_back]);
+}
+module bottom_keepout() {
+  bottom_openings();
+  for (p = dome_pts_s) translate([p[0], p[1], -1]) cylinder(d = dome_s_d, h = bot_t + boss_h + 2);
+  for (m = [-1, 1]) translate([sw_x + m * (sw_slot_l / 2 + sw_rib_w / 2) - sw_rib_w / 2, sw_y - sw_w / 2, bot_t - 0.01]) cube([sw_rib_w, sw_w, sw_z0 - bot_t - 0.01]);
+}

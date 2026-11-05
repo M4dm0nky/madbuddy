@@ -84,7 +84,7 @@ STL liegen in `stl/roboter_<teil>.stl`, schon in Druckausrichtung (ohne Stützen
 3MF zum Öffnen in Bambu Studio:
 - `3mf/roboter_teile.3mf`: alle 18 Druckkörper nebeneinander, jeder bekommt im Slicer seine Farbe.
 - `3mf/roboter_ams.3mf`: Gruppe „kopf“ (Kopfschale, Blende, 4 Zierschrauben als drei Bauteile eines Objekts, in Einbaulage) plus die übrigen Teile einzeln. Im Slicer weist man den drei Bauteilen je eine Farbe zu.
-- Neu erzeugen: `check_roboter.ps1` (Schritt 1c) oder `tools/make_3mf.ps1`; Werkzeug `tools/stl2_3mf.py` (`--group NAME`, `--end`, `--arrange`).
+- Neu erzeugen: `check_roboter.ps1` (Schritt 1c) oder `tools/make_3mf.ps1`; Werkzeug `tools/stl2_3mf.py` (wird von `make_3mf.ps1` aufgerufen) (`--group NAME`, `--end`, `--arrange`).
 
 ### Druck (PETG)
 
@@ -92,6 +92,8 @@ STL liegen in `stl/roboter_<teil>.stl`, schon in Druckausrichtung (ohne Stützen
 - `torso_front`: Stützen nur am Linsenloch (Fase 45° bei geneigter Achse, bis ca. 60° Überhang), z. B. mit Support-Painting/Support-Blocker in Bambu Studio. Überall sonst ohne Stützen.
 - Steckzapfen sind als Presspassung gedacht (`fit_peg = 0,15 mm`). Zuerst ein Zapfen-Probestück oder den Fuß drucken und die Passung prüfen; bei Bedarf `fit_peg` ändern.
 - Kernlöcher für M3 sind Ø 2,6 mm (selbstschneidend in PETG, mindestens 7,5 mm tief).
+- **Gewindeeinsätze (Option):** `use_inserts = true` in `madbuddy_roboter.scad` macht alle M3-Kernlöcher zu Einsatzlöchern Ø 4,0 mm (M3-Einsatz zum Einschmelzen, Ø 4,0 bis 4,2 x 5,7 mm lang, **VORLÄUFIG**, am Probestück prüfen). Die Löcher sind weiterhin mindestens 7,5 mm tief, also tiefer als der Einsatz. **Wand um das Loch** bleibt an den Domen nur 1,2 bis 1,7 mm (Standard 2 mm, die Prüfung ist dafür auf 1,2 mm gesenkt): Dome bei Bedarf vergrößern. Standard ist `false`, dann ist die Geometrie unverändert. Alle Teile mit Kernlöchern (`head_front`, `head_back`, `torso_front`, `neck`, `seat`) müssen dann neu gedruckt werden.
+- **Lüftung:** `vent_row()` in `madbuddy_roboter.scad` erzeugt alle Schlitzreihen (`vent_n`, `vent_pitch`, `vent_len`, `vent_w`). Reihen: Brust-Rückwand (5 Schlitze, wie bisher), Kopf-Rückwand hinter dem CYD (`head_vent_*`, 9 Schlitze 1,6 x 24 mm, senkrecht durch die Wand, ohne Stützen) und Boden unter dem Akkumodul (`bot_vent_*`, 7 Schlitze 1,6 x 16 mm). Die Schlitze liegen frei von USB-Öffnung, BOOT-Fenster, Schrauben, Füßen, LED-, DIP- und Schalteröffnungen (Prüfung 3k). Stufe 2 hat eigene Schlitze (`madbuddy_case.scad`).
 - Die Zierschrauben-Einlagen nur als Einlage einkleben oder pressen (Taschen sind 0,15 mm größer).
 
 ### Schrauben (M3)
@@ -128,7 +130,7 @@ Jede Schraube ist im Modell mit einem Schraubendreher-Prüfkörper Ø 6 × 60 au
 
 ### Prüfung
 
-`& case\check_roboter.ps1` (aus PowerShell im Repo-Ordner): STL aller Teile ohne Warnung, Standsicherheit, Kollisionen, Montage-Erreichbarkeit mit Selbsttests, 3MF (lesbar, größer als 10 kB, richtige Anzahl Objekte und Bauteile), PNG-Renders. Exitcode ungleich 0 bei jedem Fehler.
+`& case\check_roboter.ps1` (aus PowerShell im Repo-Ordner): STL aller Teile ohne Warnung, Standsicherheit, Kollisionen, Lüftungsschlitze (3k, mit Positiv-Kontrolle), Montage-Erreichbarkeit mit Selbsttests, 3MF (lesbar, größer als 10 kB, richtige Anzahl Objekte und Bauteile), PNG-Renders. Exitcode ungleich 0 bei jedem Fehler.
 
 ### Offene Punkte
 
