@@ -3,7 +3,7 @@
 #include <string.h>
 
 static constexpr const char *kNs = "buddy";
-// Version 2: Tageszähler, Version 3: Sättigung, Krankheit, Charakter, Lieblingsessen, 4: cam_on.
+// Version 2: Tageszähler, Version 3: Sättigung, Charakter, Lieblingsessen, 4: cam_on.
 // Ältere Stände werden übernommen, fehlende Schlüssel bekommen Startwerte.
 static constexpr uint8_t kVersion = 4;
 
@@ -16,7 +16,6 @@ void store_defaults(Persist &p) {
   p.lat = p.lon = 0;
   p.has_place = false;
   p.day = DayStats{};
-  p.sick = false;
   p.cuddly = p.playful = 0;
   p.favorite_food = STORE_NO_FAVORITE;
   p.cam_on = true;
@@ -32,7 +31,6 @@ bool store_load(Persist &p) {
   p.needs.fun = prefs.getFloat("fun", p.needs.fun);
   p.needs.energy = prefs.getFloat("ene", p.needs.energy);
   p.needs.satiety = prefs.getFloat("sat", p.needs.satiety);
-  p.sick = prefs.getBool("sick", false);
   p.cuddly = prefs.getFloat("cud", 0);
   p.playful = prefs.getFloat("pla", 0);
   p.favorite_food = prefs.getUChar("fav", STORE_NO_FAVORITE);
@@ -66,7 +64,6 @@ void store_save(const Persist &p) {
   prefs.putFloat("fun", p.needs.fun);
   prefs.putFloat("ene", p.needs.energy);
   prefs.putFloat("sat", p.needs.satiety);
-  prefs.putBool("sick", p.sick);
   prefs.putFloat("cud", p.cuddly);
   prefs.putFloat("pla", p.playful);
   prefs.putUChar("fav", p.favorite_food);

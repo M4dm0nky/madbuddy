@@ -7,10 +7,10 @@ void setUp() {}
 void tearDown() {}
 
 void test_decay_awake_one_hour() {
-  fresh(50, 50, 50);
+  fresh(100, 100, 50);
   mood_tick(s, 3600000UL, 3600000UL);
-  TEST_ASSERT_FLOAT_WITHIN(0.05f, 38.0f, s.n.affection);
-  TEST_ASSERT_FLOAT_WITHIN(0.05f, 30.2f, s.n.fun);
+  TEST_ASSERT_FLOAT_WITHIN(0.05f, 88.0f, s.n.affection);
+  TEST_ASSERT_FLOAT_WITHIN(0.05f, 80.2f, s.n.fun);
   TEST_ASSERT_FLOAT_WITHIN(0.05f, 39.8f, s.n.energy);
 }
 void test_sleep_regenerates_and_clamps() {
@@ -39,26 +39,24 @@ void test_affection_clamped_at_100() {
   TEST_ASSERT_FLOAT_WITHIN(0.01f, 100.0f, s.n.affection);
 }
 void test_poke_annoyed_20s() {
-  fresh(50, 50, 50);
+  fresh(80, 50, 50);
   mood_event(s, MoodEvent::POKE, 1000);
-  TEST_ASSERT_FLOAT_WITHIN(0.01f, 47.0f, s.n.affection);
+  TEST_ASSERT_FLOAT_WITHIN(0.01f, 77.0f, s.n.affection);
   TEST_ASSERT_EQUAL((int)Emotion::ANNOYED, (int)mood_emotion(s, 12, 20999));
   TEST_ASSERT_EQUAL((int)Emotion::CONTENT, (int)mood_emotion(s, 12, 21001));
 }
-void test_transient_beats_sad() {
+void test_transient_then_back_to_base() {
   fresh(10, 50, 50);
   mood_event(s, MoodEvent::TAP, 1000);
   TEST_ASSERT_EQUAL((int)Emotion::SURPRISED, (int)mood_emotion(s, 12, 2000));
-  TEST_ASSERT_EQUAL((int)Emotion::SAD, (int)mood_emotion(s, 12, 2600));
+  TEST_ASSERT_EQUAL((int)Emotion::CONTENT, (int)mood_emotion(s, 12, 2600));
 }
 void test_priorities() {
   fresh(50, 50, 50);
   TEST_ASSERT_EQUAL((int)Emotion::SLEEPY, (int)mood_emotion(s, 23, 0));
   TEST_ASSERT_EQUAL((int)Emotion::CONTENT, (int)mood_emotion(s, -1, 0));
-  fresh(10, 10, 50);
-  TEST_ASSERT_EQUAL((int)Emotion::SAD, (int)mood_emotion(s, 12, 0));
-  fresh(50, 10, 50);
-  TEST_ASSERT_EQUAL((int)Emotion::BORED, (int)mood_emotion(s, 12, 0));
+  fresh(10, 10, 50);   // unter der Untergrenze: neutral, nie traurig oder gelangweilt
+  TEST_ASSERT_EQUAL((int)Emotion::CONTENT, (int)mood_emotion(s, 12, 0));
   fresh(80, 70, 50);
   TEST_ASSERT_EQUAL((int)Emotion::HAPPY, (int)mood_emotion(s, 12, 0));
   fresh(50, 50, 20);
@@ -139,10 +137,10 @@ void test_game_won() {
   TEST_ASSERT_EQUAL((int)Emotion::EXCITED, (int)mood_emotion(s, 12, 5999));
 }
 void test_elapsed_counts_as_sleep() {
-  fresh(50, 40, 20);
+  fresh(50, 70, 20);
   mood_apply_elapsed(s, 30UL * 60UL);   // ausgeschaltet = geschlafen: nur Energie steigt
   TEST_ASSERT_FLOAT_WITHIN(0.05f, 50.0f, s.n.affection);
-  TEST_ASSERT_FLOAT_WITHIN(0.05f, 40.0f, s.n.fun);
+  TEST_ASSERT_FLOAT_WITHIN(0.05f, 70.0f, s.n.fun);
   TEST_ASSERT_FLOAT_WITHIN(0.05f, 50.0f, s.n.energy);
 }
 
@@ -233,13 +231,6 @@ void test_slow_taps_stay_surprised() {
   mood_event(s, MoodEvent::TAP, 1500);   // genau 500 ms: noch nicht verwirrt
   TEST_ASSERT_EQUAL(E(Emotion::SURPRISED), E(mood_emotion(s, 12, 1600)));
 }
-void test_poke_when_sad_is_scared() {
-  fresh(10, 50, 50);
-  mood_event(s, MoodEvent::POKE, 1000, 12);
-  TEST_ASSERT_FLOAT_WITHIN(0.01f, 7.0f, s.n.affection);
-  TEST_ASSERT_EQUAL(E(Emotion::SCARED), E(mood_emotion(s, 12, 5999)));
-  TEST_ASSERT_EQUAL(E(Emotion::SAD), E(mood_emotion(s, 12, 6001)));
-}
 void test_poke_when_not_sad_still_annoyed() {
   fresh(50, 50, 50);
   mood_event(s, MoodEvent::POKE, 1000, 12);
@@ -269,7 +260,7 @@ void test_base_emotion_ignores_transient() {
   fresh(10, 50, 50);
   mood_event(s, MoodEvent::TAP, 1000);
   TEST_ASSERT_EQUAL(E(Emotion::SURPRISED), E(mood_emotion(s, 12, 1100)));
-  TEST_ASSERT_EQUAL(E(Emotion::SAD), E(mood_base_emotion(s, 12)));
+  TEST_ASSERT_EQUAL(E(Emotion::CONTENT), E(mood_base_emotion(s, 12)));
 }
 
 // ---- Eigenarten ----
@@ -288,14 +279,6 @@ void test_quirk_yawn_when_sleepy_within_5min_for_3s() {
   TEST_ASSERT_TRUE(t0 >= 120000);
   TEST_ASSERT_EQUAL(E(Emotion::YAWN), E(mood_emotion(s, 12, t0 + 2999)));
   TEST_ASSERT_EQUAL(E(Emotion::SLEEPY), E(mood_emotion(s, 12, t0 + 3001)));
-}
-void test_quirk_whistle_when_bored_within_3min_for_5s() {
-  fresh(50, 10, 50);   // BORED
-  mood_seed(s, 777);
-  long t0 = first_seen(Emotion::WHISTLE, 12, 180000);
-  TEST_ASSERT_TRUE(t0 >= 60000);
-  TEST_ASSERT_EQUAL(E(Emotion::WHISTLE), E(mood_emotion(s, 12, t0 + 4999)));
-  TEST_ASSERT_EQUAL(E(Emotion::BORED), E(mood_emotion(s, 12, t0 + 5001)));
 }
 void test_quirk_happy_gives_mischievous_or_cheeky_both_occur() {
   bool seen_m = false, seen_c = false;
@@ -324,7 +307,7 @@ void test_quirk_none_when_sleeping() {
   TEST_ASSERT_EQUAL(E(Emotion::CONTENT), E(s.transient));
 }
 void test_quirk_none_during_other_transient() {
-  fresh(50, 10, 50);   // BORED
+  fresh(80, 70, 50);   // HAPPY
   mood_seed(s, 777);
   mood_set_transient(s, Emotion::SURPRISED, 0, 1000000);
   for (uint32_t t = 0; t <= 400000; t += 1000) {
@@ -377,13 +360,6 @@ void test_quirk_set_long_ago_fires_after_2_31() {
   mood_quirks(s, 23, 0x80000000UL + 400000);   // nie abgefragt (Ziel hoechstens bei 301000): darf nicht 24,8 Tage warten
   TEST_ASSERT_EQUAL((int)Emotion::YAWN, (int)mood_emotion(s, 23, 0x80000000UL + 400000));
 }
-void test_sneeze_set_long_ago_fires_after_2_31() {
-  fresh(50, 50, 50);
-  mood_seed(s, 777);
-  s.sick = true;
-  TEST_ASSERT_FALSE(mood_sneeze_due(s, 1000));   // plant
-  TEST_ASSERT_TRUE(mood_sneeze_due(s, 0x80000000UL + 200000));
-}
 int main(int, char **) {
   UNITY_BEGIN();
   RUN_TEST(test_night_hours_shared);
@@ -396,14 +372,12 @@ int main(int, char **) {
   RUN_TEST(test_giggle_beats_kiss_beats_love);
   RUN_TEST(test_double_tap_confused);
   RUN_TEST(test_slow_taps_stay_surprised);
-  RUN_TEST(test_poke_when_sad_is_scared);
   RUN_TEST(test_poke_when_not_sad_still_annoyed);
   RUN_TEST(test_game_won_then_proud);
   RUN_TEST(test_new_transient_cancels_proud_follow);
   RUN_TEST(test_game_lost_skeptical);
   RUN_TEST(test_base_emotion_ignores_transient);
   RUN_TEST(test_quirk_yawn_when_sleepy_within_5min_for_3s);
-  RUN_TEST(test_quirk_whistle_when_bored_within_3min_for_5s);
   RUN_TEST(test_quirk_happy_gives_mischievous_or_cheeky_both_occur);
   RUN_TEST(test_quirk_none_when_sleeping);
   RUN_TEST(test_quirk_none_during_other_transient);
@@ -413,7 +387,7 @@ int main(int, char **) {
   RUN_TEST(test_stroke_cooldown);
   RUN_TEST(test_affection_clamped_at_100);
   RUN_TEST(test_poke_annoyed_20s);
-  RUN_TEST(test_transient_beats_sad);
+  RUN_TEST(test_transient_then_back_to_base);
   RUN_TEST(test_priorities);
   RUN_TEST(test_nap_and_wake_by_touch);
   RUN_TEST(test_nap_ends_above_60);
@@ -430,6 +404,5 @@ int main(int, char **) {
   RUN_TEST(test_follow_not_reactivated_after_2_31);
   RUN_TEST(test_transient_cleared_by_tick_survives_49_days);
   RUN_TEST(test_quirk_set_long_ago_fires_after_2_31);
-  RUN_TEST(test_sneeze_set_long_ago_fires_after_2_31);
   return UNITY_END();
 }

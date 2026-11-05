@@ -14,8 +14,6 @@ inline void char_stroke(Character &c) { c.cuddly += 0.5f; char_clamp(c); }
 inline void char_poke(Character &c) { c.cuddly -= 1.5f; char_clamp(c); }
 inline void char_game(Character &c) { c.playful += 1.0f; char_clamp(c); }
 inline void char_highfive(Character &c) { c.playful += 0.3f; char_clamp(c); }
-// Zeit, die er gelangweilt (BORED) war.
-inline void char_bored(Character &c, uint32_t dt_ms) { c.playful -= 0.02f * (dt_ms / 60000.0f); char_clamp(c); }
 
 inline float char_quirk_scale(const Character &c) { return 1.0f - c.playful / 200.0f; }   // Eigenarten-Abstand ×
 inline float char_cheeky_prob(const Character &c) { return 0.5f - c.cuddly / 200.0f; }    // CHEEKY statt MISCHIEVOUS

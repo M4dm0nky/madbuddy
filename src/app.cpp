@@ -106,13 +106,12 @@ static uint32_t s_seen_weather_ms = 0; // fetched_ms des zuletzt ausgewerteten W
 static bool s_sky_known = false;
 static Sky s_last_sky = Sky::CLOUDY;
 
-// F3: Füttern, Krankheit, Charakter
-static constexpr uint32_t kFlyMs = 600, kChewMs = 1200, kChewStepMs = 200, kSneezeMs = 600;
+// F3: Füttern, Charakter
+static constexpr uint32_t kFlyMs = 600, kChewMs = 1200, kChewStepMs = 200;
 static constexpr int kFoodY0 = 236, kMouthY = 172;
 static Character s_char{};
 static int s_feed_food = -1;           // gerade gefütterte Speise (Animation), -1 = keine
 static uint32_t s_feed_start = 0;
-static Deadline s_sneeze;
 
 // F4: Pomodoro
 static constexpr Rgb kTimerCol{255, 90, 140}, kBreakCol{60, 220, 120};
@@ -137,7 +136,6 @@ static void set_backlight(uint8_t v) {
 
 static void save_now() {
   s_persist.needs = s_mood.n;
-  s_persist.sick = s_mood.sick;
   s_persist.cuddly = s_char.cuddly;
   s_persist.playful = s_char.playful;
   const uint32_t epoch = net_epoch();
@@ -452,7 +450,6 @@ static void mood_frame(uint32_t now, uint32_t dt) {
   }
   s_emotion = mood_emotion(s_mood, hour, now);
   if (focused_work() && s_emotion != Emotion::SLEEPING) s_emotion = Emotion::FOCUSED;   // überschreibt alles außer Schlaf
-  if (s_emotion == Emotion::BORED) char_bored(s_char, dt);
   // Claude-Gesicht: Berührungs-Gefühl (3 s) und Pomodoro haben Vorrang
   const bool touch_feel = s_touch_prio.active(now) && !mood_is_sleeping(s_mood, now) &&
                           s_emotion != mood_base_emotion(s_mood, hour);
@@ -516,10 +513,6 @@ static void speech_frame(uint32_t now, bool sleeping) {
   weather_say(now);
   Say what;
   if (speech_due(s_speech, mood_base_emotion(s_mood, hour), now, &what, s_char.cuddly)) say(what, now);
-  if (mood_sneeze_due(s_mood, now)) {   // krank: Hatschi
-    s_sneeze.arm(now, kSneezeMs);
-    say(Say::KRANK, now);
-  }
 }
 
 static void eyes_frame(uint32_t now, uint32_t dt) {
@@ -562,8 +555,6 @@ static void eyes_frame(uint32_t now, uint32_t dt) {
 
   FaceShape draw = s_face;
   if (!sleeping) draw.eye.open *= blinker_open(s_blink, now);
-  const bool sneezing = s_sneeze.active(now);
-  if (sneezing) { ov |= OV_SNEEZE; draw.eye.open *= 0.1f; }   // Augen kurz zu
   // Füttern: Speise fliegt in 600 ms von unten zum Mund, dann 3× kauen, dann Reaktion
   if (s_feed_food >= 0) {
     const uint32_t t = now - s_feed_start;
@@ -669,7 +660,7 @@ static void screen_frame(uint32_t now, uint32_t dt, Gesture g, int16_t tx, int16
         case MenuChoice::PLAY_CATCH: s_screen = Screen::GAME_CATCH; game_catch_open(s_lcd, now); break;
         case MenuChoice::PLAY_SIMON: s_screen = Screen::GAME_SIMON; game_simon_open(s_lcd, now); break;
         case MenuChoice::TIMER: s_screen = Screen::TIMER; timer_open(s_lcd, s_pomo.state != PomoState::IDLE, now); break;
-        case MenuChoice::FEED: s_screen = Screen::FEED; feed_open(s_lcd, s_mood.n.satiety, s_mood.sick, now); break;
+        case MenuChoice::FEED: s_screen = Screen::FEED; feed_open(s_lcd, s_mood.n.satiety, now); break;
         default: break;
       }
       return;
@@ -788,7 +779,6 @@ void app_setup() {
   cam_uart_on_msg(on_cam_msg);
   if (!store_load(s_persist)) Serial.println("store: nichts gespeichert, Startwerte");
   mood_init(s_mood, s_persist.needs);
-  s_mood.sick = s_persist.sick;
   s_char = Character{s_persist.cuddly, s_persist.playful};
   if (s_persist.favorite_food == STORE_NO_FAVORITE) {   // erster Start: Lieblingsessen auslosen
     s_persist.favorite_food = (uint8_t)(esp_random() % (uint32_t)Food::COUNT);

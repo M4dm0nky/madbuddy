@@ -393,9 +393,6 @@ static void render(LovyanGFX &d, const FaceShape &f, Rgb color, uint32_t ov, uin
     const uint32_t oc = lgfx::color888(217, 119, 87);
     for (int i = 0; i < 3; i++) d.fillCircle(160 + ox + (i - 1) * 18, 190 + oy, i == active ? 5 : 3, oc);
   }
-  if (ov & OV_SNEEZE) {   // Hatschi: Tropfen an der Nase
-    drop(d, 160 + ox + 8, kNoseY + oy + 14, 12, lgfx::color888(140, 210, 255));
-  }
   if (s_food >= 0) icon_food(d, 160 + ox, s_food_y, 40, s_food);
   if (ov & OV_HAND) {
     const uint32_t t = now - s_hand_since;

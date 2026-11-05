@@ -10,87 +10,64 @@ static constexpr uint32_t MIN = 60000UL;
 static MoodState s;
 static void fresh(float a, float f, float e, float sat) { mood_init(s, Needs{a, f, e, sat}); }
 
-// ---- Sättigung ----
-void test_satiety_start_and_decay() {
+// ---- Keine Pflichten: Untergrenze statt Vernachlaessigung ----
+void test_satiety_decay_stops_at_floor() {
   mood_init(s, Needs{50, 50, 50});
   TEST_ASSERT_FLOAT_WITHIN(0.01f, 70.0f, s.n.satiety);   // Startwert
   mood_tick(s, 60 * MIN, 60 * MIN);
   TEST_ASSERT_FLOAT_WITHIN(0.05f, 70.0f - 7.2f, s.n.satiety);   // wach -0,12/min
-  fresh(50, 50, 50, 50);
+  fresh(50, 50, 50, 100);
   s.night_sleep = true;
   mood_tick(s, 60 * MIN, 60 * MIN);
-  TEST_ASSERT_FLOAT_WITHIN(0.05f, 50.0f - 2.4f, s.n.satiety);   // schlafend -0,04/min
-  fresh(50, 50, 50, 0.1f);
+  TEST_ASSERT_FLOAT_WITHIN(0.05f, 100.0f - 2.4f, s.n.satiety);   // schlafend -0,04/min
+  fresh(50, 50, 50, 50.1f);
   mood_tick(s, 60 * MIN, 60 * MIN);
-  TEST_ASSERT_FLOAT_WITHIN(0.001f, 0.0f, s.n.satiety);          // geklemmt
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, MOOD_NEUTRAL_FLOOR, s.n.satiety);   // nie darunter
 }
-void test_hungry_rank() {
-  fresh(50, 50, 50, 24);
-  TEST_ASSERT_EQUAL((int)Emotion::HUNGRY, (int)mood_base_emotion(s, 12));
-  fresh(10, 10, 50, 24);   // traurig und gelangweilt: Hunger geht vor
-  TEST_ASSERT_EQUAL((int)Emotion::HUNGRY, (int)mood_base_emotion(s, 12));
-  fresh(50, 50, 20, 24);   // müde geht vor Hunger
-  TEST_ASSERT_EQUAL((int)Emotion::SLEEPY, (int)mood_base_emotion(s, 12));
-  fresh(50, 50, 50, 25);
-  TEST_ASSERT_EQUAL((int)Emotion::CONTENT, (int)mood_base_emotion(s, 12));
+void test_neglect_48h_is_neutral() {
+  fresh(100, 100, 100, 100);
+  for (uint32_t t = MIN; t <= 48UL * 60 * MIN; t += MIN) mood_tick(s, MIN, t);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, MOOD_NEUTRAL_FLOOR, s.n.affection);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, MOOD_NEUTRAL_FLOOR, s.n.fun);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, MOOD_NEUTRAL_FLOOR, s.n.satiety);
+  s.n.energy = 100;
+  const Emotion e = mood_base_emotion(s, 12);
+  TEST_ASSERT_TRUE(e != Emotion::SAD && e != Emotion::BORED);
+  TEST_ASSERT_EQUAL((int)Emotion::CONTENT, (int)e);
 }
-
-// ---- Krankheit ----
-void test_sick_after_2h_uninterrupted() {
-  fresh(10, 50, 100, 10);
-  for (uint32_t t = 1000; t <= 119 * MIN; t += MIN) { mood_tick(s, MIN, t); s.n.energy = 100; s.n.affection = 10; s.n.satiety = 10; }
-  TEST_ASSERT_FALSE(s.sick);
-  for (uint32_t t = 120 * MIN; t <= 122 * MIN; t += MIN) { mood_tick(s, MIN, t); s.n.energy = 100; s.n.affection = 10; s.n.satiety = 10; }
-  TEST_ASSERT_TRUE(s.sick);
-  TEST_ASSERT_EQUAL((int)Emotion::SICK, (int)mood_base_emotion(s, 12));
-  TEST_ASSERT_EQUAL((int)Emotion::SICK, (int)mood_base_emotion(s, 23));   // Rang vor SLEEPY
-}
-void test_sick_needs_both_conditions_and_resets() {
-  fresh(10, 50, 100, 10);
-  for (uint32_t t = 1000; t <= 100 * MIN; t += MIN) { mood_tick(s, MIN, t); s.n.energy = 100; s.n.affection = 10; s.n.satiety = 10; }
-  s.n.affection = 30;   // Unterbrechung
-  mood_tick(s, MIN, 101 * MIN);
-  s.n.affection = 10;
-  for (uint32_t t = 102 * MIN; t <= 200 * MIN; t += MIN) { mood_tick(s, MIN, t); s.n.energy = 100; s.n.affection = 10; s.n.satiety = 10; }
-  TEST_ASSERT_FALSE(s.sick);   // erst 98 min seit der Unterbrechung
-  fresh(50, 50, 100, 10);       // nur hungrig, Zuneigung ok
-  for (uint32_t t = 1000; t <= 300 * MIN; t += MIN) { mood_tick(s, MIN, t); s.n.energy = 100; s.n.satiety = 10; s.n.affection = 50; }
-  TEST_ASSERT_FALSE(s.sick);
-}
-void test_sick_double_energy_decay() {
-  fresh(50, 50, 50, 50);
-  s.sick = true;
-  mood_tick(s, 60 * MIN, 60 * MIN);
-  TEST_ASSERT_FLOAT_WITHIN(0.05f, 50.0f - 2 * 10.2f, s.n.energy);
-}
-void test_heal_needs_satiety_then_3_strokes() {
-  fresh(50, 50, 80, 30);
-  s.sick = true;
-  for (int i = 0; i < 3; i++) mood_event(s, MoodEvent::STROKE, 1000 + i * 3000, 12);
-  TEST_ASSERT_TRUE(s.sick);              // Sättigung noch zu niedrig: Streicheln zählt nicht
-  s.n.satiety = 61;
-  mood_tick(s, 100, 20000);
-  mood_event(s, MoodEvent::STROKE, 21000, 12);
-  mood_event(s, MoodEvent::STROKE, 24000, 12);
-  TEST_ASSERT_TRUE(s.sick);
-  mood_event(s, MoodEvent::STROKE, 27000, 12);
-  TEST_ASSERT_FALSE(s.sick);
-  TEST_ASSERT_EQUAL((int)Emotion::HAPPY, (int)mood_emotion(s, 12, 29999));
-  TEST_ASSERT_EQUAL((int)Emotion::CONTENT, (int)mood_emotion(s, 12, 30001));
-}
-void test_sneeze_every_1_to_3_min_only_when_sick() {
-  fresh(50, 50, 80, 50);
-  mood_seed(s, 42);
-  for (uint32_t t = 0; t < 10 * MIN; t += 1000) TEST_ASSERT_FALSE(mood_sneeze_due(s, t));
-  s.sick = true;
-  uint32_t last = 10 * MIN, n = 0;
-  for (uint32_t t = 10 * MIN; t < 40 * MIN; t += 1000) {
-    if (mood_sneeze_due(s, t)) {
-      TEST_ASSERT_TRUE(t - last >= 1 * MIN && t - last <= 3 * MIN + 1000);
-      last = t; n++;
-    }
+void test_stroke_raises_then_decays_to_floor_not_below() {
+  fresh(50, 50, 100, 50);
+  mood_event(s, MoodEvent::STROKE, 1000, 12);
+  TEST_ASSERT_TRUE(s.n.affection > MOOD_NEUTRAL_FLOOR);
+  float prev = s.n.affection;
+  for (uint32_t t = 2000 + MIN; t <= 2000 + 600UL * MIN; t += MIN) {
+    mood_tick(s, MIN, t);
+    s.n.energy = 100;
+    TEST_ASSERT_TRUE(s.n.affection <= prev);
+    TEST_ASSERT_TRUE(s.n.affection >= MOOD_NEUTRAL_FLOOR);
+    prev = s.n.affection;
   }
-  TEST_ASSERT_TRUE(n >= 10);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, MOOD_NEUTRAL_FLOOR, s.n.affection);
+}
+void test_poke_and_load_clamp_to_floor() {
+  fresh(50, 50, 50, 50);
+  mood_event(s, MoodEvent::POKE, 1000, 12);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, MOOD_NEUTRAL_FLOOR, s.n.affection);
+  mood_init(s, Needs{0, 0, 40, 0});   // wie ein alter NVS-Stand mit 0
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, MOOD_NEUTRAL_FLOOR, s.n.affection);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, MOOD_NEUTRAL_FLOOR, s.n.fun);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, MOOD_NEUTRAL_FLOOR, s.n.satiety);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, 40, s.n.energy);   // Energie bleibt unberuehrt
+  Needs n{-5, 10, 0, 20};
+  mood_clamp(n);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, MOOD_NEUTRAL_FLOOR, n.affection);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, MOOD_NEUTRAL_FLOOR, n.fun);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, 0, n.energy);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, MOOD_NEUTRAL_FLOOR, n.satiety);
+}
+void test_energy_still_drives_sleepy() {
+  fresh(50, 50, 20, 50);
+  TEST_ASSERT_EQUAL((int)Emotion::SLEEPY, (int)mood_base_emotion(s, 12));
 }
 
 // ---- Füttern ----
@@ -104,43 +81,40 @@ void test_food_effects() {
   TEST_ASSERT_FLOAT_WITHIN(0.01f, 0, food_effect(Food::APPLE).fun);
 }
 void test_feed_normal() {
-  fresh(50, 50, 50, 40);
+  fresh(50, 50, 50, 50);
   TEST_ASSERT_EQUAL((int)Say::LECKER, (int)food_feed(s, Food::PIZZA, Food::APPLE, 1000));
-  TEST_ASSERT_FLOAT_WITHIN(0.01f, 75, s.n.satiety);
+  TEST_ASSERT_FLOAT_WITHIN(0.01f, 85, s.n.satiety);
   TEST_ASSERT_FLOAT_WITHIN(0.01f, 50, s.n.affection);
   TEST_ASSERT_EQUAL((int)Emotion::HAPPY, (int)mood_emotion(s, 12, 2999));
   TEST_ASSERT_EQUAL((int)Emotion::CONTENT, (int)mood_emotion(s, 12, 3001));
 }
 void test_feed_favorite() {
-  fresh(50, 50, 50, 40);
+  fresh(50, 50, 50, 50);
   TEST_ASSERT_EQUAL((int)Say::LIEBLINGSESSEN, (int)food_feed(s, Food::CAKE, Food::CAKE, 1000));
-  TEST_ASSERT_FLOAT_WITHIN(0.01f, 65, s.n.satiety);
+  TEST_ASSERT_FLOAT_WITHIN(0.01f, 75, s.n.satiety);
   TEST_ASSERT_FLOAT_WITHIN(0.01f, 55, s.n.affection);
   TEST_ASSERT_FLOAT_WITHIN(0.01f, 60, s.n.fun);   // Kuchen +5, Liebling +5
   TEST_ASSERT_EQUAL((int)Emotion::EXCITED, (int)mood_emotion(s, 12, 3999));
   TEST_ASSERT_FALSE(mood_emotion(s, 12, 4001) == Emotion::EXCITED);
 }
-void test_feed_full_strictly_above_95() {
-  fresh(50, 50, 50, 70);
-  food_feed(s, Food::CAKE, Food::APPLE, 1000);   // 95: genau, noch nicht satt
-  TEST_ASSERT_FALSE(mood_emotion(s, 12, 2000) == Emotion::FULL);
-  fresh(50, 50, 50, 81);
-  TEST_ASSERT_EQUAL((int)Say::SATT, (int)food_feed(s, Food::APPLE, Food::CAKE, 1000));   // 96
-  TEST_ASSERT_EQUAL((int)Emotion::FULL, (int)mood_emotion(s, 12, 5999));
-  TEST_ASSERT_FALSE(mood_emotion(s, 12, 6001) == Emotion::FULL);
-  fresh(50, 50, 50, 90);
-  food_feed(s, Food::PIZZA, Food::APPLE, 1000);
+void test_feed_is_transient_joy_no_lasting_state() {
+  fresh(50, 50, 100, 100);   // schon satt: er lehnt nicht ab, kein "zu satt"
+  TEST_ASSERT_EQUAL((int)Say::LECKER, (int)food_feed(s, Food::PIZZA, Food::APPLE, 1000));
   TEST_ASSERT_FLOAT_WITHIN(0.01f, 100, s.n.satiety);   // geklemmt
+  TEST_ASSERT_EQUAL((int)Emotion::HAPPY, (int)mood_emotion(s, 12, 2999));
+  TEST_ASSERT_EQUAL((int)Emotion::CONTENT, (int)mood_emotion(s, 12, 3001));   // danach wieder neutral
+  TEST_ASSERT_EQUAL((int)Emotion::CONTENT, (int)mood_base_emotion(s, 12));
 }
 void test_coffee_energy() {
-  fresh(50, 50, 50, 40);
+  fresh(50, 50, 50, 50);
   food_feed(s, Food::COFFEE, Food::APPLE, 0);
   TEST_ASSERT_FLOAT_WITHIN(0.01f, 65, s.n.energy);
-  TEST_ASSERT_FLOAT_WITHIN(0.01f, 45, s.n.satiety);
+  TEST_ASSERT_FLOAT_WITHIN(0.01f, 55, s.n.satiety);
 }
-void test_speech_for_hungry_and_sick() {
-  TEST_ASSERT_EQUAL((int)Say::HUNGRIG, (int)speech_for_base(Emotion::HUNGRY));
-  TEST_ASSERT_EQUAL((int)Say::KRANK, (int)speech_for_base(Emotion::SICK));
+void test_speech_for_base_only_happy() {
+  TEST_ASSERT_EQUAL((int)Say::FROH, (int)speech_for_base(Emotion::HAPPY));
+  TEST_ASSERT_EQUAL((int)Say::COUNT, (int)speech_for_base(Emotion::SAD));
+  TEST_ASSERT_EQUAL((int)Say::COUNT, (int)speech_for_base(Emotion::BORED));
 }
 
 // ---- Charakter ----
@@ -152,8 +126,7 @@ void test_character_changes_and_clamp() {
   TEST_ASSERT_FLOAT_WITHIN(0.001f, -0.5f, c.cuddly);
   char_game(c); char_highfive(c);
   TEST_ASSERT_FLOAT_WITHIN(0.001f, 1.3f, c.playful);
-  char_bored(c, 10 * MIN);
-  TEST_ASSERT_FLOAT_WITHIN(0.001f, 1.1f, c.playful);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, 1.3f, c.playful);   // Vernachlaessigen aendert den Charakter nicht
   for (int i = 0; i < 1000; i++) { char_poke(c); char_game(c); }
   TEST_ASSERT_FLOAT_WITHIN(0.001f, -100.0f, c.cuddly);
   TEST_ASSERT_FLOAT_WITHIN(0.001f, 100.0f, c.playful);
@@ -207,19 +180,17 @@ void test_character_cheeky_and_love() {
 
 int main(int, char **) {
   UNITY_BEGIN();
-  RUN_TEST(test_satiety_start_and_decay);
-  RUN_TEST(test_hungry_rank);
-  RUN_TEST(test_sick_after_2h_uninterrupted);
-  RUN_TEST(test_sick_needs_both_conditions_and_resets);
-  RUN_TEST(test_sick_double_energy_decay);
-  RUN_TEST(test_heal_needs_satiety_then_3_strokes);
-  RUN_TEST(test_sneeze_every_1_to_3_min_only_when_sick);
+  RUN_TEST(test_satiety_decay_stops_at_floor);
+  RUN_TEST(test_neglect_48h_is_neutral);
+  RUN_TEST(test_stroke_raises_then_decays_to_floor_not_below);
+  RUN_TEST(test_poke_and_load_clamp_to_floor);
+  RUN_TEST(test_energy_still_drives_sleepy);
   RUN_TEST(test_food_effects);
   RUN_TEST(test_feed_normal);
   RUN_TEST(test_feed_favorite);
-  RUN_TEST(test_feed_full_strictly_above_95);
+  RUN_TEST(test_feed_is_transient_joy_no_lasting_state);
   RUN_TEST(test_coffee_energy);
-  RUN_TEST(test_speech_for_hungry_and_sick);
+  RUN_TEST(test_speech_for_base_only_happy);
   RUN_TEST(test_character_changes_and_clamp);
   RUN_TEST(test_character_effects);
   RUN_TEST(test_character_quirk_interval);
