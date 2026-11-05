@@ -64,7 +64,7 @@ static Deadline s_touch_prio;
 static uint8_t s_claude_fx = CFX_NONE;                 // Zusatzeffekte des angezeigten Claude-Gesichts
 static bool s_claude_busy = false;                     // Zustand mit eigenem Gesicht (nicht OFF/IDLE)
 static ClaudeState s_prev_cs = ClaudeState::OFF;
-static uint32_t s_next_hmm = 0, s_next_hey = 0;
+static Wait s_next_hmm, s_next_hey;   // Abstand seit dem Setzen (millis()-Überlauf-sicher)
 static bool s_needs_ack = false;                       // Tippen hat das gelbe Blinken beendet ...
 static uint32_t s_needs_ack_since = 0;                 // ... für das NEEDS_YOU, das bei L.since begann
 static MoodState s_mood;
@@ -97,7 +97,8 @@ static RitualState s_rituals{};
 static char s_bubble[64] = "";
 static Deadline s_bubble_dl;
 static char s_pending[64] = "";        // zweite Blase (Morgen: Tageswetter)
-static uint32_t s_pending_at = 0;
+static Wait s_pending_at;
+static bool s_pending_on = false;      // zweite Blase wartet auf ihre Zeit
 static bool s_touch_began = false;     // in diesem Bild hat eine Berührung begonnen
 static bool s_prev_sleeping = false;
 static bool s_prev_storm = false;
@@ -295,13 +296,13 @@ static void touch_to_mood(Gesture g, int16_t tx, int16_t ty, uint32_t now) {
 static void claude_frame(ClaudeState cs, uint32_t now) {
   if (cs != s_prev_cs) {
     const bool was_calm = s_prev_cs == ClaudeState::OFF || s_prev_cs == ClaudeState::IDLE || s_prev_cs == ClaudeState::DONE;
-    if (was_calm && claude_busy(cs) && cs != ClaudeState::DONE) s_next_hmm = now + 20000 + esp_random() % 20001;
+    if (was_calm && claude_busy(cs) && cs != ClaudeState::DONE) s_next_hmm.start(now, 20000 + esp_random() % 20001);
     switch (cs) {
       case ClaudeState::LISTENING: claude_say(Say::CLAUDE_OKAY, now); break;
       case ClaudeState::FAILED: claude_say(Say::CLAUDE_FEHLER, now); break;
       case ClaudeState::NEEDS_YOU:
         claude_say(Say::CLAUDE_HEY, now, true);
-        s_next_hey = now + kHeyEveryMs;
+        s_next_hey.start(now, kHeyEveryMs);
         break;
       case ClaudeState::DONE:
         claude_say(Say::CLAUDE_FERTIG, now);
@@ -311,13 +312,13 @@ static void claude_frame(ClaudeState cs, uint32_t now) {
     }
     s_prev_cs = cs;
   }
-  if (cs == ClaudeState::THINKING && (int32_t)(now - s_next_hmm) >= 0) {   // alle 20-40 s ein „Hmm...“
+  if (cs == ClaudeState::THINKING && s_next_hmm.due(now)) {   // alle 20-40 s ein „Hmm...“
     claude_say(Say::CLAUDE_HMM, now);
-    s_next_hmm = now + 20000 + esp_random() % 20001;
+    s_next_hmm.start(now, 20000 + esp_random() % 20001);
   }
-  if (cs == ClaudeState::NEEDS_YOU && (int32_t)(now - s_next_hey) >= 0) {   // „Hey, du!“ alle 30 s
+  if (cs == ClaudeState::NEEDS_YOU && s_next_hey.due(now)) {   // „Hey, du!“ alle 30 s
     claude_say(Say::CLAUDE_HEY, now, true);
-    s_next_hey = now + kHeyEveryMs;
+    s_next_hey.start(now, kHeyEveryMs);
   }
 }
 
@@ -483,7 +484,7 @@ static void weather_say(uint32_t now) {
 static void speech_frame(uint32_t now, bool sleeping) {
   const bool woke = (s_prev_sleeping && !sleeping) || s_touch_began;
   s_prev_sleeping = sleeping;
-  if (sleeping) { s_bubble_dl.clear(); s_pending_at = 0; return; }
+  if (sleeping) { s_bubble_dl.clear(); s_pending_on = false; return; }
   struct tm t;
   const uint32_t day = today(&t);
   daystats_roll(s_persist.day, day);
@@ -496,7 +497,8 @@ static void speech_frame(uint32_t now, bool sleeping) {
     NetWeather w;
     if (fresh_weather(now, &wm, &w)) {
       weather_sentence(w.temp_c, wm.sky, s_pending, sizeof s_pending);
-      s_pending_at = now + kMorningWeatherDelayMs;
+      s_pending_at.start(now, kMorningWeatherDelayMs);
+      s_pending_on = true;
     }
   } else if (s_pres.greet) {   // Kamera: jemand ist wieder da (Morgen hat Vorrang)
     mood_set_transient(s_mood, Emotion::GREETING, now, 3000);
@@ -507,8 +509,8 @@ static void speech_frame(uint32_t now, bool sleeping) {
     mood_set_transient(s_mood, Emotion::YAWN, now, 3000);
     say(Say::NACHT, now);
   }
-  if (s_pending_at && (int32_t)(now - s_pending_at) >= 0) {
-    s_pending_at = 0;
+  if (s_pending_on && s_pending_at.due(now)) {
+    s_pending_on = false;
     show_bubble(s_pending, now);
   }
   weather_say(now);

@@ -6,3 +6,5 @@ ota-out/
 .superpowers/
 
 .claude/settings.local.json
+
+tools/claude-hooks/buddy-status.json

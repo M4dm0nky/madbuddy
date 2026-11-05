@@ -14,24 +14,22 @@
 // WLAN-Update des XIAO (Spec: Updates). Ablauf wie src/ota/ota_pull.cpp am CYD, aber Auftrag (URL, SHA-256, WLAN) vom CYD
 // über die U-Zeile. Die SHA-256 kommt aus dem Manifest, das der CYD per geprüftem TLS geladen hat. Sie legt den Inhalt fest.
 
+#if ESP_ARDUINO_VERSION_MAJOR < 3
+#error "Arduino-Core >= 3 nötig (Zertifikatsbündel)"
+#endif
+
 namespace {
 constexpr size_t kChunk = 4096;
 constexpr uint32_t kStallMs = 15000;
 constexpr uint32_t kWifiMs = 20000;
+constexpr uint32_t kTotalMs = 300000;   // Gesamtzeit des Downloads (5 min)
 constexpr int kMaxRedirects = 3;
 bool g_pending = false;   // läuft auf Probe (PENDING_VERIFY)
 
-#if ESP_ARDUINO_VERSION_MAJOR >= 3
 const char *project_name() { return esp_app_get_description()->project_name; }
 #define SHA_START(c) mbedtls_sha256_starts(c, 0)
 #define SHA_UPDATE(c, b, n) mbedtls_sha256_update(c, b, n)
 #define SHA_FINISH(c, d) mbedtls_sha256_finish(c, d)
-#else
-const char *project_name() { return esp_ota_get_app_description()->project_name; }
-#define SHA_START(c) mbedtls_sha256_starts_ret(c, 0)
-#define SHA_UPDATE(c, b, n) mbedtls_sha256_update_ret(c, b, n)
-#define SHA_FINISH(c, d) mbedtls_sha256_finish_ret(c, d)
-#endif
 
 void send_err(const char *why) {
   char b[64];
@@ -45,12 +43,8 @@ void send_pct(int pct) {
 }
 
 void setup_tls(WiFiClientSecure &tls) {
-#if ESP_ARDUINO_VERSION_MAJOR >= 3
   tls.useBuiltinCACertBundle();
   tls.setHandshakeTimeout(6);   // Sekunden; Vorgabe 120 s würde den Herzschlag blockieren
-#else
-  tls.setInsecure();   // Kern 2.x ohne eingebautes Zertifikatsbündel: Der Inhalt ist über die SHA-256 festgelegt
-#endif
 }
 
 // GET mit selbst verfolgten Umleitungen; jede Adresse muss ota_redirect_ok() bestehen.
@@ -58,6 +52,7 @@ bool open_follow(HTTPClient &http, WiFiClientSecure &tls, const char *url, int *
   String cur = url;
   static const char *keys[] = {"Location"};
   for (int hop = 0; hop <= kMaxRedirects; hop++) {
+    feedLoopWDT();
     beat();   // ein Schritt (Verbinden + Antwort) dauert höchstens ~8 s, siehe Timeouts in download()
     if (!ota_redirect_ok(cur.c_str())) { strlcpy(why, "Umleitung abgelehnt", wn); return false; }
     http.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
@@ -108,12 +103,15 @@ bool download(const CamMsg &cmd, void (*beat)(), char *why, size_t wn) {
   mbedtls_sha256_init(&sha);
   SHA_START(&sha);
 
+  const uint32_t t_start = millis();
   uint32_t done = 0, last_data = millis(), last_beat = millis();
   int last_pct = -1;
   bool started = false, fail = false;
   size_t have = 0;
   while (done < (uint32_t)total && !fail) {
+    feedLoopWDT();   // Watchdog der loop(): das Update dauert länger als sein Timeout
     if (millis() - last_beat >= CAM_HEART_MS) { last_beat = millis(); beat(); }
+    if (millis() - t_start >= kTotalMs) { strlcpy(why, "Gesamtzeit", wn); fail = true; break; }
     const int avail = s->available();
     if (avail <= 0) {
       if (!http.connected() && !s->available()) { strlcpy(why, "Verbindung weg", wn); fail = true; }
@@ -170,7 +168,7 @@ void updater_boot() {
 }
 
 void updater_run(const CamMsg &cmd, void (*beat)()) {
-  if (!ota_redirect_ok(cmd.url)) { send_err("URL abgelehnt"); return; }
+  if (!ota_release_url_ok(cmd.url)) { send_err("URL abgelehnt"); return; }
   send_pct(0);
   WiFi.persistent(false);   // Zugangsdaten nie in den Flash (NVS) schreiben
   WiFi.mode(WIFI_STA);
@@ -178,6 +176,7 @@ void updater_run(const CamMsg &cmd, void (*beat)()) {
   const uint32_t t0 = millis();
   uint32_t last_beat = t0;
   while (WiFi.status() != WL_CONNECTED && millis() - t0 < kWifiMs) {
+    feedLoopWDT();   // Watchdog der loop(): das Update dauert länger als sein Timeout
     if (millis() - last_beat >= CAM_HEART_MS) { last_beat = millis(); beat(); }
     delay(100);
   }

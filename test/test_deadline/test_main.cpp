@@ -63,6 +63,17 @@ void test_due_since() {
   TEST_ASSERT_TRUE(due_since(0x00000100UL, 0xFFFFFF00UL, 0x100));      // millis()-Ueberlauf
   TEST_ASSERT_FALSE(due_since(0x000000FFUL, 0xFFFFFF00UL, 0x200));
 }
+void test_wait_struct() {
+  Wait w;
+  TEST_ASSERT_TRUE(w.due(5));                  // nie gesetzt: sofort faellig
+  w.start(1000, 500);
+  TEST_ASSERT_FALSE(w.due(1499));
+  TEST_ASSERT_TRUE(w.due(1500));
+  w.start(0xFFFFFF00UL, 0x200);                // ueber den millis()-Ueberlauf
+  TEST_ASSERT_FALSE(w.due(0x000000FFUL));
+  TEST_ASSERT_TRUE(w.due(0x00000100UL));
+  TEST_ASSERT_TRUE(w.due(0xFFFFFF00UL + 0x80000000UL + 5));   // lange liegengeblieben: faellig
+}
 int main(int, char **) {
   UNITY_BEGIN();
   RUN_TEST(test_never_armed_is_never_active);
@@ -73,5 +84,6 @@ int main(int, char **) {
   RUN_TEST(test_rearm_and_clear);
   RUN_TEST(test_high_now_arm);
   RUN_TEST(test_due_since);
+  RUN_TEST(test_wait_struct);
   return UNITY_END();
 }

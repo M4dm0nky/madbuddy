@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <esp_camera.h>
+#include <esp_task_wdt.h>
 #include <img_converters.h>
 #include <mbedtls/base64.h>
 #include "cam_config.h"
@@ -72,6 +73,7 @@ static void send_snapshot() {
     c[h + olen] = '\0';
     send_j(c);
     // Ein großes Bild dauert über 2 s: Lebenszeichen nicht ausfallen lassen (cam-snap.py überliest Nicht-J-Zeilen)
+    feedLoopWDT();   // ein großes Bild dauert länger als die loop()-Überwachung
     if (millis() - g_last_heart >= CAM_HEART_MS) { g_last_heart = millis(); send_heart(); }
   }
   free(jpg);
@@ -105,6 +107,10 @@ void setup() {
   apply_camera();
   send_heart();
   g_last_heart = g_stat_t0 = millis();
+  // Watchdog der loop(): 30 s mit Reset; sdkconfig.defaults setzt dasselbe, das hier sichert es ab.
+  const esp_task_wdt_config_t wdt = {.timeout_ms = 30000, .idle_core_mask = 0, .trigger_panic = true};
+  if (esp_task_wdt_reconfigure(&wdt) != ESP_OK) esp_task_wdt_init(&wdt);
+  enableLoopWDT();   // der Kern füttert ihn nach jedem loop(); lange Abschnitte rufen feedLoopWDT()
 }
 
 void loop() {
