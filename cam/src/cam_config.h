@@ -17,7 +17,6 @@
 #define CAM_PIN_HREF  47
 #define CAM_PIN_PCLK  13
 
-#define CAM_UART_BAUD 115200
 #define CAM_UART_TX   43   // D6
 #define CAM_UART_RX   44   // D7
 

@@ -7,7 +7,7 @@ static CamLineBuf g_ub, g_sb;
 
 void link_begin() {
   g_uart.setRxBufferSize(1024);   // eine U-Zeile (bis 400 Zeichen) muss eine Erkennung (bis ~250 ms) überstehen
-  g_uart.begin(CAM_UART_BAUD, SERIAL_8N1, CAM_UART_RX, CAM_UART_TX);
+  g_uart.begin(CAM_BAUD, SERIAL_8N1, CAM_UART_RX, CAM_UART_TX);
 }
 
 void link_send(const char *s, size_t n, bool mirror) {

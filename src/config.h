@@ -43,7 +43,6 @@ constexpr int LED_B = 17;
 // Kamera (XIAO ESP32-S3 Sense an CN1, docs/verkabelung.md)
 constexpr int CAM_RX = 27;          // vom XIAO D6 (TX)
 constexpr int CAM_TX = 22;          // zum XIAO D7 (RX)
-constexpr uint32_t CAM_BAUD = 115200;
 // Roboter, gemessen 2026-11-03: Kamerabild ist seitenverkehrt (Schrift im Schnappschuss gespiegelt), daher kein
 // zusätzliches Spiegeln. Sitzende Person bei y ≈ 300 (Kamera 15° nach oben), Gesichtsbreite normal ≈ 210, 20 cm ≈ 400.
 constexpr bool CAM_MIRROR_X = false;  // Augen sollen zur Person schauen

@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "deadline.h"
+#include "claude_state.h"
 
 // Entscheidungen des Firmware-Updates per Abruf (src/ota/ota_pull.cpp). Reine Logik ohne Arduino-/LVGL-Includes (Host-Test test/test_ota_policy).
 // Das Gerät holt die Datei selbst, aber nur nach Zustimmung am Display; was es bootet, prüft es am Image selbst, nicht an den Angaben im Manifest.
@@ -169,4 +170,10 @@ static inline int ota_status_line(int state, int pct, bool busy, uint32_t last_c
   else if (min < 60) snprintf(out, n, "Aktuell (vor %u min)", (unsigned)min);
   else snprintf(out, n, "Aktuell (vor %u h)", (unsigned)(min / 60));
   return 1;
+}
+
+// Die Update-Karte erscheint nicht mitten in Pomodoro-Arbeit und nicht, während Claude arbeitet
+// (Einstellungen -> Firmware geht immer).
+static inline bool ota_card_allowed(bool focused_work, ClaudeState cs) {
+  return !focused_work && (cs == ClaudeState::OFF || cs == ClaudeState::IDLE);
 }

@@ -9,6 +9,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "../logic/cam_proto.h"
+#include "../logic/secure_zero.h"
 #include "../logic/ota_policy.h"
 #include "claude_api.h"
 
@@ -337,11 +338,9 @@ size_t net_build_cam_upd(const char *url, const char *sha, char *buf, size_t cap
     for (const char *p : {(const char *)ssid, (const char *)pass}) for (; *p; p++) if (*p == '\t' || *p == '\n' || *p == '\r') ok = false;
     if (ok) n = cam_build_upd_cmd(url, sha, ssid, pass, buf, cap);
   }
-  volatile uint8_t *w = (volatile uint8_t *)&c;   // Passwort nicht liegen lassen
-  for (size_t i = 0; i < sizeof c; i++) w[i] = 0;
-  volatile char *sv = ssid, *pv = pass;
-  for (size_t i = 0; i < sizeof ssid; i++) sv[i] = 0;
-  for (size_t i = 0; i < sizeof pass; i++) pv[i] = 0;
+  secure_zero(&c, sizeof c);   // Passwort nicht liegen lassen
+  secure_zero(ssid, sizeof ssid);
+  secure_zero(pass, sizeof pass);
   return n;
 }
 bool net_portal_active() { return s_portal; }
