@@ -11,9 +11,9 @@ constexpr int TFT_DC   = 2;
 constexpr int TFT_RST  = -1;
 constexpr int TFT_BL   = 21;  // Backlight (PWM)
 
-// SPI-Takt zum Display in MHz. 40 ist bewährt; 80 nur über Env cyd2usb_spi80 und erst nach Test am Gerät.
+// SPI-Takt zum Display in MHz. 80 seit 2026-11-05 am Gerät getestet (Bild sauber); Rückfall auf 40 über Env cyd2usb_spi40.
 #ifndef CYD_SPI_WRITE_MHZ
-#define CYD_SPI_WRITE_MHZ 40
+#define CYD_SPI_WRITE_MHZ 80
 #endif
 
 // Touch XPT2046 (VSPI)
