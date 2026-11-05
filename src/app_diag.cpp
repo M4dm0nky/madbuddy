@@ -114,6 +114,20 @@ void diag_gesture(Gesture g, int16_t tx, int16_t ty) {
 }
 #endif
 
+#if CYD_LOG_FPS   // Bildrate messen (Build-Flag -DCYD_LOG_FPS=1): Schleife und gesendete Gesichtsbilder je Sekunde, alle 10 s
+static uint32_t s_fps_t = 0, s_fps_frames = 0, s_fps_pushes = 0;
+void diag_fps_push() { s_fps_pushes++; }
+void diag_fps_frame(uint32_t now) {
+  s_fps_frames++;
+  if (s_fps_t == 0) { s_fps_t = now; return; }
+  const uint32_t dt = now - s_fps_t;
+  if (dt < 10000) return;
+  Serial.printf("fps: %.1f push: %.1f\n", s_fps_frames * 1000.0f / dt, s_fps_pushes * 1000.0f / dt);
+  s_fps_t = now;
+  s_fps_frames = s_fps_pushes = 0;
+}
+#endif
+
 #if CYD_LOG_LDR   // Einmessen des Lichtsensors: Rohwert jede Sekunde (Build-Flag, danach wieder 0)
 void diag_ldr_tick(uint32_t now) {
   static uint32_t s_last_ldr = 0;

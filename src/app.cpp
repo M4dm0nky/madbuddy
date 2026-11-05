@@ -170,6 +170,7 @@ void app_loop() {
     save_now();
   }
   diag_ldr_tick(now);   // nur mit -DCYD_LOG_LDR=1
+  diag_fps_frame(now);  // nur mit -DCYD_LOG_FPS=1
   if (now - s_last_log >= kLogEveryMs) {
     const uint32_t fps = s_frames * 1000UL / (now - s_last_log);
     s_last_log = now;

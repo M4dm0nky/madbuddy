@@ -2,6 +2,7 @@
 #include <Arduino.h>
 #include <math.h>
 #include "../logic/weather_mood.h"
+#include "../logic/frame_skip.h"
 #include "bubble.h"
 #include "icons.h"
 
@@ -409,8 +410,40 @@ static void render(LovyanGFX &d, const FaceShape &f, Rgb color, uint32_t ov, uin
   }
 }
 
-void eyes_draw(LGFX &lcd, const FaceShape &face, Rgb color, uint32_t overlays, uint32_t now_ms, const char *bubble) {
+// Signatur aller Eingaben von render()/bubble_draw(). Zeitabhängige Overlays, Ring/Spin und Hand
+// (ändern sich mit now) fließen mit now ein: dann ist jedes Bild neu. Sonnenbrille, Regentönung, Sturm
+// sind zeitfrei. Änderst du render(), muss hier jede neue Eingabe mit hinein.
+static constexpr uint32_t kStaticOv = OV_SUNGLASSES | OV_RAIN_TINT | OV_STORM;
+static uint32_t frame_signature(const FaceShape &f, Rgb color, uint32_t ov, uint32_t now, const char *bubble) {
+  FrameHash h;
+  const EyeShape &e = f.eye;
+  for (float v : {e.w, e.h, e.radius, e.open, e.lid_top_tilt, e.lid_top_cut, e.lid_bottom_cut, e.gaze_x, e.gaze_y, f.pupil_r,
+                  f.pupil_dx, f.pupil_dy, f.brow_y, f.brow_tilt, f.brow_curve, f.brow_asym, f.mouth_curve, f.mouth_open,
+                  f.mouth_w, f.cross, s_ring, (float)s_food_y})
+    h.add(v);
+  h.add((uint8_t)f.mouth);
+  h.add((uint8_t)f.wink);
+  h.add(color.r); h.add(color.g); h.add(color.b);
+  h.add(ov);
+  h.add((uint8_t)s_spin);
+  h.add(s_ring_col.r); h.add(s_ring_col.g); h.add(s_ring_col.b);
+  h.add(s_spin_col.r); h.add(s_spin_col.g); h.add(s_spin_col.b);
+  h.add(s_food);
+  h.add((uint8_t)s_hand_right);
+  h.add_str(bubble);
+  if ((ov & ~kStaticOv) || s_spin || s_ring >= 0) h.add(now);   // läuft eine Animation: jedes Bild neu
+  return h.h;
+}
+
+bool eyes_draw(LGFX &lcd, const FaceShape &face, Rgb color, uint32_t overlays, uint32_t now_ms, const char *bubble) {
   if (s_ready) {
+    static uint32_t s_last_sig = 0, s_last_push = 0, s_last_call = 0;
+    static bool s_have_last = false;
+    if (frame_gap_exceeded(now_ms, s_last_call)) s_have_last = false;   // Bildschirm war weg: sicher neu
+    s_last_call = now_ms;
+    const uint32_t sig = frame_signature(face, color, overlays, now_ms, bubble);
+    if (!frame_should_push(sig, s_last_sig, now_ms, s_last_push, s_have_last)) return false;
+    s_last_sig = sig; s_last_push = now_ms; s_have_last = true;
     render(s_spr, face, color, overlays, now_ms);
     if (bubble) bubble_draw(s_spr, bubble);
     s_spr.pushSprite(&lcd, 0, 0);
@@ -420,4 +453,5 @@ void eyes_draw(LGFX &lcd, const FaceShape &face, Rgb color, uint32_t overlays, u
     if (bubble) bubble_draw(lcd, bubble);
     lcd.endWrite();
   }
+  return true;
 }

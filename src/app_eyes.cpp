@@ -115,7 +115,7 @@ void eyes_frame(uint32_t now, uint32_t dt) {
       say(food_feed(a.mood, f, (Food)a.persist.favorite_food, now), now);
     }
   }
-  eyes_draw(a.lcd, draw, s_color, ov, now, speech_bubble(now));
+  if (eyes_draw(a.lcd, draw, s_color, ov, now, speech_bubble(now))) diag_fps_push();
   status_draw(a.lcd, status_info(now));
 
   if (a.led_flash.active(now)) led_set(Rgb{255, 255, 255}, kLedPct);   // High-Five

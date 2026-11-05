@@ -23,6 +23,9 @@
 #ifndef CYD_LOG_LDR
 #define CYD_LOG_LDR 0   // 1 = Rohwert des Lichtsensors jede Sekunde seriell ausgeben (Einmessen); per build_flags -DCYD_LOG_LDR=1
 #endif
+#ifndef CYD_LOG_FPS
+#define CYD_LOG_FPS 0   // 1 = alle 10 s "fps: <Schleife> push: <gesendete Gesichtsbilder>" seriell; per build_flags -DCYD_LOG_FPS=1
+#endif
 #ifndef CYD_DIAG_TOUCH
 #define CYD_DIAG_TOUCH 0   // 1 = Touch/Gesten seriell ausgeben (Kalibrierung prüfen); per build_flags -DCYD_DIAG_TOUCH=1
 #endif
@@ -80,6 +83,13 @@ void diag_gesture(Gesture g, int16_t tx, int16_t ty);
 #else
 inline void diag_touch(bool, int32_t, int32_t) {}
 inline void diag_gesture(Gesture, int16_t, int16_t) {}
+#endif
+#if CYD_LOG_FPS
+void diag_fps_frame(uint32_t now);   // einmal je Hauptschleifen-Bild
+void diag_fps_push();                // einmal je tatsächlich gesendetem Gesichtsbild
+#else
+inline void diag_fps_frame(uint32_t) {}
+inline void diag_fps_push() {}
 #endif
 #if CYD_LOG_LDR
 void diag_ldr_tick(uint32_t now);
