@@ -2,6 +2,9 @@
 
 Neueste Einträge oben. Format und Regeln: `docs/superpowers/plans/2026-10-25-cyd-buddy.md`, Abschnitt „Fortschritts-Protokoll“.
 
+## Winken erkennen – GEBAUT (Stand 2026-11-05)
+- Nur CYD, Kamera-Firmware unverändert. `src/logic/wave.h` (Test `test/test_wave`): zählt Richtungsumkehrungen des M-Schwerpunkts (Hub ≥ 120/1000, ≥ 8 bewegte Zellen, 3 Umkehrungen in 2,5 s, Lücke > 800 ms setzt zurück, 8 s Sperre). Verdrahtet in `on_cam_msg` (nur bei aktiver Kamera), `mood_frame` (weckt tagsüber, nachts im Schlaf nicht) und `speech_frame` (Grußgesicht + Blase aus Kategorie „winken“, nur Augen-Bildschirm). **Schwellen vorläufig, am Gerät einstellen.**
+
 ## Gesamt-Review Pakete A–E + Pflege ohne Zwang – GEBAUT, wartet auf Release (Stand 2026-11-05)
 - Branch `fix/review-paket-a` (von `main`), Review-Plan: Befunde und Pakete siehe Commit-Nachrichten.
 - **A** Kamera-Watchdog 30 s mit Reset (vorher 5 s, nur Meldung), Kamera-Download höchstens 5 min, Kamera-URL nur aus `M4dm0nky/madbuddy/releases/download/`, kein `setInsecure` mehr, Wartezeiten über `Wait` (`deadline.h`), Claude-Empfänger in eigenem Task (Gesicht friert nicht mehr ein), Einrichtungs-WLAN mit 8-stelligem Passwort auf dem Display, Schlüssel nicht mehr im seriellen Log. Kamera **0.1.7**.

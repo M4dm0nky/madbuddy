@@ -80,6 +80,7 @@ static void apply_elapsed_once() {
 static void on_cam_msg(const CamMsg &m, uint32_t now) {
   diag_cam_count(m);
   presence_msg(g_app.presence, m, now, CAM_MIRROR_X, CAM_GAZE_Y0);
+  if (m.kind == CAM_MOTION && g_app.presence.active) wave_feed(g_app.wave, m.x, m.n, now);   // wie Presence: nur bei aktiver Kamera
   if (m.kind == CAM_UPD_PCT || m.kind == CAM_UPD_OK || m.kind == CAM_UPD_ERR) {
     Serial.printf("cam: U kind=%d pct=%u %s\n", (int)m.kind, (unsigned)m.pct, m.text);
     ota_card_cam_msg(m, now);   // Kamera-Update (Karte)

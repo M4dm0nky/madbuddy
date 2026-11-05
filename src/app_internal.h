@@ -15,6 +15,7 @@
 #include "logic/character.h"
 #include "logic/pomodoro.h"
 #include "logic/presence.h"
+#include "logic/wave.h"
 #include "logic/claude_state.h"
 #include "logic/claude_face.h"
 #include "logic/cam_proto.h"
@@ -41,6 +42,8 @@ struct App {
   MoodState mood;
   Presence presence;             // Kamera: Anwesenheit, Begrüßung, Nähe, Blick
   PresenceOut pres;              // Ergebnis des letzten mood_frame (für speech_frame/eyes_frame)
+  WaveDetect wave;               // Kamera: Winken aus den M-Meldungen
+  bool wave_hello = false;       // in diesem Bild wurde gewinkt und er ist wach (für speech_frame, gilt nur ein Bild)
   GestureState gesture;
   Character chr{};
   Pomo pomo{};

@@ -99,6 +99,11 @@ void mood_frame(uint32_t now, uint32_t dt) {
   const bool cam = cam_active(now);
   const PresenceOut po = presence_tick(a.presence, cam, now, CAM_NEAR_W);
   a.pres = po;   // für eyes_frame/speech_frame
+  a.wave_hello = false;
+  if (wave_take(a.wave, now) && !(mood_is_night(hour) && mood_is_sleeping(a.mood, now))) {   // Winken: nachts im Schlaf nicht wecken
+    mood_touch(a.mood, now);   // weckt aus dem Tages-Nickerchen
+    a.wave_hello = true;
+  }
   const bool asleep = mood_is_sleeping(a.mood, now);
   if (po.present && !(mood_is_night(hour) && asleep)) mood_touch(a.mood, now);   // da = wach halten; nachts weckt ein Gesicht nicht
   const bool ldr_dark = light_update(now);   // läuft immer weiter, damit die Glättung nicht springt

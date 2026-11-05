@@ -117,6 +117,10 @@ void speech_frame(uint32_t now, bool sleeping) {
     mood_set_transient(a.mood, Emotion::GREETING, now, 3000);
     say(Say::WIEDER, now);
   }
+  if (a.wave_hello && !a.pres.greet) {   // zurückwinken (nur auf dem Augen-Bildschirm, wie die Begrüßung)
+    mood_set_transient(a.mood, Emotion::GREETING, now, 3000);
+    say(Say::WINKEN, now);
+  }
   a.pres.greet = false;
   if (ritual_night(a.rituals, true, hour, minute, day)) {
     mood_set_transient(a.mood, Emotion::YAWN, now, 3000);

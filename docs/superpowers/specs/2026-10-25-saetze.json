@@ -24,5 +24,6 @@
   "claude_fehler": ["Mist!", "Huch, Fehler!", "Oje...", "Nochmal!", "Autsch!", "Das klappte nicht."],
   "claude_hey": ["Hey, du!", "Ich brauch dich!", "Schau mal her!", "Frage an dich!", "Kurz mal bitte!", "Hallo? Deine Hilfe!"],
   "claude_fertig": ["Fertig!", "Geschafft!", "Erledigt!", "Tadaa!", "Das war's!", "Alles fertig!"],
-  "wieder": ["Da bist du ja!", "Hallo du!", "Wieder da!", "Schön, dich zu sehen!", "Hab dich vermisst!", "Na, wieder zurück?"]
+  "wieder": ["Da bist du ja!", "Hallo du!", "Wieder da!", "Schön, dich zu sehen!", "Hab dich vermisst!", "Na, wieder zurück?"],
+  "winken": ["Hallo!", "Hi!", "Huhu!", "Winke winke!", "Hallo du!", "Hey, hi!"]
 }

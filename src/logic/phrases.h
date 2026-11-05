@@ -3,7 +3,7 @@
 
 // ERZEUGT von tools/gen-phrases.mjs aus docs/superpowers/specs/2026-10-25-saetze.json – nicht von Hand ändern.
 // Sätze in UTF-8; vor dem Zeichnen über logic/ascii.h wandeln. Host-Test test/test_phrases.
-enum class Say : uint8_t { MORGEN, NACHT, FROH, VERLIEBT, GENERVT, REGEN, SONNE, HITZE, KALT, GEWITTER, POMODORO_START, POMODORO_PAUSE, POMODORO_FERTIG, LECKER, LIEBLINGSESSEN, HIGHFIVE, GEDANKEN, FRECH, VERSCHMUST, CLAUDE_OKAY, CLAUDE_HMM, CLAUDE_FEHLER, CLAUDE_HEY, CLAUDE_FERTIG, WIEDER, COUNT };
+enum class Say : uint8_t { MORGEN, NACHT, FROH, VERLIEBT, GENERVT, REGEN, SONNE, HITZE, KALT, GEWITTER, POMODORO_START, POMODORO_PAUSE, POMODORO_FERTIG, LECKER, LIEBLINGSESSEN, HIGHFIVE, GEDANKEN, FRECH, VERSCHMUST, CLAUDE_OKAY, CLAUDE_HMM, CLAUDE_FEHLER, CLAUDE_HEY, CLAUDE_FERTIG, WIEDER, WINKEN, COUNT };
 
 namespace phrases_detail {
 inline const char *const MORGEN[] = {"Moin! Schon wach?", "Guten Morgen!", "Sonne oder Kaffee?", "Na, gut geschlafen?", "Auf in den Tag!", "Hallo du! Endlich wach."};
@@ -31,6 +31,7 @@ inline const char *const CLAUDE_FEHLER[] = {"Mist!", "Huch, Fehler!", "Oje...", 
 inline const char *const CLAUDE_HEY[] = {"Hey, du!", "Ich brauch dich!", "Schau mal her!", "Frage an dich!", "Kurz mal bitte!", "Hallo? Deine Hilfe!"};
 inline const char *const CLAUDE_FERTIG[] = {"Fertig!", "Geschafft!", "Erledigt!", "Tadaa!", "Das war's!", "Alles fertig!"};
 inline const char *const WIEDER[] = {"Da bist du ja!", "Hallo du!", "Wieder da!", "Schön, dich zu sehen!", "Hab dich vermisst!", "Na, wieder zurück?"};
+inline const char *const WINKEN[] = {"Hallo!", "Hi!", "Huhu!", "Winke winke!", "Hallo du!", "Hey, hi!"};
 }  // namespace phrases_detail
 
 struct SayList { const char *const *items; uint8_t n; };
@@ -62,6 +63,7 @@ inline SayList say_list(Say s) {
     case Say::CLAUDE_HEY: return SayList{CLAUDE_HEY, 6};
     case Say::CLAUDE_FERTIG: return SayList{CLAUDE_FERTIG, 6};
     case Say::WIEDER: return SayList{WIEDER, 6};
+    case Say::WINKEN: return SayList{WINKEN, 6};
     default: return SayList{nullptr, 0};
   }
 }
