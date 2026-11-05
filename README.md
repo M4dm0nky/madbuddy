@@ -87,7 +87,7 @@ Summe zusätzlich ca. 35 € (vorläufig).
 1. CYD per USB-Kabel an den PC anschließen.
 2. Flashen: `pio run -e cyd2usb -t upload`
 3. **Touch einrichten:** Beim ersten Start (oder mit dem Finger auf dem Display beim Einschalten) die vier Pfeile in den Ecken antippen. Die Werte bleiben gespeichert.
-4. **WLAN:** Beim ersten Start (und wenn 30 s kein WLAN da ist) öffnet der Buddy den Access-Point **„MadBuddy“**. Mit dem Handy verbinden, WLAN wählen, im Feld **„Ort“** den Wohnort eintragen (z. B. „Berlin“), speichern. Aus dem Ort werden die Koordinaten für das Wetter (Open-Meteo) bestimmt.
+4. **WLAN:** Beim ersten Start (und wenn 30 s kein WLAN da ist) öffnet der Buddy den Access-Point **„MadBuddy“** (das WLAN-Passwort, 8 Ziffern, steht bei jedem Öffnen neu auf dem Display). Mit dem Handy verbinden, WLAN wählen, im Feld **„Ort“** den Wohnort eintragen (z. B. „Berlin“), speichern. Aus dem Ort werden die Koordinaten für das Wetter (Open-Meteo) bestimmt.
 
 ### Stufe 2: Desktop-Kopf
 

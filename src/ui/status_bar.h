@@ -8,7 +8,7 @@ constexpr int STATUS_H = 40;
 
 struct StatusInfo {
   bool time_ok; int hour, minute;
-  bool wifi_ok; bool portal;
+  bool wifi_ok; bool portal; char portal_pass[12];   // Portal offen + dessen WLAN-Passwort ("" = unbekannt)
   bool weather_ok; Sky sky; bool is_day; float temp_c;
   bool update_ready;
   uint16_t timer_s; bool timer_break;   // Pomodoro-Restzeit (0 = kein Timer), Pause grün

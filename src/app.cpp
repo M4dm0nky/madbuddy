@@ -163,6 +163,7 @@ static StatusInfo status_info(uint32_t now) {
   si.minute = si.time_ok ? t.tm_min : 0;
   si.wifi_ok = net_wifi_ok();
   si.portal = net_portal_active();
+  if (si.portal) strlcpy(si.portal_pass, net_portal_pass(), sizeof si.portal_pass);
   WeatherMood wm;
   NetWeather w;
   si.weather_ok = fresh_weather(now, &wm, &w);

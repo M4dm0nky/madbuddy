@@ -36,7 +36,7 @@ GitHub leitet `…/latest/download/<Datei>` um (auf `…/releases/download/<Tag>
 5. **A/B-Slot.** Das Image landet im inaktiven Slot (`Update`-Klasse). Bootloader, Partitionstabelle, NVS und der laufende Slot werden nicht beschrieben. Rettung bleibt USB.
 6. **Kein PSRAM.** 4-KB-Puffer per `malloc`, ArduinoJson mit Standard-Allocator und Filter. Während des Ladens gibt die UI das 64-KB-Augen-Sprite frei
    (Fortschrittsbalken mit „konzentrierten“ Augen, direkt gezeichnet); nach einem Fehler wird es neu angelegt.
-7. **WiFiManager-Upload gesperrt.** Das Portal-AP ist offen und WiFiManager registriert seine Upload-Seite immer. Ein Upload dort startet das Gerät neu (`setPreOtaUpdateCallback`), Firmware kommt nur über diesen geprüften Weg.
+7. **WiFiManager-Upload gesperrt.** Das Portal-AP hat ein zufälliges Passwort (steht auf dem Display), WiFiManager registriert seine Upload-Seite immer. Ein Upload dort startet das Gerät neu (`setPreOtaUpdateCallback`), Firmware kommt nur über diesen geprüften Weg.
 
 ## Dateien
 
