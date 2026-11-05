@@ -13,7 +13,7 @@ CONFIG_MBEDTLS_PSK_MODES=y
 CONFIG_MBEDTLS_KEY_EXCHANGE_PSK=y
 # Version im App-Deskriptor: muss CAM_FW_VERSION in src/cam_config.h entsprechen (ota-publish prüft das und liest sie ins Manifest)
 CONFIG_APP_PROJECT_VER_FROM_CONFIG=y
-CONFIG_APP_PROJECT_VER="0.1.6"
+CONFIG_APP_PROJECT_VER="0.1.7"
 # Gesichtsmodell espdet_pico_224 (CAM_FACE_MODEL 1 in cam_config.h) zusätzlich zu MSR+MNP ins Flash; Vorgabe ist das Pico-Modell.
 CONFIG_FLASH_ESPDET_PICO_224_224_FACE=y
 CONFIG_ESPDET_PICO_224_224_FACE=y
@@ -23,3 +23,10 @@ CONFIG_COMPILER_OPTIMIZATION_PERF=y
 CONFIG_SPIRAM_SPEED_80M=y
 CONFIG_ESP32S3_DATA_CACHE_64KB=y
 CONFIG_ESP32S3_DATA_CACHE_LINE_64B=y
+# Task-Watchdog: Hängt loop() (Kamera, Erkennung), setzt der XIAO sich nach 30 s zurück. Leerlauf-Tasks nicht prüfen.
+CONFIG_ESP_TASK_WDT_EN=y
+CONFIG_ESP_TASK_WDT_INIT=y
+CONFIG_ESP_TASK_WDT_PANIC=y
+CONFIG_ESP_TASK_WDT_TIMEOUT_S=30
+# CONFIG_ESP_TASK_WDT_CHECK_IDLE_TASK_CPU0 is not set
+# CONFIG_ESP_TASK_WDT_CHECK_IDLE_TASK_CPU1 is not set

@@ -22,7 +22,7 @@ void test_pick_never_repeats() {
 void test_pick_categories_independent() {
   SpeechState s; speech_init(s, 0, 7);
   const char *a = speech_pick(s, Say::FROH, 1);
-  speech_pick(s, Say::TRAURIG, 1);
+  speech_pick(s, Say::VERLIEBT, 1);
   const char *b = speech_pick(s, Say::FROH, 1);   // gleicher Zufall, aber FROH darf nicht gleich bleiben
   TEST_ASSERT_FALSE(strcmp(a, b) == 0);
 }
@@ -66,8 +66,8 @@ void test_base_change_40_percent() {
     SpeechState s; speech_init(s, 0, seed);
     Say say = Say::COUNT;
     speech_due(s, Emotion::CONTENT, 1000, &say, 0);
-    if (speech_due(s, Emotion::BORED, 2000, &say, 0)) {
-      TEST_ASSERT_EQUAL((int)Say::GELANGWEILT, (int)say);
+    if (speech_due(s, Emotion::HAPPY, 2000, &say, 0)) {
+      TEST_ASSERT_EQUAL((int)Say::FROH, (int)say);
       hits++;
     }
   }
@@ -75,9 +75,9 @@ void test_base_change_40_percent() {
 }
 void test_base_change_mapping_and_cooldown() {
   // Mit Zufall, der sicher trifft: viele Seeds probieren, bis einer trifft, dann Zuordnung prüfen.
-  const Emotion e[] = {Emotion::SAD, Emotion::HAPPY};
-  const Say want[] = {Say::TRAURIG, Say::FROH};
-  for (int k = 0; k < 2; k++) {
+  const Emotion e[] = {Emotion::HAPPY};
+  const Say want[] = {Say::FROH};
+  for (int k = 0; k < 1; k++) {
     bool ok = false;
     for (uint32_t seed = 1; seed < 100 && !ok; seed++) {
       SpeechState s; speech_init(s, 0, seed);
@@ -93,13 +93,13 @@ void test_base_change_mapping_and_cooldown() {
     Say say;
     speech_due(s, Emotion::CONTENT, 1000, &say, 0);
     speech_shown(s, 1500);
-    TEST_ASSERT_FALSE(speech_due(s, Emotion::BORED, 2000, &say, 0));
+    TEST_ASSERT_FALSE(speech_due(s, Emotion::HAPPY, 2000, &say, 0));
   }
   // Wechsel zu CONTENT: nie eine Blase
   for (uint32_t seed = 1; seed < 200; seed++) {
     SpeechState s; speech_init(s, 0, seed);
     Say say;
-    speech_due(s, Emotion::BORED, 1000, &say, 0);
+    speech_due(s, Emotion::HAPPY, 1000, &say, 0);
     TEST_ASSERT_FALSE(speech_due(s, Emotion::CONTENT, 200000, &say, 0));
   }
 }

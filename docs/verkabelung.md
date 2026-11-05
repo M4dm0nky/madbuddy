@@ -120,6 +120,17 @@ Der XIAO liegt in der Brust (Kamera 15° nach oben gekippt), das CYD im Kopf. Di
 - **Flashen des CYD per Kabel:** Schalter aus (siehe Warnungen).
 - Beim Schließen von `torso_back` die Adern nicht einklemmen. Die Adern liegen vorher an der Seite des Stapels, wo die Wiege Platz lässt.
 
+## Schutz und Strom
+
+Gilt für den Roboter (Akku), der Elko und der Schalter auch für Stufe 2 am Netzteil.
+
+- **Elko am 5-V-Verteilerpunkt:** 470 bis 1000 µF, mindestens 10 V, low-ESR, Plus an 5 V, Minus an GND, so nah am Verteiler wie möglich. Er fängt Einbrüche beim WLAN- und Kamerastart ab. **Mit Lautsprecher Pflicht**, sonst gibt es Knacken und Resets bei Lautstärkespitzen. Polung vor dem Einlöten prüfen.
+- **Schalter mindestens 1 A.** Der übliche Mini-Schiebeschalter SS12D00 ist oft nur mit 0,3 bis 0,5 A angegeben und kann bei 1 A (CYD plus Kamera plus Lautsprecher) heiß werden oder verschleißen. Besser: Schiebeschalter SS-12F15 bzw. EG1218 oder ein Wippen-/Mini-Kippschalter mit Angabe **≥ 1 A bei 5 V DC** (Datenblatt des gekauften Teils lesen). **VORLÄUFIG:** Der Schalterschlitz im Boden (`sw_slot_l` x `sw_slot_w` in `case/madbuddy_roboter.scad`) ist für einen kleinen Schiebeschalter gemessen. Bei einer anderen Bauform vor dem Druck die Maße prüfen.
+- **Polyfuse 1,5 A (Haltestrom)** direkt hinter dem Schalter, vor dem Verteilerpunkt, in Reihe mit der 5-V-Leitung. Sie schützt vor Kurzschluss in der Verkabelung, der Akku (DFR0969) selbst ist bei Kurzschluss ebenfalls geschützt, aber nicht die dünne P1-Ader.
+- **Zellen: 18650 mit Schutzschaltung bevorzugt.** Geschützte Zellen sind ca. 69 mm lang (ohne Schutz 65 mm). Das Gehäuse hat Platz dafür: `cell_l = 69` ist im Modell schon die lange Variante, der Kontaktblock liegt bei X ±40,5 mm, das Fach reicht bis ±52,75 mm. **Ob die Federkontakte des DFR0969 eine 69-mm-Zelle aufnehmen, ist nicht belegt (VORLÄUFIG):** am echten Modul eine geschützte Zelle probeweise einlegen. Passt sie nicht, gilt: nur ungeschützte Zellen passen, Schutz übernimmt der DFR0969 (Überladung/Kurzschluss). Die Zellen immer mit gleichem Ladestand und aus derselben Charge einsetzen.
+- **XIAO-Antenne bei geschlossenem Gehäuse prüfen.** Der XIAO sitzt in der Brust zwischen Akku, Kabeln und Kunststoff, das drückt das WLAN-Signal. Messen: die Kamera hat keine eigene RSSI-Ausgabe, deshalb als Test das **WLAN-Update der Kamera bei geschlossenem Roboter** aus der Entfernung starten, in der er später steht (Update läuft durch, ohne Abbrüche und ohne auffällig lange Dauer). Bricht es ab oder ist der Empfang schlecht: die Stabantenne durch einen Schlitz nach außen führen oder eine Flex-Antenne innen an die Brust-Rückwand kleben, **weg vom Akku** und weg von den Zellen.
+- **Vor dem Löten messen bleibt:** P1 VIN mit dem Multimeter (Schritt 3) bevor an den XIAO gelötet wird.
+
 ## Was noch offen ist
 
 - Die Lage von P1 und CN1 am eigenen Board und bei der 2-USB-Version.

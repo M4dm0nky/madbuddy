@@ -9,7 +9,9 @@
 #include <string.h>
 #include <ctype.h>
 #include "../logic/cam_proto.h"
+#include "../logic/secure_zero.h"
 #include "../logic/ota_policy.h"
+#include "claude_api.h"
 
 static constexpr const char *kApName = "MadBuddy";
 static constexpr const char *kTz = "CET-1CEST,M3.5.0,M10.5.0/3";
@@ -28,6 +30,8 @@ static uint32_t s_portal_manual_since = 0;
 static bool s_place_changed = false;
 static volatile bool s_wifi_ok = false;
 static volatile bool s_portal = false;
+static int s_portal_pending = 0;        // 1 = automatisches, 2 = manuelles Portal wartet auf freien Port 80 (nur UI-Task)
+static char s_portal_pass[9] = "";      // vor startConfigPortal geschrieben, nur UI-Task
 
 // Zwischen Haupt-Task und net_task geteilt, geschützt durch s_mux.
 static portMUX_TYPE s_mux = portMUX_INITIALIZER_UNLOCKED;
@@ -220,11 +224,18 @@ static void net_task(void *) {
 }
 
 static void start_portal(bool automatic) {
-  if (s_wm.getConfigPortalActive()) return;
+  if (s_wm.getConfigPortalActive()) { s_portal_pending = 0; return; }
+  // Das Portal braucht Port 80: Claude-Empfänger (eigener Task) erst stoppen lassen, sonst später erneut versuchen.
+  claude_api_stop();
+  if (!claude_api_released()) { s_portal_pending = automatic ? 1 : 2; return; }
+  s_portal_pending = 0;
   s_portal_auto = automatic;
   s_portal_manual_since = automatic ? 0 : millis();
-  s_wm.startConfigPortal(kApName);
-  Serial.println("net: Portal MadBuddy offen");
+  for (int i = 0; i < 8; i++) s_portal_pass[i] = (char)('0' + esp_random() % 10);   // WPA2 braucht >= 8 Zeichen
+  s_portal_pass[8] = '\0';
+  s_wm.startConfigPortal(kApName, s_portal_pass);
+  s_portal = true;   // gleich sichtbar machen, damit der Claude-Empfänger Port 80 nicht wieder belegt
+  Serial.println("net: Portal MadBuddy offen (mit Passwort)");
 }
 
 void net_begin(Persist *p) {
@@ -238,7 +249,7 @@ void net_begin(Persist *p) {
   s_wm.setMenu(menu, 2);
   s_wm.setShowInfoUpdate(false);
   s_wm.setShowInfoErase(false);
-  // Das Portal-AP ist offen; die Firmware-Upload-Seite von WiFiManager ist trotzdem registriert. Ein Upload
+  // Das Portal-AP hat ein zufälliges Passwort (am Display); die Firmware-Upload-Seite von WiFiManager ist trotzdem registriert. Ein Upload
   // dort wird abgebrochen (Neustart) – Firmware kommt nur über das geprüfte OTA (ota_pull).
   s_wm.setPreOtaUpdateCallback([]() {
     Serial.println("net: Upload ueber das Portal ist gesperrt");
@@ -265,6 +276,8 @@ void net_loop() {
   s_wifi_ok = ok;
   s_portal = s_wm.getConfigPortalActive();
 
+  if (s_portal_pending == 1 && s_wifi_ok) s_portal_pending = 0;   // WLAN ist doch da: automatisches Portal entfällt
+  if (s_portal_pending && !s_portal) start_portal(s_portal_pending == 1);
   if (!s_wifi_ok && !s_portal && now - s_offline_since >= kConnectWaitMs) start_portal(true);
   if (s_portal && s_wifi_ok && s_portal_auto) {   // WLAN doch noch da: automatisches Portal zu
     s_wm.stopConfigPortal();
@@ -325,14 +338,14 @@ size_t net_build_cam_upd(const char *url, const char *sha, char *buf, size_t cap
     for (const char *p : {(const char *)ssid, (const char *)pass}) for (; *p; p++) if (*p == '\t' || *p == '\n' || *p == '\r') ok = false;
     if (ok) n = cam_build_upd_cmd(url, sha, ssid, pass, buf, cap);
   }
-  volatile uint8_t *w = (volatile uint8_t *)&c;   // Passwort nicht liegen lassen
-  for (size_t i = 0; i < sizeof c; i++) w[i] = 0;
-  volatile char *sv = ssid, *pv = pass;
-  for (size_t i = 0; i < sizeof ssid; i++) sv[i] = 0;
-  for (size_t i = 0; i < sizeof pass; i++) pv[i] = 0;
+  secure_zero(&c, sizeof c);   // Passwort nicht liegen lassen
+  secure_zero(ssid, sizeof ssid);
+  secure_zero(pass, sizeof pass);
   return n;
 }
 bool net_portal_active() { return s_portal; }
+bool net_portal_busy() { return s_portal || s_portal_pending != 0; }
+const char *net_portal_pass() { return s_portal ? s_portal_pass : ""; }
 void net_open_portal() {
   s_param_place.setValue(s_p ? s_p->place : "", 47);
   start_portal(false);

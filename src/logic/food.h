@@ -17,10 +17,8 @@ inline FoodEffect food_effect(Food f) {
   }
 }
 
-constexpr float FOOD_FULL_ABOVE = 95;
-
 // Wirkung anwenden und Reaktion setzen; liefert die Kategorie der Sprechblase.
-// Lieblingsessen: Zuneigung +5, Unterhaltung +5, EXCITED 3 s; sonst HAPPY 2 s. Sättigung danach > 95: FULL 5 s (Bauchweh).
+// Lieblingsessen: Zuneigung +5, Unterhaltung +5, EXCITED 3 s; sonst HAPPY 2 s. Nur ein kurzer Moment Freude, keine Pflicht und kein "zu satt".
 inline Say food_feed(MoodState &s, Food f, Food favorite, uint32_t now_ms) {
   mood_touch(s, now_ms);
   const FoodEffect e = food_effect(f);
@@ -36,11 +34,6 @@ inline Say food_feed(MoodState &s, Food f, Food favorite, uint32_t now_ms) {
   } else {
     mood_set_transient(s, Emotion::HAPPY, now_ms, 2000);
   }
-  const bool full = s.n.satiety > FOOD_FULL_ABOVE;
   mood_clamp(s.n);
-  if (full) {
-    mood_set_transient(s, Emotion::FULL, now_ms, 5000);
-    say = Say::SATT;
-  }
   return say;
 }

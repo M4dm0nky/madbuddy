@@ -11,6 +11,8 @@ void net_begin(Persist *p);          // AP "MadBuddy" mit Zusatzfeld "Ort"; star
 void net_loop();                     // aus app_loop: wm.process(), übernimmt Ort/Geocoding-Ergebnis in *p
 bool net_wifi_ok();
 bool net_portal_active();
+bool net_portal_busy();              // Portal offen oder soll gleich öffnen (wartet auf freien Port 80)
+const char *net_portal_pass();       // WLAN-Passwort des offenen Portals (8 Ziffern), "" wenn nicht offen
 void net_open_portal();              // Einstellungen: Portal (erneut) öffnen
 bool net_time_ok();                  // time(nullptr) > 1700000000
 int net_hour();                      // -1 wenn Zeit unbekannt

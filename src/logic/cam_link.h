@@ -69,3 +69,8 @@ static inline bool cam_link_upd_timed_out(const CamLink &l, uint32_t now) {
 // Nach der Anzeige des Ergebnisses (auch der Zeitüberschreitung): Überwachung beenden, sonst bleibt upd_timed_out wahr.
 static inline void cam_link_upd_end(CamLink &l) { l.upd = false; }
 static inline const char *cam_link_version(const CamLink &l) { return l.version; }
+// Kamera-Auge in der Statusleiste: 0 kein Symbol (Kamera aus), 1 grau, 2 grün (läuft, Gesicht da), 3 rot (keine Verbindung/Fehler).
+static inline uint8_t cam_status_level(bool cam_on, CamConn cc, bool present) {
+  if (!cam_on) return 0;
+  return (cc == CamConn::NONE || cc == CamConn::ERR) ? 3 : (cc == CamConn::ON && present ? 2 : 1);
+}

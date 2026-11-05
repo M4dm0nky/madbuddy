@@ -8,6 +8,7 @@
 #include "../hw/cam_uart.h"
 #include "../net/net.h"
 #include "../logic/ota_policy.h"
+#include "../logic/secure_zero.h"
 #include "../logic/cam_link.h"
 
 static constexpr uint32_t kIgnoreTapsMs = 1000;   // Tipps in der ersten Sekunde zählen nicht
@@ -73,8 +74,7 @@ static void cam_start(uint32_t now_ms) {
   } else {
     cam_fail("kein WLAN", now_ms);
   }
-  volatile char *w = line;   // enthält das WLAN-Passwort
-  for (size_t k = 0; k < sizeof line; k++) w[k] = 0;
+  secure_zero(line, sizeof line);   // enthält das WLAN-Passwort
 }
 
 bool ota_card_wanted(uint32_t now_ms, bool awake) {

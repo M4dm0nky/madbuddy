@@ -220,14 +220,6 @@ void icon_food(LovyanGFX &d, int cx, int cy, int s, int food) {
   }
 }
 
-void icon_thermometer(LovyanGFX &d, int cx, int cy, int s) {
-  const int w = s / 8 + 1, h = s * 36 / 100;
-  const uint32_t glass = lgfx::color888(230, 230, 240), red = lgfx::color888(230, 40, 40);
-  d.fillRoundRect(cx - w, cy - h, 2 * w, 2 * h, w, glass);
-  d.fillCircle(cx, cy + h, w * 2, glass);
-  d.fillRect(cx - w / 2, cy - h / 3, w, h + h / 3, red);
-  d.fillCircle(cx, cy + h, w * 3 / 2, red);
-}
 
 void icon_ball(LovyanGFX &d, int cx, int cy, int s, uint32_t col) {
   const int r = s * 4 / 10;

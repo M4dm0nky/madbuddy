@@ -17,7 +17,6 @@
 #define CAM_PIN_HREF  47
 #define CAM_PIN_PCLK  13
 
-#define CAM_UART_BAUD 115200
 #define CAM_UART_TX   43   // D6
 #define CAM_UART_RX   44   // D7
 
@@ -27,7 +26,7 @@
 #define CAM_ROTATE_CW 90   // Einbaulage im Roboter: Bild im Uhrzeigersinn drehen (0/90/180/270)
 
 #ifndef CAM_FW_VERSION
-#define CAM_FW_VERSION "0.1.6"   // Phase C setzt die Version beim Release
+#define CAM_FW_VERSION "0.1.7"   // Phase C setzt die Version beim Release
 #endif
 
 // Gesichtsmodell: 0 = MSR + MNP (bisher), 1 = espdet_pico_224_224_face (muss im Flash liegen, siehe sdkconfig.defaults)

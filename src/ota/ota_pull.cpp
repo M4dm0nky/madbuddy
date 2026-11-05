@@ -40,7 +40,9 @@ volatile bool g_check_now = false, g_fetching = false;   // Suche angefordert (S
 uint32_t g_check_req_ms = 0;
 volatile bool g_ui_alive = false;
 volatile bool g_marked = false;   // Gesundheitsnachweis erledigt bzw. nicht nötig (nur health_tick() setzt es nach begin())
-uint32_t g_next_poll = 0;
+Wait g_poll;   // nächste Abfrage (Abstand seit dem Setzen); geschützt durch g_mux (net_task und UI schreiben)
+void poll_in(uint32_t now, uint32_t ms) { portENTER_CRITICAL(&g_mux); g_poll.start(now, ms); portEXIT_CRITICAL(&g_mux); }
+bool poll_due(uint32_t now) { portENTER_CRITICAL(&g_mux); const bool d = g_poll.due(now); portEXIT_CRITICAL(&g_mux); return d; }
 char g_running_elf[65] = "";
 char g_slot[17] = "?", g_build[24] = "";
 int g_img_state = -1;
@@ -151,7 +153,7 @@ bool fetch_manifest(bool *newer) {
     const char *cu = doc["cam"]["url"] | "";
     const char *cs = doc["cam"]["sha256"] | "";
     CamInfo ci = {};
-    if (cv[0] && strlen(cv) <= 15 && ota_redirect_ok(cu) && strlen(cu) < sizeof ci.url && ota_hex_ok(cs, 64)) {
+    if (cv[0] && strlen(cv) <= 15 && ota_release_url_ok(cu) && strlen(cu) < sizeof ci.url && ota_hex_ok(cs, 64)) {
       ci.avail = true;
       strlcpy(ci.version, cv, sizeof ci.version);
       strlcpy(ci.url, cu, sizeof ci.url);
@@ -276,7 +278,7 @@ void download() {
 void begin() {
   const esp_app_desc_t *d = esp_app_get_description();
   hex_of(d->app_elf_sha256, 32, g_running_elf);
-  g_next_poll = kFirstPollMs;
+  poll_in(0, kFirstPollMs);
   const esp_partition_t *run = esp_ota_get_running_partition();
   esp_ota_img_states_t st = ESP_OTA_IMG_UNDEFINED;
   if (run) esp_ota_get_state_partition(run, &st);
@@ -309,7 +311,7 @@ void loop() {
     if (!fetch_manifest(&newer)) { set_error("Manifest nicht lesbar"); return; }
     if (!newer) { set_error("Update nicht mehr noetig"); return; }
     download();
-    g_next_poll = millis() + kPollMs;
+    poll_in(millis(), kPollMs);
     return;
   }
   g_consent = false;
@@ -327,18 +329,18 @@ void loop() {
     if (ok && !newer && info().state == AVAILABLE) set_state(IDLE);   // inzwischen zurückgenommen/gleich der laufenden Firmware
     g_fetching = false;
     record_check(ok);
-    g_next_poll = millis() + (ok ? kPollMs : kRetryMs);
+    poll_in(millis(), ok ? kPollMs : kRetryMs);
     return;
   }
   if (st == AVAILABLE) return;   // wartet auf Zustimmung; kein erneutes Abfragen nötig
-  if ((int32_t)(now - g_next_poll) < 0) return;
+  if (!poll_due(now)) return;
   if (!net_wifi_ok()) return;
   g_fetching = true;
   bool newer = false;
   const bool ok = fetch_manifest(&newer);
   g_fetching = false;
   record_check(ok);
-  g_next_poll = millis() + (ok ? kPollMs : kRetryMs);
+  poll_in(millis(), ok ? kPollMs : kRetryMs);
 }
 
 Info info() {
@@ -381,7 +383,7 @@ void dismiss_failure() {
   portENTER_CRITICAL(&g_mux);
   if (g_info.state == FAILED) { g_info.state = IDLE; g_info.error[0] = '\0'; }
   portEXIT_CRITICAL(&g_mux);
-  g_next_poll = millis() + kRetryMs;
+  poll_in(millis(), kRetryMs);
 }
 
 void ui_alive() { g_ui_alive = true; }

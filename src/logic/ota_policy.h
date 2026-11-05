@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "deadline.h"
+#include "claude_state.h"
 
 // Entscheidungen des Firmware-Updates per Abruf (src/ota/ota_pull.cpp). Reine Logik ohne Arduino-/LVGL-Includes (Host-Test test/test_ota_policy).
 // Das Gerät holt die Datei selbst, aber nur nach Zustimmung am Display; was es bootet, prüft es am Image selbst, nicht an den Angaben im Manifest.
@@ -90,6 +91,19 @@ static inline bool ota_redirect_ok(const char *url) {
   return n > ns && strcmp(host + n - ns, kSuffix) == 0;
 }
 
+// Kamera-Image aus dem Manifest: nur aus den Releases unseres Repos (nicht jede github.com-Adresse). Umleitungen prüfen weiter nur ota_redirect_ok.
+static const char OTA_RELEASE_PREFIX[] = "https://github.com/M4dm0nky/madbuddy/releases/download/";
+static inline bool ota_release_url_ok(const char *url) {
+  if (!ota_redirect_ok(url)) return false;
+  const size_t np = sizeof OTA_RELEASE_PREFIX - 1;
+  if (strncmp(url, OTA_RELEASE_PREFIX, np) != 0 || !url[np]) return false;
+  for (const char *p = url + np; *p; p++) {
+    if (*p == '?' || *p == '#' || *p == '%') return false;   // keine Abfrage/Kodierung (versteckte "..")
+    if (p[0] == '.' && p[1] == '.') return false;             // kein Pfad nach oben
+  }
+  return true;
+}
+
 // Gibt es etwas Neues? Beide Kennungen müssen gültige ELF-SHA-256 sein und sich unterscheiden (ein kaputtes Manifest meldet nie "Update").
 static inline bool ota_needs_update(const char *running_elf, const char *manifest_elf) {
   return ota_hex_ok(running_elf, 64) && ota_hex_ok(manifest_elf, 64) && strcmp(running_elf, manifest_elf) != 0;
@@ -156,4 +170,10 @@ static inline int ota_status_line(int state, int pct, bool busy, uint32_t last_c
   else if (min < 60) snprintf(out, n, "Aktuell (vor %u min)", (unsigned)min);
   else snprintf(out, n, "Aktuell (vor %u h)", (unsigned)(min / 60));
   return 1;
+}
+
+// Die Update-Karte erscheint nicht mitten in Pomodoro-Arbeit und nicht, während Claude arbeitet
+// (Einstellungen -> Firmware geht immer).
+static inline bool ota_card_allowed(bool focused_work, ClaudeState cs) {
+  return !focused_work && (cs == ClaudeState::OFF || cs == ClaudeState::IDLE);
 }

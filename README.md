@@ -33,6 +33,8 @@ MadBuddy ist ein kleines Haustier mit großen Augen auf dem ESP32-2432S028 („C
 
 **Kamera-Firmware:** 🟡 läuft am Gerät (Verbindung, Augen-Symbol, Einstellungen, Update über das Release). Die Gesichtserkennung wird noch abgestimmt (Licht, Einbaulage, Blickrichtung).
 
+**Winken:** Winkst du in die Kamera (Hand mehrmals hin und her), winkt MadBuddy zurück: Grußgesicht und eine kurze Blase („Hallo!“, „Huhu!“ ...). Schwellen sind vorläufig und werden am Gerät eingestellt (`src/logic/wave.h`).
+
 ## Einkaufsliste
 
 Preise: ca., Stand Oktober 2026, ohne Versand. „Schätzung“ = nicht belegt. Wo kein Link steht, ist ein Suchbegriff angegeben (nicht geprüft).
@@ -87,7 +89,7 @@ Summe zusätzlich ca. 35 € (vorläufig).
 1. CYD per USB-Kabel an den PC anschließen.
 2. Flashen: `pio run -e cyd2usb -t upload`
 3. **Touch einrichten:** Beim ersten Start (oder mit dem Finger auf dem Display beim Einschalten) die vier Pfeile in den Ecken antippen. Die Werte bleiben gespeichert.
-4. **WLAN:** Beim ersten Start (und wenn 30 s kein WLAN da ist) öffnet der Buddy den Access-Point **„MadBuddy“**. Mit dem Handy verbinden, WLAN wählen, im Feld **„Ort“** den Wohnort eintragen (z. B. „Berlin“), speichern. Aus dem Ort werden die Koordinaten für das Wetter (Open-Meteo) bestimmt.
+4. **WLAN:** Beim ersten Start (und wenn 30 s kein WLAN da ist) öffnet der Buddy den Access-Point **„MadBuddy“** (das WLAN-Passwort, 8 Ziffern, steht bei jedem Öffnen neu auf dem Display). Mit dem Handy verbinden, WLAN wählen, im Feld **„Ort“** den Wohnort eintragen (z. B. „Berlin“), speichern. Aus dem Ort werden die Koordinaten für das Wetter (Open-Meteo) bestimmt.
 
 ### Stufe 2: Desktop-Kopf
 

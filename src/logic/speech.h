@@ -53,11 +53,7 @@ inline void speech_shown(SpeechState &s, uint32_t now_ms) {
 // Kategorie für ein neues Grundgefühl oder COUNT (keine).
 inline Say speech_for_base(Emotion e) {
   switch (e) {
-    case Emotion::BORED: return Say::GELANGWEILT;
-    case Emotion::SAD: return Say::TRAURIG;
     case Emotion::HAPPY: return Say::FROH;
-    case Emotion::HUNGRY: return Say::HUNGRIG;
-    case Emotion::SICK: return Say::KRANK;
     default: return Say::COUNT;
   }
 }

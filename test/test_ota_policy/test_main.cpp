@@ -112,6 +112,26 @@ void test_redirect_control_chars() {
   TEST_ASSERT_FALSE(ota_redirect_ok("https://github.com/a\rb"));
   TEST_ASSERT_FALSE(ota_redirect_ok("https://github.com/a b"));
 }
+void test_release_url_pinned() {
+  const char *ok = "https://github.com/M4dm0nky/madbuddy/releases/download/v20261103-2108/madbuddy-cam.bin";
+  TEST_ASSERT_TRUE(ota_release_url_ok(ok));
+  TEST_ASSERT_FALSE(ota_release_url_ok("https://github.com/evil/madbuddy/releases/download/v1/x.bin"));
+  TEST_ASSERT_FALSE(ota_release_url_ok("https://github.com/M4dm0nky/madbuddy-evil/releases/download/v1/x.bin"));
+  TEST_ASSERT_FALSE(ota_release_url_ok("https://github.com/M4dm0nky/madbuddy/releases/download/../../../evil/x.bin"));
+  TEST_ASSERT_FALSE(ota_release_url_ok("https://github.com/M4dm0nky/madbuddy/releases/download/v1/..%2f"));
+  TEST_ASSERT_FALSE(ota_release_url_ok("http://github.com/M4dm0nky/madbuddy/releases/download/v1/x.bin"));
+  TEST_ASSERT_FALSE(ota_release_url_ok("https://objects.githubusercontent.com/M4dm0nky/madbuddy/releases/download/v1/x.bin"));
+  TEST_ASSERT_FALSE(ota_release_url_ok("https://github.com/M4dm0nky/madbuddy/releases/download/"));
+  TEST_ASSERT_FALSE(ota_release_url_ok(nullptr));
+}
+void test_card_allowed() {
+  TEST_ASSERT_TRUE(ota_card_allowed(false, ClaudeState::OFF));
+  TEST_ASSERT_TRUE(ota_card_allowed(false, ClaudeState::IDLE));
+  TEST_ASSERT_FALSE(ota_card_allowed(true, ClaudeState::OFF));
+  TEST_ASSERT_FALSE(ota_card_allowed(false, ClaudeState::THINKING));
+  TEST_ASSERT_FALSE(ota_card_allowed(false, ClaudeState::NEEDS_YOU));
+  TEST_ASSERT_FALSE(ota_card_allowed(false, ClaudeState::DONE));
+}
 int main(int, char **) {
   UNITY_BEGIN();
   RUN_TEST(test_image_ok_esp32);
@@ -125,5 +145,7 @@ int main(int, char **) {
   RUN_TEST(test_cam_newer);
   RUN_TEST(test_card_list);
   RUN_TEST(test_redirect_control_chars);
+  RUN_TEST(test_release_url_pinned);
+  RUN_TEST(test_card_allowed);
   return UNITY_END();
 }

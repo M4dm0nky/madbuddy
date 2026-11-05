@@ -44,7 +44,10 @@ static bool unchanged(char *cache, size_t n, const char *key, bool force) {
 static void draw_wifi(LGFX &d, const Persist &p, bool force) {
   static char s_cache[80] = "";
   const bool ok = net_wifi_ok();
-  const char *txt = net_portal_active() ? "Portal offen: MadBuddy" : (p.place[0] ? p.place : "WLAN / Ort einrichten");
+  char ptxt[40];
+  const bool portal = net_portal_active();
+  if (portal) snprintf(ptxt, sizeof ptxt, "MadBuddy  PW %s", net_portal_pass());   // Font S: passt in die Zeile
+  const char *txt = portal ? ptxt : (p.place[0] ? p.place : "WLAN / Ort einrichten");
   char key[80];
   snprintf(key, sizeof key, "%d|%s", ok ? 1 : 0, txt);
   if (unchanged(s_cache, sizeof s_cache, key, force)) return;
@@ -52,7 +55,8 @@ static void draw_wifi(LGFX &d, const Persist &p, bool force) {
   const int cy = row(1).y + kRowH / 2;
   const uint32_t col = ok ? d.color888(60, 220, 120) : d.color888(255, 60, 60);
   icon_wifi(d, 30, cy, 30, col);
-  ui_text(d, txt, 62, cy, &FONT_M, TFT_WHITE, middle_left);
+  if (portal) ui_text(d, txt, 62, cy, &FONT_S, d.color888(255, 200, 0), middle_left);
+  else ui_text(d, txt, 62, cy, &FONT_M, TFT_WHITE, middle_left);
 }
 
 static void draw_firmware(LGFX &d, uint32_t now_ms, bool force) {

@@ -22,3 +22,11 @@ struct Deadline {
     return false;
   }
 };
+
+// Wiederkehrende Wartezeit ("in x ms wieder"): Startzeit + Dauer statt Zielzeitpunkt, ueberlaufsicher. Nie gesetzt = sofort faellig.
+struct Wait {
+  uint32_t set = 0;
+  uint32_t wait = 0;
+  void start(uint32_t now, uint32_t duration) { set = now; wait = duration; }
+  bool due(uint32_t now) const { return due_since(now, set, wait); }
+};

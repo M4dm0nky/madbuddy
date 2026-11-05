@@ -121,6 +121,15 @@ void test_update_watchdog_probation_after_100() {
   TEST_ASSERT_TRUE(cam_link_upd_timed_out(l, 20000));
 }
 
+void test_cam_status_level() {
+  TEST_ASSERT_EQUAL(0, cam_status_level(false, CamConn::ON, true));
+  TEST_ASSERT_EQUAL(3, cam_status_level(true, CamConn::NONE, true));
+  TEST_ASSERT_EQUAL(3, cam_status_level(true, CamConn::ERR, false));
+  TEST_ASSERT_EQUAL(2, cam_status_level(true, CamConn::ON, true));
+  TEST_ASSERT_EQUAL(1, cam_status_level(true, CamConn::ON, false));
+  TEST_ASSERT_EQUAL(1, cam_status_level(true, CamConn::OFF, true));
+  TEST_ASSERT_EQUAL(1, cam_status_level(true, CamConn::OFF_USER, false));
+}
 int main(int, char **) {
   UNITY_BEGIN();
   RUN_TEST(test_line_across_chunks);
@@ -131,5 +140,6 @@ int main(int, char **) {
   RUN_TEST(test_update_watchdog);
   RUN_TEST(test_update_watchdog_ignores_running_camera);
   RUN_TEST(test_update_watchdog_probation_after_100);
+  RUN_TEST(test_cam_status_level);
   return UNITY_END();
 }

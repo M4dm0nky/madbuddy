@@ -3,11 +3,13 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdio.h>
+#include "secure_zero.h"
 
 // Zeilenprotokoll XIAO <-> CYD (Spec docs/superpowers/specs/2026-10-26-kamera-firmware-design.md). Reine Logik ohne
 // Arduino-/IDF-Includes, von beiden Projekten benutzt (cam/ per -I../src). Host-Test test/test_cam_proto.
 // Zeile: <inhalt>*<xx>\n, xx = XOR über <inhalt> als zwei Hexziffern (gesendet groß, gelesen beides).
 constexpr size_t CAM_LINE_MAX = 400;   // ohne '\n'; die U-Zeile (URL, SHA, SSID, Passwort) braucht mehr als 200
+constexpr uint32_t CAM_BAUD = 115200;   // UART XIAO <-> CYD, für beide Seiten
 
 enum CamKind : uint8_t { CAM_NONE = 0, CAM_FACE, CAM_NOFACE, CAM_HEART, CAM_CTRL, CAM_UPD_CMD, CAM_UPD_PCT, CAM_UPD_OK, CAM_UPD_ERR, CAM_SNAP_CMD, CAM_MOTION, CAM_STATS };
 enum CamState : uint8_t { CAM_ST_ON = 0, CAM_ST_OFF, CAM_ST_ERR };
@@ -79,8 +81,7 @@ static inline size_t cam_build_upd_cmd(const char *url, const char *sha, const c
   const int n = snprintf(c, sizeof c, "U\t%s\t%s\t%s\t%s", url, sha, ssid, pass);
   size_t r = 0;
   if (n >= 0 && (size_t)n < sizeof c) r = cam_seal(c, out, cap);
-  volatile char *w = c;   // enthält das Passwort: nicht auf dem Stapel liegen lassen
-  for (size_t i = 0; i < sizeof c; i++) w[i] = 0;
+  secure_zero(c, sizeof c);   // enthält das Passwort: nicht auf dem Stapel liegen lassen
   return r;
 }
 

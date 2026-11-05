@@ -1,6 +1,7 @@
 #include "status_bar.h"
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 #include "icons.h"
 #include "fonts.h"
 
@@ -8,7 +9,7 @@ static StatusInfo s_last;
 static bool s_valid = false;
 
 static bool same(const StatusInfo &a, const StatusInfo &b) {
-  if (a.time_ok != b.time_ok || a.wifi_ok != b.wifi_ok || a.portal != b.portal || a.weather_ok != b.weather_ok ||
+  if (a.time_ok != b.time_ok || a.wifi_ok != b.wifi_ok || a.portal != b.portal || strcmp(a.portal_pass, b.portal_pass) != 0 || a.weather_ok != b.weather_ok ||
       a.update_ready != b.update_ready || a.timer_s != b.timer_s || a.timer_break != b.timer_break ||
       a.claude_on != b.claude_on || a.helpers != b.helpers || a.cam != b.cam)
     return false;
@@ -36,9 +37,12 @@ void status_draw(LGFX &lcd, const StatusInfo &s) {
 
   lcd.setTextDatum(middle_left);
   if (s.portal && !s.wifi_ok) {
-    lcd.setFont(&FONT_S);
+    lcd.setFont(&FONT_M);
     lcd.setTextColor(lcd.color888(255, 200, 0), TFT_BLACK);
-    lcd.drawString("WLAN einrichten: MadBuddy", 8, cy);
+    char pw[40];
+    snprintf(pw, sizeof pw, "Passwort: %s", s.portal_pass);
+    lcd.drawString("WLAN: MadBuddy", 8, cy - 10);
+    lcd.drawString(pw, 8, cy + 10);
     lcd.endWrite();
     return;
   }

@@ -17,6 +17,10 @@ void test_wieder_exists() {
   TEST_ASSERT_EQUAL_UINT8(6, say_list(Say::WIEDER).n);
   TEST_ASSERT_EQUAL_STRING("Da bist du ja!", say_list(Say::WIEDER).items[0]);
 }
+void test_winken_exists() {
+  TEST_ASSERT_EQUAL_UINT8(6, say_list(Say::WINKEN).n);
+  TEST_ASSERT_EQUAL_STRING("Hallo!", say_list(Say::WINKEN).items[0]);
+}
 void test_ascii_max_28() {
   char buf[64];
   for (int i = 0; i < (int)Say::COUNT; i++) {
@@ -42,6 +46,7 @@ int main(int, char **) {
   UNITY_BEGIN();
   RUN_TEST(test_each_category_has_6);
   RUN_TEST(test_wieder_exists);
+  RUN_TEST(test_winken_exists);
   RUN_TEST(test_ascii_max_28);
   RUN_TEST(test_known_entries);
   return UNITY_END();

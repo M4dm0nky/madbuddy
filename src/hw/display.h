@@ -33,7 +33,7 @@ public:
       auto cfg = _bus.config();
       cfg.spi_host = HSPI_HOST;
       cfg.spi_mode = 0;
-      cfg.freq_write = 40000000;
+      cfg.freq_write = (uint32_t)CYD_SPI_WRITE_MHZ * 1000000UL;
       cfg.freq_read = 16000000;
       cfg.spi_3wire = false;
       cfg.use_lock = true;

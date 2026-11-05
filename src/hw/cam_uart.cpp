@@ -3,6 +3,7 @@
 #include "../config.h"
 #include "../logic/deadline.h"
 #include "../logic/cam_snapbuf.h"
+#include "../logic/secure_zero.h"
 
 static CamLink s_link;
 static void (*s_cb)(const CamMsg &, uint32_t) = nullptr;
@@ -63,8 +64,7 @@ void cam_uart_send(const char *content) {
   char line[CAM_LINE_MAX + 4];
   const size_t n = cam_seal(content, line, sizeof line);
   if (n) Serial2.write((const uint8_t *)line, n);
-  volatile char *p = line;   // die U-Zeile enthält das Passwort: Puffer nicht liegen lassen
-  for (size_t i = 0; i < sizeof line; i++) p[i] = 0;
+  secure_zero(line, sizeof line);   // die U-Zeile enthält das Passwort: Puffer nicht liegen lassen
 }
 
 void cam_uart_write_sealed(const char *line, size_t n) { if (n) Serial2.write((const uint8_t *)line, n); }

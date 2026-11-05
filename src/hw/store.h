@@ -12,7 +12,6 @@ struct Persist {
   float lat, lon;
   bool has_place;        // lat/lon passen zu place
   DayStats day;          // Tageszähler (F2); day.day = last_day (YYYYMMDD)
-  bool sick;             // F3 (Sättigung steckt in needs.satiety)
   float cuddly, playful; // Charakter -100..100
   uint8_t favorite_food; // 0..3; STORE_NO_FAVORITE = noch nicht gewählt (app zieht beim ersten Start zufällig)
   bool cam_on;           // Kamera eingeschaltet (Einstellung), Standard an
