@@ -105,7 +105,7 @@ Der XIAO-Stapel liegt in der Wiege hinter der Kamera in der Stirn, `xiao_offset`
 
 ## Stufe 3: Roboter
 
-Der XIAO liegt in der Brust (Kamera 15° nach oben gekippt), das CYD im Kopf. Die Kabel laufen durch den Hals (Rohr Ø 22) in den Kopf. Reihenfolge beim Einbau steht in `case/README.md`: Kamera einsetzen, Riegel von +X einschieben, XIAO-Stapel von hinten einlegen, dann `torso_back` schließen.
+Der XIAO liegt in der Brust (Kamera 15° nach oben gekippt), das CYD im Kopf. Die Kabel laufen durch den Hals (Rohr Ø 22) in den Kopf. Reihenfolge beim Einbau steht in `case/README.md`: XIAO mit aufgesteckter Kamera (wie geliefert, nichts kleben) als ein Block von hinten einschieben, dann `torso_back` schließen. Bebilderte Anleitung: `docs/einbau-kamera-roboter.pdf`.
 
 - **Kabellänge ca. 150 mm** für beide Kabel (durch den Hals, Spec). **VORLÄUFIG:** Der Wert stammt aus der Spec, nicht aus einer Messung am Modell. Am eigenen Aufbau von der Brust bis zu P1 und CN1 mit einem Faden abmessen, dazu ca. 10 mm Reserve.
 - **Strom:** Akku (DFR0969) → Schiebeschalter → 5 V und GND.

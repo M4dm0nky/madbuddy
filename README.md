@@ -94,7 +94,7 @@ Summe zusätzlich ca. 35 € (vorläufig).
 ### Stufe 2: Desktop-Kopf
 
 1. **XIAO vor dem Einbau flashen** (`& tools\cam-build.ps1`, dann per Kabel). Sein USB-C ist im Gehäuse nicht erreichbar; spätere Updates kommen über das Release (siehe unten).
-2. **Drucken** (PETG, 0,2 mm, 3 Wände, ohne Stützen): zuerst `frame_test` (ca. 20 min, prüft Fenster, Glas-Sitz, Lochbild), dann `front`, `back` und `cam_clip`. STL-Dateien unter [`case/stl/`](case/stl/).
+2. **Drucken** (PETG, 0,2 mm, 3 Wände, ohne Stützen): zuerst `frame_test` (ca. 20 min, prüft Fenster, Glas-Sitz, Lochbild), dann `cam_test` (Probestück für den Kamera-Block), dann `front` und `back`. STL-Dateien unter [`case/stl/`](case/stl/).
 3. **Verdrahten** nach der [Verkabelung](docs/verkabelung.md): 4 Adern, P1 VIN → XIAO 5V, P1 GND → XIAO GND, CN1 IO27 ↔ D6, CN1 IO22 ↔ D7.
 4. **Kamera und XIAO einbauen** ([`case/README.md`](case/README.md#kamera-und-xiao-einbauen-stufe-2)), mit 4× M3×8 verschrauben.
 
