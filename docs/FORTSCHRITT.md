@@ -2,12 +2,12 @@
 
 Neueste Einträge oben. Format und Regeln: `docs/superpowers/plans/2026-10-25-cyd-buddy.md`, Abschnitt „Fortschritts-Protokoll“.
 
-## Kamera-Halter v2 im Kopf Stufe 2 – GEBAUT (Stand 2026-11-06)
-- Branch `feature/halter-v2-stufe2` (von `main`), wartet auf Merge. Roboter (v2, seit 2026-11-02) und Kopf nutzen jetzt dieselbe Geometrie `case/xiao_cam_block.scad`: XIAO mit aufgesteckter Kamera bleibt wie geliefert (Kamera auf dem SD-Steckplatz, nichts kleben), beides geht als EIN Block von hinten in Tasche und Schacht. Riegel `cam_clip`, Nuten, FPC-Bogen und `case/xiao_cam_common.scad` sind entfernt.
+## Kamera-Halter v2 im Kopf Stufe 2 – GEMERGT (Stand 2026-11-06)
+- Branch `feature/halter-v2-stufe2`, auf `main` gemergt und gepusht (c292b11). Roboter (v2, seit 2026-11-02) und Kopf nutzen jetzt dieselbe Geometrie `case/xiao_cam_block.scad`: XIAO mit aufgesteckter Kamera bleibt wie geliefert (Kamera auf dem SD-Steckplatz, nichts kleben), beides geht als EIN Block von hinten in Tasche und Schacht. Riegel `cam_clip`, Nuten, FPC-Bogen und `case/xiao_cam_common.scad` sind entfernt.
 - **Kopf**: nur die Endwände des Schachts, `cam_tray_idx = [3, 4, 5]` (Index 2 entfällt: nach dem Zuschnitt nur 1,65 mm lang, Splitter). Grund: zwischen Display-Kante und Stirn-Innenhaut sind nur ca. 19 mm frei, der volle Schacht braucht 24,4 mm. Der Block wird dadurch an den Enden und von der Tasche geführt, die Längsseiten fehlen (Nutzerentscheidung). Zuschnitt der Endwände zweistufig (oben `offset -wall+0,01`, im Falz/Wandring des Rückteils `-wall-0,05`).
 - **Werte**: `xiao_cy` 33,95; Anschlag im Rückteil u 0,5…7,5 / v −4…5 (VORLÄUFIG, wie im Roboter), Anschlagfläche 0,15 mm hinter der XIAO-Unterseite (Z −14,25); Kabelschienen X ±3,8, Y 25,6…42,6 enden auf derselben Fläche; Lüftungsschlitze kerben 1 mm in die Wurzel des Anschlags (nur Kommentar angepasst); `cam_tip_ref` 1,7 (Soll-Linsenspitze bei Front 2,0).
 - **Prüfungen neu** (`check.ps1`, je mit Gegenprobe): `asm_block` (Einschubweg alle 1,5 mm bis 30 mm frei, Kontrolle Kamerakörper +0,6 mm trifft), `lens_tip` (Linse ragt nicht über die Hülle, Kontrolle trifft; mit `front_t=1,5` wird sie rot), `cradle_fit` je Seite (Endwände sitzen am Block, `tray_extra=-0,05` und `cam_dbg_nocradle` bleiben leer), Anschlag (`xiao_stop_gap=-0,5` trifft), `fb_overlap`/`inside_ctrl` auf der ungeschnittenen Halterung. Außerdem `cam_test` als neues Druckteil.
-- **Prüflauf 2026-11-06**: `check.ps1` (mit PNG) ALLES GRÜN, Gegenprobe `-Define window_shrink=2` rot (Task 1); `check_roboter.ps1 -Only 1,3i,3j` grün. Der Volllauf `check_roboter.ps1` (~35 min) steht vor dem Merge noch aus.
+- **Prüflauf 2026-11-06**: `check.ps1` (mit PNG) ALLES GRÜN, Gegenprobe `-Define window_shrink=2` rot (Task 1); `check_roboter.ps1 -Only 1,3i,3j` grün. Volllauf `check_roboter.ps1` und `check.ps1` vor dem Merge ALLES GRÜN (72ff2e4), Roboter-STL daraus neu.
 - **Anleitung**: `docs/einbau-kamera-roboter.md/.html/.pdf` auf 4 Schritte umgestellt (leere Tasche, Block von hinten einschieben, Block sitzt, Rückwand drauf; Bilder `einbau_kamera_1..4`), dazu „Kamera bleibt wie geliefert auf dem SD-Steckplatz, nichts kleben“ und „zuerst `cam_test` drucken“. `case/README.md`, `README.md`, `docs/verkabelung.md` bereinigt. `roboter_teile.3mf` enthielt `cam_test` schon ohne Clip. `roboter_ams.3mf` unberührt.
 - **Neu drucken (nur wenn Stufe 2 gebaut wird)**: zuerst `case/stl/madbuddy_cam_test.stl`, dann `madbuddy_front.stl` und `madbuddy_back.stl`. Roboter: nichts Neues durch diese Änderung.
 - Kein Release nötig, keine Firmware geändert.
@@ -31,14 +31,14 @@ Neueste Einträge oben. Format und Regeln: `docs/superpowers/plans/2026-10-25-cy
   4. Altstand: `roboter_torso_back.stl` passt nicht zum SCAD (nicht von diesem Branch).
   5. Volllauf Gehäuseprüfung, dann Merge nach `main`.
 
-## Nächste Aufgaben (Stand 2026-11-06, Branch `feature/halter-v2-stufe2` wartet auf Merge)
+## Nächste Aufgaben (Stand 2026-11-06, alles auf `main`)
 Für jede Aufgabe einen neuen Branch von `main`. Geräte-Stand: Release `v20261105-2217` (SPI 80 MHz) ist installiert. Kamera-Updates nur am Netzteil ≥ 2 A. Releases (`node tools/ota-publish.mjs --release`, vorher Branch pushen) und das Löschen von Branches braucht das ausdrückliche Ja des Nutzers.
 
 1. **Roboterkopf-Nachdruck abnehmen** – Kopf vorn + hinten ist gedruckt, noch nicht abgenommen.
    - Fragen an den Nutzer: Bild mittig im Fenster? USB-C steckbar? Sitzt der CYD fest (Andruckfüße greifen)?
    - Klemmt USB weiter oder wackelt der CYD: messen lassen Glasoberfläche → Platinenunterseite (Modell 6,1 = `disp_h` 4,5 + 1,6) und Dicke der USB-C-Steckerhülle (Modell 6,5), dann `disp_h` in `case/cyd_common.scad` an der Ursache korrigieren statt `usb_face_extra` weiter zu erhöhen.
    - Details: Abschnitt „Roboterkopf Passung nach Druck“ unten.
-2. **Kamera-Halter v2: Sitz des Blocks im Schacht** beim Nutzer erfragen (Spiel 0,3 mm, Lötstellen frei). Erledigt bis Testdruck: Roboter komplett gedruckt, Kopf Stufe 2 gebaut und geprüft (siehe Eintrag oben). Vor dem Merge nach `main` einmal der Volllauf `check_roboter.ps1` (~35 min).
+2. **Kamera-Halter v2: Sitz des Blocks im Schacht** beim Nutzer erfragen (Spiel 0,3 mm, Lötstellen frei). Erledigt bis Testdruck: Roboter komplett gedruckt, Kopf Stufe 2 gebaut, geprüft und gemergt (siehe Eintrag oben).
 3. **Blick am Gerät abnehmen** – mit dem Nutzer, kein Code.
    - Folgt der Blick flüssig? Geradeaus beim normalen Sitzen (`CAM_GAZE_Y0 300`)? Schielen erst bei ~20 cm (`CAM_NEAR_W 350`)? Werte live über `cam:`-Zeile (COM6, 115200, DTR/RTS aus). Bei Gelegenheit ein `python tools/cam-snap.py COM6 --out bild.jpg` (prüft den neuen Snap-Puffer).
 4. **Erledigt**
@@ -49,8 +49,7 @@ Für jede Aufgabe einen neuen Branch von `main`. Geräte-Stand: Release `v202611
    - Winken: Schwellen vorläufig, am Gerät einstellen.
    - Kamera noch schneller: Erkennung braucht 135 ms je Bild (Pico 224). Nächste Hebel: kleineres Modell-Eingangsbild, eigenes Kopfmodell mit ESP-Detection (~2–3 Arbeitstage, RTX 5080).
    - CYD: Bildrate 24–26 fps (SPI 80 MHz, Ring-Spur, Brillen-Raster).
-   - Altstand: `roboter_torso_back.stl` passt nicht zum SCAD (Prüfen beim nächsten Roboter-Druck).
-   - Aufräumen: Branches `feature/kamera-*` (einrichtung, firmware, gehaeuse, halter-v2, kleinkram, schneller), `rename-madbuddy`, `fix/kopf-passung` (lokal + GitHub) sind gemergt und können weg (Nutzer-Ja; Löschen durch Claude wurde von der Rechteprüfung abgelehnt).
+   - Aufräumen: Branches `feature/kamera-*` (einrichtung, firmware, gehaeuse, halter-v2, kleinkram, schneller), `feature/halter-v2-stufe2`, `rename-madbuddy`, `fix/kopf-passung` (lokal + GitHub) sind gemergt und können weg (Nutzer-Ja; Löschen durch Claude wurde von der Rechteprüfung abgelehnt).
 
 ## Roboterkopf Passung nach Druck – ERLEDIGT bis Nachdruck (Stand 2026-11-03 spät)
 - Anlass: Roboter komplett gedruckt. Bild saß 3 mm zu weit rechts im Fenster; USB-C-Stecker ließ sich nicht stecken, er stieß zum Gesicht hin an (Buchse sitzt näher am Gesicht als im Modell).
