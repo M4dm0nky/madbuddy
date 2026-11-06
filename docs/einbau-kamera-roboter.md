@@ -1,6 +1,6 @@
 # Kamera und XIAO in den Roboter einbauen
 
-Die Kamera sitzt innen in der Brust des Roboters. Sie schaut durch ein kleines Loch (Ø 6,7 mm) nach vorn. Kamera und XIAO bleiben **so, wie Seeed sie liefert**: Die Kameraplatine steckt auf dem XIAO über dem SD-Steckplatz. Beides wird als **ein Block** von hinten in die Brust geschoben. Nichts wird geklebt, nichts geschraubt, es gibt keinen Riegel.
+Die Kamera sitzt innen in der Brust des Roboters. Sie schaut durch ein kleines Loch (Ø 7,4 mm) nach vorn. Kamera und XIAO bleiben **so, wie Seeed sie liefert**: Die Kameraplatine steckt auf dem XIAO über dem SD-Steckplatz. Beides wird als **ein Block** von hinten in die Brust geschoben. Nichts wird geklebt, nichts geschraubt, es gibt keinen Riegel.
 
 Alle Bilder zeigen den Oberkörper-Vorderteil `torso_front` **von hinten**, also so, wie er vor dir liegt, wenn die Rückwand ab ist.
 

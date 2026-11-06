@@ -9,7 +9,7 @@ Alle Maße stehen oben in der Datei mit Kommentar: `QUELLE: Originalzeichnung`, 
 
 | Teil | Datei | Inhalt |
 |---|---|---|
-| front | `stl/madbuddy_front.stl` | Kopfschale mit Display-Fenster (nach vorn angefast), Stirn, Kameratasche (Linsenloch Ø 6,7 mit 45°-Fase), 3 Endwände des Schachts (`xiao_tray()`-Stücke [3,4,5]), 4 Schraubdome (M3, von hinten) |
+| front | `stl/madbuddy_front.stl` | Kopfschale mit Display-Fenster (nach vorn angefast), Stirn, Kameratasche (Linsenloch Ø 7,4 mit 45°-Fase), 3 Endwände des Schachts (`xiao_tray()`-Stücke [3,4,5]), 4 Schraubdome (M3, von hinten) |
 | cam_test | `stl/madbuddy_cam_test.stl` | Probestück: Stirn um Tasche und Endwände (X −14 … 24,5, Y ±14 um die Linse), flach druckbar. **Zuerst drucken**, Block muss stramm ohne Gewalt hinein (1× drucken) |
 | back | `stl/madbuddy_back.stl` | Rückwand mit Falz, USB-C-Öffnung, SD-Aussparung, BOOT/RESET-Fenster, Lüftungsschlitze, Platinen-Andrückfüße mit Zentrierstift, Anschlag und Kabelschienen für den Block, Fuß mit 15° Neigung |
 | frame_test | `stl/madbuddy_frame_test.stl` | flacher Streifen (2 mm Front + Display-Auflage) zum Prüfen von Fenstermaß, Glas-Sitz und Lochbild in ca. 20 min |
@@ -31,7 +31,7 @@ Alle Maße stehen oben in der Datei mit Kommentar: `QUELLE: Originalzeichnung`, 
 Kamera und XIAO bleiben wie geliefert: Die Kameraplatine steckt auf dem XIAO über dem SD-Steckplatz, nichts kleben. Beides geht als ein Block in den Kopf. **Zuerst `cam_test` drucken** und den Block dort probeweise einschieben (stramm, ohne Gewalt).
 
 1. Leere Tasche: `front` liegt mit dem Gesicht nach unten. Tasche in der Stirn und die drei Endwände des Schachts sind leer.
-2. Block von hinten einschieben: Linse (Tubus) durch das Loch Ø 6,7, Kamera 8 × 8 in die Tasche, der XIAO zwischen die Endwände. Der Klappstecker liegt seitlich. Die angelöteten Drähte bleiben frei.
+2. Block von hinten einschieben: Linse (Tubus) durch das Loch Ø 7,4, Kamera 8 × 8 in die Tasche, der XIAO zwischen die Endwände. Der Klappstecker liegt seitlich. Die angelöteten Drähte bleiben frei.
 3. Block sitzt: Kamera liegt vorn an der Stirn, ca. 0,3 mm Spiel in X/Y, Lötstellen frei. Vor dem Schließen einschalten und die Kamera testen.
 4. Rückwand aufsetzen: Der Anschlag in `back` steht 0,15 mm hinter der XIAO-Unterseite und hält den Block in Z. Mit 4 × M3×8 verschrauben. Die Lage des Blocks relativ zur Linse ist `xiao_pos`.
 
