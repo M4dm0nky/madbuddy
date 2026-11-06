@@ -1,5 +1,5 @@
-// MadBuddy: Kamera-/XIAO-Geometrie fuer den ROBOTER (Kamera v2: XIAO + Kamera als EIN Block in Lieferlage). Ersetzt xiao_cam_common.scad im Roboter; der Kopf (madbuddy_case.scad) nutzt weiter xiao_cam_common.scad. NICHT beide einbinden (gleiche Namen).
-// Wird von den Gehaeuse-Dateien mit include <xiao_cam_common.scad> eingebunden (nach cyd_common.scad). OpenSCAD 2021.01.
+// MadBuddy: Kamera-/XIAO-Geometrie fuer ROBOTER (madbuddy_roboter.scad) und KOPF Stufe 2 (madbuddy_case.scad) (Kamera v2: XIAO + Kamera als EIN Block in Lieferlage). Ersetzt das alte xiao_cam_common.scad (Riegel, Nuten, FPC-Bogen; entfernt).
+// Wird von den Gehaeuse-Dateien mit include <xiao_cam_block.scad> eingebunden (nach cyd_common.scad bzw. wo noetig). OpenSCAD 2021.01.
 // Alle Module arbeiten in EINEM lokalen System: Innenseite der Frontwand = Z 0, Blickrichtung (nach aussen) = +Z,
 // Mitte der Linse = Ursprung (X/Y), lange XIAO-Seite = X. Die einbindende Datei platziert/kippt das System.
 // Die Aussenflaeche der Frontwand liegt bei Z = wall_t (jedes Modul nimmt wall_t, Vorgabe cam_wall_t).
@@ -7,7 +7,7 @@
 // seitlich (+X). Die Kamera klemmt zwischen der Tasche in der Front und dem SD-Steckplatz (Schaumpad dazwischen). Kein Riegel, keine Nuten, kein FPC-Bogen.
 // Block-Koordinaten der Seeed-Zeichnung: u = ab USB-Kante nach +X, v = quer (Linsenmitte 0), h = ueber der XIAO-Unterseite.
 // Umrechnung ins lokale System: X = u - 3.53, Y = v, Z = xiao_zbot + h (bei xiao_flip: X gespiegelt, USB zeigt nach +X).
-// Optional darf die einbindende Datei VOR dem include cam_chamfer_ang (Fasenwinkel) setzen. Definiert hier (NICHT in der einbindenden Datei wiederholen, sonst WARNING):
+// Optional darf die einbindende Datei VOR dem include setzen: cam_chamfer_ang (Fasenwinkel) und cam_tray_idx (Auswahl der Schachtstuecke aus xiao_tray(); Vorgabe alle 6 = Roboter, der Kopf nimmt nur die Endwaende [2,3,4,5]). Definiert hier (NICHT in der einbindenden Datei wiederholen, sonst WARNING):
 //   cam_*, xiao_* (siehe unten).
 // Quellen: Seeed-STEP des Sense-Moduls (umgerechnet), gemessene Kamera OV3660 (schmale Linse), Spec docs/superpowers/specs (Kamera-Halter v2)
 
@@ -100,6 +100,7 @@ module cam_pocket_cut(wall_t = cam_wall_t) {
 // Luecken: Loetstellen an den Laengsseiten (Pin 1/2 am USB-Ende u ca. 2,9/5,4, Pin 7 u ca. 18,1), USB-C (v -3,86 ... 5,14),
 // U.FL-Antennenkabel am Klappstecker-Ende (v -7 ... 0); oben (+Y) Werkzeugkanal der Kopfschraube (u ca. 8,2 ... 14,8) frei.
 xiao_vmin = -8.25; xiao_vmax = 9.53;    // QUELLE: STEP -- XIAO-Platine in v
+cam_tray_sel = is_undef(cam_tray_idx) ? [0, 1, 2, 3, 4, 5] : cam_tray_idx;   // gebaute Schachtstuecke (Indizes in xiao_tray()); Kopf: [2,3,4,5] = nur Endwaende, Platzmangel in der Stirn
 function xiao_tray() = let(P = xiao_play, T = xiao_post_t, lo = xiao_vmin - P, hi = xiao_vmax + P, ue = 21.25 + P, uu = -3.11 - P) [
   [7.0, 16.5, lo - T, lo],              // Laengsseite unten (U.FL-Seite), zwischen Pin 2 und Pin 7
   [15.0, 17.2, hi, hi + T],             // Laengsseite oben, hinter dem Werkzeugkanal
@@ -112,7 +113,7 @@ module xiao_tray_box(r, z0, z1) {        // ein Schachtstueck [u0,u1,v0,v1] von 
   translate([xiao_flip ? -x1 : x0, r[2], z0]) cube([x1 - x0, r[3] - r[2], z1 - z0]);
 }
 module xiao_cradle_add(wall_t = cam_wall_t) {
-  if (!cam_dbg_nocradle) for (r = xiao_tray()) xiao_tray_box(r, xiao_zbot(wall_t), 0.5);   // cam_dbg_nocradle nur fuer die Gegenprobe der Wiege-Pruefung
+  if (!cam_dbg_nocradle) for (i = cam_tray_sel) xiao_tray_box(xiao_tray()[i], xiao_zbot(wall_t), 0.5);   // cam_dbg_nocradle nur fuer die Gegenprobe der Wiege-Pruefung
 }
 module xiao_cradle_cut(wall_t = cam_wall_t) {               // Huellraum des Blocks (ohne Kamera) + Spiel seitlich; oben bis zur Rahmen-Rueckseite
   xbox(-3.11, 21.25, xiao_vmin, xiao_vmax, 0, cam_zrear(wall_t) - xiao_zbot(wall_t) - 0.02, wall_t, xiao_play);   // 0,02 unter der Rahmen-Rueckseite (keine deckungsgleiche Flaeche)
