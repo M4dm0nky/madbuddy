@@ -7,7 +7,7 @@
 // seitlich (+X). Die Kamera klemmt zwischen der Tasche in der Front und dem SD-Steckplatz (Schaumpad dazwischen). Kein Riegel, keine Nuten, kein FPC-Bogen.
 // Block-Koordinaten der Seeed-Zeichnung: u = ab USB-Kante nach +X, v = quer (Linsenmitte 0), h = ueber der XIAO-Unterseite.
 // Umrechnung ins lokale System: X = u - 3.53, Y = v, Z = xiao_zbot + h (bei xiao_flip: X gespiegelt, USB zeigt nach +X).
-// Optional darf die einbindende Datei VOR dem include setzen: cam_chamfer_ang (Fasenwinkel) und cam_tray_idx (Auswahl der Schachtstuecke aus xiao_tray(); Vorgabe alle 6 = Roboter, der Kopf nimmt nur die Endwaende [2,3,4,5]). Definiert hier (NICHT in der einbindenden Datei wiederholen, sonst WARNING):
+// Optional darf die einbindende Datei VOR dem include setzen: cam_chamfer_ang (Fasenwinkel) und cam_tray_idx (Auswahl der Schachtstuecke aus xiao_tray(); Vorgabe alle 6 = Roboter, der Kopf nimmt nur die Endwaende [3,4,5]; Index 2 entfaellt (Splitter 1,65 mm)). Definiert hier (NICHT in der einbindenden Datei wiederholen, sonst WARNING):
 //   cam_*, xiao_* (siehe unten).
 // Quellen: Seeed-STEP des Sense-Moduls (umgerechnet), gemessene Kamera OV3660 (schmale Linse), Spec docs/superpowers/specs (Kamera-Halter v2)
 
@@ -100,7 +100,7 @@ module cam_pocket_cut(wall_t = cam_wall_t) {
 // Luecken: Loetstellen an den Laengsseiten (Pin 1/2 am USB-Ende u ca. 2,9/5,4, Pin 7 u ca. 18,1), USB-C (v -3,86 ... 5,14),
 // U.FL-Antennenkabel am Klappstecker-Ende (v -7 ... 0); oben (+Y) Werkzeugkanal der Kopfschraube (u ca. 8,2 ... 14,8) frei.
 xiao_vmin = -8.25; xiao_vmax = 9.53;    // QUELLE: STEP -- XIAO-Platine in v
-cam_tray_sel = is_undef(cam_tray_idx) ? [0, 1, 2, 3, 4, 5] : cam_tray_idx;   // gebaute Schachtstuecke (Indizes in xiao_tray()); Kopf: [2,3,4,5] = nur Endwaende, Platzmangel in der Stirn
+cam_tray_sel = is_undef(cam_tray_idx) ? [0, 1, 2, 3, 4, 5] : cam_tray_idx;   // gebaute Schachtstuecke (Indizes in xiao_tray()); Kopf: [3,4,5] = nur Endwaende, Index 2 entfaellt (Splitter 1,65 mm), Platzmangel in der Stirn
 function xiao_tray() = let(P = xiao_play, T = xiao_post_t, lo = xiao_vmin - P, hi = xiao_vmax + P, ue = 21.25 + P, uu = -3.11 - P) [
   [7.0, 16.5, lo - T, lo],              // Laengsseite unten (U.FL-Seite), zwischen Pin 2 und Pin 7
   [15.0, 17.2, hi, hi + T],             // Laengsseite oben, hinter dem Werkzeugkanal

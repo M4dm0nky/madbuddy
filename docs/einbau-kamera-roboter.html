@@ -32,6 +32,7 @@
   .tip { background: #e9f7ee; border-left: 5px solid var(--green); }
   .warn { background: #fff4e0; border-left: 5px solid #f0a020; }
   .terms { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .step dl { margin: 0; } .step dt { margin-top: 6px; } .step dd { margin: 2px 0 0; color: var(--muted); }
   .terms dl { margin: 0; } .terms dt { font-weight: 700; margin-top: 8px; } .terms dd { margin: 2px 0 0; color: var(--muted); }
   footer { color: var(--muted); font-size: 12px; margin: 18px 4px; }
   @media print { body { background: #fff; } main { padding: 0; } .card { border-color: #d5d9e0; } }
@@ -48,89 +49,70 @@
 <section class="card">
   <h2>🧩 Das Prinzip</h2>
   Die Kamera sitzt innen in der Brust und schaut durch ein kleines Loch (Ø 6,7 mm) nach vorn.
-  Ein flaches Druckteil, der <b>Riegel</b>, klemmt sie fest. Der XIAO darunter rastet zwischen vier Pfosten ein,
-  die Rückwand hält alles von hinten. Alle Bilder zeigen das Brust-Vorderteil <b>von hinten</b>, so wie es vor dir liegt, wenn die Rückwand ab ist.
+  Kamera und XIAO bleiben <b>so, wie sie geliefert werden</b>: Die Kameraplatine steckt auf dem XIAO über dem SD-Steckplatz.
+  Beides geht als <b>ein Block</b> von hinten in die Brust. Kein Riegel, kein Kleber, keine Schrauben an dieser Stelle.
+  Alle Bilder zeigen das Brust-Vorderteil <b>von hinten</b>, so wie es vor dir liegt, wenn die Rückwand ab ist.
 </section>
 
 <section class="card">
   <h2>🧰 Was du brauchst</h2>
   <table>
     <tr><td>🟧</td><td><span class="chip c-orange">torso_front</span> Brust-Vorderteil, Hals und Kopf sind schon daran montiert</td></tr>
-    <tr><td>🟨</td><td><span class="chip c-yellow">cam_clip</span> der Riegel, 1 Stück (in <code>roboter_teile.3mf</code>; flach drucken, 3 Wände)</td></tr>
-    <tr><td>🟥</td><td><span class="chip c-red">Kamera</span> das kleine Kameramodul mit Flachkabel, liegt dem XIAO Sense bei</td></tr>
-    <tr><td>🟩</td><td><span class="chip c-green">XIAO</span> XIAO ESP32S3 mit aufgesteckter Kameraplatine, Drähte schon angelötet</td></tr>
+    <tr><td>🟩</td><td><span class="chip c-green">XIAO + Kamera</span> XIAO ESP32S3 Sense mit aufgesteckter Kamera, wie geliefert, Drähte schon angelötet</td></tr>
     <tr><td>🟦</td><td><span class="chip c-blue">torso_back</span> Brust-Rückwand</td></tr>
     <tr><td>🔩</td><td>4 Schrauben M3 × 28 und ein Kreuzschlitz-Schraubendreher</td></tr>
   </table>
+  <div class="note tip">💡 Zuerst <code>cam_test</code> drucken (kleines Probestück). Geht der Block dort stramm, aber ohne Gewalt hinein, passt auch <code>torso_front</code>.</div>
   <div class="note warn">⚠️ Die Rückwand muss <b>ab</b> sein. Bei geschlossener Brust kommst du nicht an die Kamera.</div>
 </section>
 
-<section class="card">
-  <div class="terms">
-    <img src="../case/render/einbau_kamera_1.png" alt="Leere Kameratasche von hinten" style="width:100%;border-radius:10px;border:1px solid var(--line)">
-    <div>
-      <h2>🔍 Was ist was?</h2>
-      <dl>
-        <dt>Tasche</dt><dd>Das kleine quadratische Kästchen in der Mitte. Vorn darin ist das Linsenloch.</dd>
-        <dt>Schlitze (Nuten)</dt><dd>Zwei schmale Spalten oben und unten im Rand der Tasche. Darin gleitet der Riegel.</dd>
-        <dt>Kabelöffnung</dt><dd>Die <b>linke</b> Seite der Tasche ist offen. Dort kommt das Flachkabel heraus.</dd>
-        <dt>Pfosten</dt><dd>Die vier schrägen Stege rund um die Tasche. Dazwischen rastet der XIAO ein.</dd>
-      </dl>
-    </div>
+<section class="card step">
+  <img src="../case/render/einbau_kamera_1.png" alt="Leere Kameratasche von hinten">
+  <div>
+    <h2><span class="num c-orange">1</span>Leere Tasche</h2>
+    <dl>
+      <dt><b>Tasche</b></dt><dd>Das kleine quadratische Kästchen in der Mitte. Vorn darin ist das Linsenloch.</dd>
+      <dt><b>Schacht</b></dt><dd>Die Wände darum halten den XIAO seitlich. Der Block gleitet von hinten hinein.</dd>
+    </dl>
+    <div class="note tip">💡 Die Kamera wird nicht einzeln eingesetzt und nicht vom XIAO abgezogen.</div>
   </div>
 </section>
 
 <section class="card step">
-  <img src="../case/render/einbau_kamera_2.png" alt="Kamera vor der Tasche">
+  <img src="../case/render/einbau_kamera_2.png" alt="Block vor der Tasche">
   <div>
-    <h2><span class="num c-red">1</span>Kamera einlegen</h2>
+    <h2><span class="num c-red">2</span>Block von hinten einschieben</h2>
     <ol>
-      <li>Kamera so halten, dass die runde Linse von dir weg zum Loch zeigt.</li>
-      <li>Das Flachkabel zeigt nach <b>links</b>, zur offenen Seite.</li>
-      <li>Kamera gerade in die Tasche drücken, bis sie vorn anliegt. Die Linse steckt jetzt im Loch.</li>
+      <li>Die Kamera bleibt wie geliefert auf dem SD-Steckplatz. Nichts kleben.</li>
+      <li>Block so halten, dass die Linse nach vorn zum Loch zeigt.</li>
+      <li>Gerade von hinten in Schacht und Tasche schieben, die Linse ins Loch.</li>
     </ol>
-    <div class="note tip">💡 Die Kamera sitzt jetzt noch locker. Das ist richtig, der Riegel hält sie gleich fest.</div>
+    <div class="note tip">💡 Die angelöteten Drähte bleiben frei. Sie laufen später nach oben durch den Hals zum Kopf.</div>
   </div>
 </section>
 
 <section class="card step">
-  <img src="../case/render/einbau_kamera_3.png" alt="Riegel halb eingeschoben">
+  <img src="../case/render/einbau_kamera_3.png" alt="Block sitzt in Tasche und Schacht">
   <div>
-    <h2><span class="num c-yellow">2</span>Riegel einschieben</h2>
+    <h2><span class="num c-green">3</span>Block sitzt</h2>
     <ol>
-      <li>Den gelben Riegel von <b>links</b> in die beiden Schlitze schieben. Die geschlossene Seite des U geht voran.</li>
-      <li>Das Flachkabel liegt zwischen den beiden Armen des U, es wird nicht eingeklemmt.</li>
-      <li>Schieben, bis der Riegel auf der anderen Seite anliegt. Er drückt die Kamera nach vorn.</li>
+      <li>Die Kamera liegt vorn an der Brustwand, der XIAO sitzt im Schacht.</li>
+      <li>Der Block hat ca. 0,3 mm Spiel und wackelt leicht. Das ist richtig.</li>
+      <li>Die Lötstellen am XIAO dürfen nirgends anliegen.</li>
     </ol>
-    <div class="note tip">💡 Der Riegel geht stramm, er soll klemmen. Kleber brauchst du nicht.</div>
-    <div class="note warn">⚠️ Geht er gar nicht rein: die Arme mit feinem Schleifpapier etwas dünner schleifen. Zu locker: ein dünnes doppelseitiges Klebepad hinten auf die Kamera.</div>
   </div>
 </section>
 
 <section class="card step">
-  <img src="../case/render/einbau_kamera_4.png" alt="XIAO vor den Pfosten">
+  <img src="../case/render/einbau_kamera_4.png" alt="Rückwand wird aufgesetzt">
   <div>
-    <h2><span class="num c-green">3</span>XIAO einrasten</h2>
+    <h2><span class="num c-blue">4</span>Rückwand drauf</h2>
     <ol>
-      <li>Flachkabel in den Klappstecker der Kameraplatine stecken und den Bügel zuklappen.</li>
-      <li>XIAO so halten, dass die Kameraplatine nach vorn zur Kamera zeigt.</li>
-      <li>Gerade zwischen die vier Pfosten drücken, bis es <b>klick</b> macht.</li>
-    </ol>
-    <div class="note warn">⚠️ Das Flachkabel macht eine lockere Schleife. Nicht knicken!</div>
-    <div class="note tip">💡 Die langen Seiten des XIAO bleiben frei, dort sitzen die Drähte. Sie laufen nach oben durch den Hals zum Kopf.</div>
-  </div>
-</section>
-
-<section class="card step">
-  <img src="../case/render/einbau_kamera_5.png" alt="Rückwand wird aufgesetzt">
-  <div>
-    <h2><span class="num c-blue">4</span>Brust schließen</h2>
-    <ol>
-      <li>💡 Vorher einschalten und prüfen, ob die Kamera am Display erkannt wird.</li>
+      <li>Vorher einschalten und prüfen, ob die Kamera am Display erkannt wird.</li>
       <li>Rückwand gerade von hinten aufsetzen. Keine Drähte einklemmen.</li>
       <li>Mit den 4 Schrauben M3 × 28 festschrauben.</li>
     </ol>
-    <div class="note tip">💡 Innen in der Rückwand sitzt ein Steg genau hinter dem XIAO. So kann er nicht herausfallen.</div>
+    <div class="note tip">💡 Innen in der Rückwand sitzt ein Anschlag genau hinter dem XIAO. Er hält den Block gegen die Brustwand.</div>
   </div>
 </section>
 
@@ -140,7 +122,7 @@
   Wie XIAO und Display verkabelt werden, steht in <code>docs/verkabelung.md</code>.
 </section>
 
-<footer>MadBuddy · Bilder aus dem Gehäusemodell (<code>case/tools/render_guide.ps1</code>) · Stand 2026-11-02</footer>
+<footer>MadBuddy · Bilder aus dem Gehäusemodell (<code>case/tools/render_guide.ps1</code>) · Stand 2026-11-06</footer>
 </main>
 </body>
 </html>

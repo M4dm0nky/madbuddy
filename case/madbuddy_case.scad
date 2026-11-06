@@ -31,9 +31,9 @@ include <cyd_common.scad>
 
 // ---------------------------------------------------------------- XIAO ESP32S3 Sense + Kamera (Halter v2): Masse, Tasche, Endwaende, Pruefkoerper
 // Lokales System der Kamera: Frontwand-Innenseite = Z 0, Blick nach +Z, Linsenmitte = Ursprung (siehe cam_place unten).
-// Im Kopf nur die Endwaende des Schachts (Indizes 2..5 von xiao_tray()): zwischen Display-Kante und Stirn-Innenhaut sind nur ca. 19 mm frei, der volle Schacht braucht 24,4 mm.
+// Im Kopf nur die Endwaende des Schachts (Kopf: [3,4,5], Index 2 entfaellt (Splitter 1,65 mm); aus xiao_tray()): zwischen Display-Kante und Stirn-Innenhaut sind nur ca. 19 mm frei, der volle Schacht braucht 24,4 mm.
 // Die Tasche haelt den Block in X/Y, der Anschlag im Rueckteil in Z. Muss VOR dem include stehen.
-// Nutzerentscheidung 2026-11-06 (Platzmangel in der Stirn): Endwaende = Indizes 2..5. Index 2 (Klappstecker-Ende, v -8,55 ... -7,0, U.FL-Seite) bleibt nach dem Zuschnitt
+// Nutzerentscheidung 2026-11-06 (Platzmangel in der Stirn): Endwaende = Kopf [3,4,5]. Index 2 (Klappstecker-Ende, v -8,55 ... -7,0, U.FL-Seite) bleibt nach dem Zuschnitt
 // auf Y >= 25,3 nur 1,65 mm lang (< 3 mm, Splitter) und entfaellt: [3, 4, 5].
 cam_tray_idx = [3, 4, 5];
 include <xiao_cam_block.scad>
@@ -193,7 +193,7 @@ module back_part() {
     // BOOT/RESET
     translate([btn_x - btn_open_w / 2, -pcb_h / 2 + btn_y_from_bottom - btn_open_h / 2, z_back - 1])
       cube([btn_open_w, btn_open_h, back_t + 2]);
-    // Lueftungsschlitze hinter dem XIAO
+    // Lueftungsschlitze hinter dem XIAO (zwei Schlitze kerben 1 mm in die Wurzel des Anschlags, nur Kommentar, Geometrie unveraendert)
     for (sx = [-9.5, -6.5, 6.5, 9.5])
       translate([xiao_pos[0] + sx - 0.8, xiao_cy + xiao_pos[1] - 3, z_back - 1]) cube([1.6, 12, back_t + 2]);
   }

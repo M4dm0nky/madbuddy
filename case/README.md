@@ -2,16 +2,16 @@
 
 Parametrisches OpenSCAD-Gehäuse (OpenSCAD 2021.01) für das ESP32-2432S028 (CYD 2,8", Micro-USB + USB-C) und ein Seeed XIAO ESP32S3 Sense mit Kameraplatine (Linse in der Stirn, schaut nach vorn).
 
-Dateien: `madbuddy_case.scad` und `xiao_cam_common.scad` (Kamera: Tasche, Riegel, XIAO-Wiege, Prüfkörper; gemeinsam mit dem Roboter nutzbar). Teil wählen mit `-D 'part="front"'` (`front`, `back`, `cam_clip`, `frame_test`, `assembly`, `section`, `cam_section`, `collision`, `info`).
+Dateien: `madbuddy_case.scad` und `xiao_cam_block.scad` (Kamera-Halter v2: Tasche, Endwände des Schachts, Prüfkörper; gemeinsam mit dem Roboter nutzbar). Teil wählen mit `-D 'part="front"'` (`front`, `back`, `cam_test`, `frame_test`, `assembly`, `section`, `cam_section`, `collision`, `info`).
 Alle Maße stehen oben in der Datei mit Kommentar: `QUELLE: Originalzeichnung`, `GEMESSEN` oder `VORLÄUFIG`.
 
 ## Teile
 
 | Teil | Datei | Inhalt |
 |---|---|---|
-| front | `stl/madbuddy_front.stl` | Kopfschale mit Display-Fenster (nach vorn angefast), Stirn, Kameratasche (Linsenloch Ø 6,7 mit 45°-Fase, Rahmen mit Riegelnuten, FPC-Schlitz), XIAO-Wiege (4 Pfosten), 4 Schraubdome (M3, von hinten) |
-| cam_clip | `stl/madbuddy_cam_clip.stl` | Kamera-Riegel: flache U-Platte, 1,2 mm dick, hält den Kamerakörper in der Tasche (1× drucken) |
-| back | `stl/madbuddy_back.stl` | Rückwand mit Falz, USB-C-Öffnung, SD-Aussparung, BOOT/RESET-Fenster, Lüftungsschlitze, Platinen-Andrückfüße mit Zentrierstift, Kabelkanal, Fuß mit 15° Neigung |
+| front | `stl/madbuddy_front.stl` | Kopfschale mit Display-Fenster (nach vorn angefast), Stirn, Kameratasche (Linsenloch Ø 6,7 mit 45°-Fase), 3 Endwände des Schachts (`xiao_tray()`-Stücke [3,4,5]), 4 Schraubdome (M3, von hinten) |
+| cam_test | `stl/madbuddy_cam_test.stl` | Probestück: Stirn um Tasche und Endwände (X −14 … 24,5, Y ±14 um die Linse), flach druckbar. **Zuerst drucken**, Block muss stramm ohne Gewalt hinein (1× drucken) |
+| back | `stl/madbuddy_back.stl` | Rückwand mit Falz, USB-C-Öffnung, SD-Aussparung, BOOT/RESET-Fenster, Lüftungsschlitze, Platinen-Andrückfüße mit Zentrierstift, Anschlag und Kabelschienen für den Block, Fuß mit 15° Neigung |
 | frame_test | `stl/madbuddy_frame_test.stl` | flacher Streifen (2 mm Front + Display-Auflage) zum Prüfen von Fenstermaß, Glas-Sitz und Lochbild in ca. 20 min |
 | assembly / section | nur Ansicht (`render/*.png`) | alles mit farbigen Prüfkörpern |
 
@@ -21,23 +21,25 @@ Alle Maße stehen oben in der Datei mit Kommentar: `QUELLE: Originalzeichnung`, 
 - front: Gesicht nach unten auf dem Bett (Fenster und Linsenloch sind Durchbrüche, Fenster-Fase ist ein Überhang von 35°).
 - back: Rückseite (Außenfläche) liegt flach unten, der Fuß hat nur 15° Überhang.
 - frame_test: Gesicht nach unten.
-- cam_clip: flach auf dem Bett (1,2 mm dick, 1 Lage Wandlinie genügt nicht, 3 Wände einstellen).
+- cam_test: Außenseite nach unten, wie `front`.
 - Schrauben: 4× M3×8 (Senkung hinten, Kernloch 2,6 mm in den Domen; bei PETG selbstschneidend).
 - Mindestwand 2,4 mm, Passungsspiel `fit = 0,3 mm` (Variable).
-- **Wer `front` schon gedruckt hat, muss es neu drucken** (Linsenloch, Tasche und Wiege sind neu).
+- **Wer `front` oder `back` schon gedruckt hat, muss sie neu drucken** (Tasche, Endwände und Anschlag sind neu; Kamera-Halter v2, 2026-11-06). Zuerst `cam_test`.
 
 ## Kamera und XIAO einbauen (Stufe 2)
 
-1. `front` liegt mit dem Gesicht nach unten. Kamera von hinten in die Tasche legen: Linse (Tubus) durch das Loch Ø 6,7, Körper 8 × 8 an den Anschlag, das FPC zeigt nach +X (rechts im Blick von vorn) und läuft durch den Schlitz.
-2. Riegel `cam_clip` von der FPC-Seite in die beiden Nuten schieben, bis der Quersteg am Tascheneck anliegt. Er klemmt mit 0,1 mm Übermaß, kein Kleber nötig (optional ein dünnes Klebepad auf der Kamerarückseite). Das FPC liegt im Riegel-Ausschnitt.
-3. XIAO-Stapel (Sense-Platine zur Kamera, Stecker am Ende zur Kamera) zwischen die Pfosten einschieben, bis die Lippen der Klemmstege (je 0,7 mm Schnappmaß) über der Rückseite einrasten. Das FPC in den Klappstecker der Sense-Platine stecken: lockere Schleife, nicht knicken (Biegeradius mindestens 2 mm; die Luftlinie Körperkante bis Stecker ist laut `check.ps1` unter 16 mm). Die Längsseiten des Stapels bleiben für die angelöteten Drähte frei.
-4. Rückwand aufsetzen: Ihre Anschlagpfosten enden 0,1 mm unter der Stapelrückseite und halten den Stapel nach hinten. Die Lage des Stapels relativ zur Linse ist `xiao_offset`.
+Kamera und XIAO bleiben wie geliefert: Die Kameraplatine steckt auf dem XIAO über dem SD-Steckplatz, nichts kleben. Beides geht als ein Block in den Kopf. **Zuerst `cam_test` drucken** und den Block dort probeweise einschieben (stramm, ohne Gewalt).
+
+1. Leere Tasche: `front` liegt mit dem Gesicht nach unten. Tasche in der Stirn und die drei Endwände des Schachts sind leer.
+2. Block von hinten einschieben: Linse (Tubus) durch das Loch Ø 6,7, Kamera 8 × 8 in die Tasche, der XIAO zwischen die Endwände. Der Klappstecker liegt seitlich. Die angelöteten Drähte bleiben frei.
+3. Block sitzt: Kamera liegt vorn an der Stirn, ca. 0,3 mm Spiel in X/Y, Lötstellen frei. Vor dem Schließen einschalten und die Kamera testen.
+4. Rückwand aufsetzen: Der Anschlag in `back` steht 0,15 mm hinter der XIAO-Unterseite und hält den Block in Z. Mit 4 × M3×8 verschrauben. Die Lage des Blocks relativ zur Linse ist `xiao_pos`.
 
 ## Prüfung
 
 `& case\check.ps1` (aus PowerShell im Repo-Ordner) führt alles aus (STL ohne Warnungen, Standsicherheit, Standebene, Kollision gegen alle Prüfkörper inkl. Linsen-Freiraum und aktiver Fläche mit Sichtkegel, Selbsttest der Kollisionsprüfung, PNG-Renders). Exitcode ungleich 0 bei jedem Fehler.
 Gegenprobe: `check.ps1 -Define window_shrink=2 -NoPng` muss fehlschlagen (Fenster 2 mm schmaler).
-Kamera-Prüfungen (ohne `-Define`): Selbsttest (Kamerakörper +0,6 mm muss die Tasche treffen), `clip_test` (Riegel in Einbaulage schneidet den Rahmen durch das Übermaß), Rahmen und Wiege durchdringen das Rückteil nicht und bleiben 0,8 mm innerhalb der Kopfhaut, FPC-Luftlinie (Körperkante bis Stecker) höchstens 16 mm. Bild `render/madbuddy_kamera_schnitt.png` zeigt den Schnitt bei X = 0.
+Kamera-Prüfungen (ohne `-Define`): Selbsttest (Kamerakörper +0,6 mm muss die Tasche treffen), Einbauweg `asm_block` (Block lässt sich in Zwischenstellungen von hinten einschieben, mit Gegenprobe), Linsenspitze `lens_tip` (ragt höchstens bis zur Außenhülle, Gegenprobe `lens_tip_ctrl`), `cradle_fit` (Endwände sitzen am Block, je Seite mit Gegenprobe), Tasche und Endwände durchdringen das Rückteil nicht und bleiben 0,8 mm innerhalb der Kopfhaut, Kabelweg frei. Bild `render/madbuddy_kamera_schnitt.png` zeigt den Schnitt bei X = 0 (Block, Endwände und Anschlag).
 
 ## Maße
 
@@ -116,10 +118,10 @@ Summe: 4 × M3×8, 12 × M3×10, 4 × M3×28. Das passt zur Massenliste „20 ×
 1. Hals von oben mit 2 × M3×10 auf `torso_front` schrauben (`torso_back` ist dabei verschraubt, der Kopf fehlt).
 2. Rückwand des Oberkörpers abnehmen, Kopf auf den Hals setzen, 2 × M3×10 von unten durch die Halsschlitze eindrehen.
 3. Kamera und XIAO einbauen, solange `torso_back` noch abgenommen ist (bei geschlossenem Oberkörper kommt man nicht an die Tasche). **Bebilderte Anleitung: [PDF](../docs/einbau-kamera-roboter.pdf)** (Text: [`docs/einbau-kamera-roboter.md`](../docs/einbau-kamera-roboter.md)). Kurzfassung:
-   1. Kameramodul von hinten in die Tasche schieben (Linse durch das Loch), FPC durch den Schlitz nach +X führen.
-   2. `cam_clip` (Riegel) von der +X-Seite in die Nuten schieben (Übermaß 0,1 mm, Presssitz).
-   3. XIAO-Stapel von hinten zwischen die Pfosten schieben, die Lippen der Pfosten rasten über die Rückseite ein (FPC in den Stecker).
-   4. `torso_back` aufschieben und mit 4 × M3×28 schließen: Klemmsteg und Stützwand in `torso_back` legen sich hinter den Stapel. Der Weg ist per Zwischenstellungen geprüft (`asm_cam`, `asm_clip`, `asm_stack`, `asm_close`).
+   1. `cam_test` vorher drucken und den Block dort probeweise einschieben.
+   2. XIAO mit aufgesteckter Kamera (wie geliefert, nichts kleben) als ein Block von hinten in Tasche und Schacht schieben, Linse durch das Loch.
+   3. Block sitzt (ca. 0,3 mm Spiel, Lötstellen frei). Vor dem Schließen Kamera am CYD testen.
+   4. `torso_back` aufschieben und mit 4 × M3×28 schließen: Der Anschlag in `torso_back` liegt hinter dem Block. Der Weg ist per Zwischenstellungen geprüft (`asm_block`, `asm_close`).
 4. Arme in den Oberkörper stecken, Hände auf die Arme stecken, Ohren in den Kopf stecken, Blende in die Nut drücken, Zierschrauben einsetzen.
 5. Oberkörper mit Hals und Kopf auf `seat` stecken und von unten mit 4 × M3×10 verschrauben (Schraubendreher durch den offenen Boden).
 6. Akku einlegen, 5 V und GND verdrahten (Schalter, Kabel nach oben), `bottom` mit 4 × M3×10 schließen. Füße vorn auf die Beine stecken.

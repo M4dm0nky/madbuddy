@@ -120,7 +120,7 @@ if ($w.Ok) { Ok "Selbsttest Chk-Empty: sauber leeres Ergebnis wird als gruen gew
 $w = Eval-Empty 'cable_check' 1
 if (-not $w.Ok -and $w.Msg -match 'TIMEOUT') { Ok "Selbsttest Chk-Empty: Timeout wird als Fehler erkannt (nie als leer = gruen)" } else { Bad "Selbsttest Chk-Empty: Timeout NICHT als Fehler erkannt (Pruefung taugt nichts): Ok=$($w.Ok) Msg=$($w.Msg)" }
 Chk-Hit   'cam_selftest' "Kamera-Selbsttest: Kamerakoerper +0,6 mm trifft die Tasche (Pruefung wirkt)" "Kamera-Selbsttest: zu grosser Kamerakoerper NICHT erkannt"
-Chk-Hit   'lens_tip_ctrl' "Kontrolle Linse: um 0,5 mm laengere Linse ragt ueber die Aussenhuelle und wird erkannt" "Kontrolle Linse: zu lange Linse NICHT erkannt (Pruefung taugt nichts)"
+Chk-Hit   'lens_tip_ctrl' "Kontrolle Linse: um 0,2 mm laengere Linse ragt ueber die Aussenhuelle und wird erkannt" "Kontrolle Linse: zu lange Linse NICHT erkannt (Pruefung taugt nichts)"
 Chk-Empty 'lens_tip'     "Linse: Spitze liegt 0,3 mm hinter der Aussenhuelle (Frontplatte 2,0 = Linse 3,6 + Taschenboden 1,9 - 0,3 Rueckstand)" "Linse: Spitze ragt ueber die Aussenhuelle (Frontplatte zu duenn)"
 Chk-Hit   'asm_block_ctrl' "Kontrolle Montage Block: um 0,6 mm groesserer Kamerakoerper stoesst an" "Kontrolle Montage Block: zu grosser Kamerakoerper NICHT erkannt (Pruefung taugt nichts)"
 Chk-Empty 'asm_block'    "Montage: Block (Kamera + XIAO) laesst sich von hinten durch Tasche und Endwaende schieben (Zwischenstellungen bis 30 mm, voller Block)" "Montage: Block stoesst beim Einsetzen an"
